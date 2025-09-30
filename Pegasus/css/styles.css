@@ -1,0 +1,679 @@
+:root {
+    --c1: #2D235C;
+    --c2: #241C49;
+    --c3: #1B1734;
+    --c4: #14141E;
+    --black: #000000;
+    --text: #ffffff;
+    --interactive: hsl(176deg 100% 50%);
+    --background-color: linear-gradient(
+    130deg,
+    hsl(0deg 0% 2%) 0%,
+    hsl(183deg 30% 14%) 13%,
+    hsl(183deg 43% 24%) 19%,
+    hsl(183deg 54% 34%) 23%,
+    hsl(183deg 66% 43%) 27%,
+    hsl(182deg 81% 50%) 31%,
+    hsl(183deg 100% 50%) 34%,
+    hsl(186deg 100% 50%) 38%,
+    hsl(190deg 100% 50%) 41%,
+    hsl(195deg 100% 58%) 44%,
+    hsl(206deg 100% 68%) 47%,
+    hsl(220deg 100% 74%) 50%,
+    hsl(224deg 100% 76%) 53%,
+    hsl(230deg 100% 78%) 56%,
+    hsl(238deg 100% 80%) 59%,
+    hsl(247deg 100% 81%) 62%,
+    hsl(255deg 100% 80%) 66%,
+    hsl(238deg 100% 81%) 69%,
+    hsl(205deg 100% 69%) 73%,
+    hsl(191deg 100% 50%) 77%,
+    hsl(186deg 100% 50%) 81%,
+    hsl(183deg 100% 50%) 87%,
+    hsl(176deg 100% 50%) 100%
+  );
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: 'Source Sans 3', Arial, sans-serif;
+    background: var(--c4);
+    color: var(--text);
+    overflow-x: hidden;
+    position: relative;
+    background-image: var(--background-color);
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 40%, transparent 90%),
+        radial-gradient(circle at 80% 70%, rgba(36, 28, 73, 0.6) 0%, rgba(36, 28, 73, 0.3) 50%, transparent 95%),
+        radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.8) 0%, rgba(27, 23, 52, 0.2) 70%, transparent 95%),
+        radial-gradient(circle at 30% 80%, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 60%, transparent 100%);
+    background-size: 200% 200%;
+    z-index: -2;
+    filter: blur(80px);
+    animation: pulse 6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.95;
+    }
+}
+
+.slider {
+    position: fixed;
+    top: 53%;
+    left: 55%;
+    transform: translate(-15%, -50%);
+    width: 100%;
+    max-width: 1300px;
+    height: 100%;
+    max-height: 100vh;
+    overflow: hidden;
+    z-index: -1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.slider img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+}
+
+
+.fade-in {
+    animation: fadeIn 2.5s forwards;
+}
+
+.fade-out {
+    animation: fadeOut 1s forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 0.8;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 0.8;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+header {
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    z-index: 1;
+    font-family: 'Source Sans 3', sans-serif;
+    
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    z-index: 1;
+    
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    font-family: 'Source Sans 3', sans-serif;
+}
+
+p {
+    max-width: 600px;
+    color: #ddd;
+    margin-bottom: 2rem;
+}
+
+.gradient-text {
+    background-image: linear-gradient(to left,
+            rgb(184, 150, 255) 45px,
+            rgb(0, 246, 255) 126px,
+            rgb(0, 255, 240) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+
+.plain-text {
+    color: var(--text);
+    font-weight: 200;
+    text-transform: uppercase;
+    font-size: 0.7em;
+}
+
+.options {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    text-transform: uppercase;
+    font-weight: bolder;
+    
+}
+
+.option {
+
+    padding: 1rem 3rem;
+    cursor: pointer;
+    transition: transform 0.3s ease, background 0.3s ease;
+    min-width: 50%;
+    background: rgba(142, 150, 152, 0.12941176470588237);
+    border-radius: 20px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(0.9px);
+    -webkit-backdrop-filter: blur(0.9px);
+    border: 1px solid rgba(142, 150, 152, 1);
+    }
+
+.option:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.option h2 {
+    margin: 0;
+    color: white;
+    font-family: 'Source Sans 3', sans-serif;
+}
+
+.option .hover-content {
+    display: none;
+}
+
+footer {
+    position: fixed;
+    bottom: 10px;
+    width: 100%;
+    text-align: center;
+    font-size: .9rem;
+    color: #bbb;
+    z-index: 1;
+   
+
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.brand .logo {
+    height: 32px;
+    width: auto;
+}
+
+.brand .separator {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 1.2rem;
+}
+
+.logo:last-child {
+    margin-left: 6px;
+}
+
+/* ==== MODAL ==== */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(71, 71, 71, 0.269);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch; 
+    
+}
+
+.modal-content {
+ background: rgba(17, 17, 17, 0.908);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0px 0px rgba(255, 255, 255, 0);
+  position: relative;
+  overflow: hidden;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+    text-align: center;
+    position: relative;
+    animation: scaleIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.modal-content::after{
+    content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+}
+.modal-content::before{
+    content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+}
+
+.modal-content h2 {
+    margin-bottom: 1rem;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+
+}
+
+.modal-content p {
+    color: #ddd;
+   
+
+}
+
+.close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #fff;
+    transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+    color: var(--interactive);
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.plataformas {
+    
+    display: grid;
+    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.plataforma {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.plataforma:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.plataforma img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+}
+
+.status {
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    color: #ddd;
+}
+
+/* Estilo tarjetas dentro del formulario */
+.plataforma-card {
+  background: rgba(142, 150, 152, 0.13);
+  border: 1px solid rgba(142, 150, 152, 1);
+  border-radius: 20px;
+  padding: 1rem;
+  text-align: center;
+  transition: transform 0.3s ease, background 0.3s ease;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(0.9px);
+  -webkit-backdrop-filter: blur(0.9px);
+}
+
+.plataforma-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.plataforma-card h3 {
+  color: white;
+  margin-bottom: 0.5rem;
+}
+
+.plataforma-card label {
+  display: block;
+  color: white;
+  margin: 0.5rem 0;
+}
+
+.plataforma-card input[type="text"] {
+  width: 100%;
+  padding: 0.3rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.save-btn {
+  background: #22c55e;
+  color: white;
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.save-btn:hover {
+  background: #16a34a;
+}
+
+.btn-export {
+  margin-top: 20px;
+  background: #3b82f6;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.btn-export:hover {
+  background: #2563eb;
+}
+/* =========================================================
+   GENERADOR DE COMANDOS — SOLO CSS (sin cambiar HTML)
+   ========================================================= */
+
+/* 1) Contenedor del modal: ancho y respiración */
+#modal-commands .modal-content{
+  max-width: 980px;
+  padding: 28px;
+  text-align: left;
+}
+
+/* 2) Cabecera del modal */
+#modal-commands .modal-content h2{
+  margin: 0 0 6px;
+  letter-spacing: .5px;
+  display: flex;
+justify-content: center;
+  
+}
+#modal-commands .modal-content > p{
+  margin: 0 0 18px;
+  color: #cfd3e6;
+  line-height: 1.45;
+  padding-left: 20%;
+  text-align: center;
+}
+
+/* 3) Layout de dos columnas para lo que hay DENTRO del contenedor */
+#modal-commands #commnads-container{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* izquierda form, derecha resumen */
+
+  gap: 8px;
+  align-items: start;
+}
+@media (max-width: 860px){
+  #modal-commands #commnads-container{ grid-template-columns: 1fr; }
+}
+
+/* 4) “Tarjetas” suaves para form / resumen / preview (sin bordes duros) */
+#modal-commands form,
+#modal-commands .card, .card-2{
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.25);
+}
+#modal-commands form{ padding: 40px; 
+    grid-column: 1 / 3;
+    grid-row: 1 / 3; }
+#modal-commands .card{ padding: 14px 16px;
+ grid-column: 3 / 5;
+grid-row: 1 / 2;
+    
+}
+#modal-commands .card-2{ 
+  padding: 14px 16px;
+ grid-column: 3 / 5; /* Spans across columns 3 and 4 */
+  grid-row: 2 / 3;
+}
+
+/* 5) Grid de campos dentro del formulario (sin cajas marcadas) */
+#modal-commands fieldset{
+  border: 0;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 680px){
+  #modal-commands fieldset{ grid-template-columns: 1fr; }
+}
+
+/* 6) Labels + inputs coherentes */
+#modal-commands label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+#modal-commands input[type="text"],
+#modal-commands select{
+  appearance:none;
+
+  padding: 10px 12px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  color:#fff;
+  outline: none;
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease, transform .06s ease;
+}
+#modal-commands input::placeholder{ color:#aab3cc; }
+
+#modal-commands input[type="text"]:hover,
+#modal-commands select:hover{
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.25);
+}
+#modal-commands input[type="text"]:focus,
+#modal-commands select:focus{
+  border-color: var(--interactive);
+  box-shadow: 0 0 0 3px rgba(77,75,255,0.25);
+  background: rgba(255,255,255,0.1);
+}
+
+/* 7) Flags como chips compactos */
+#modal-commands .options{
+  display:flex; flex-wrap:wrap; gap:10px; margin: 10px 0px; justifsy-content: flex-start;
+}
+#modal-commands .filter-btn{
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size:.8rem;
+  font-weight:700;
+  text-transform: uppercase;
+  border:1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color:#fff;
+  transition: background .2s ease, border-color .2s ease, transform .06s ease;
+}
+#modal-commands .filter-btn:hover{ background: rgba(255,255,255,0.12); }
+#modal-commands .filter-btn:active{ transform: scale(0.98); }
+#modal-commands .filter-btn.active{
+  background: linear-gradient(180deg, var(--interactive), #3836e9);
+  border-color:#6563ff;
+  box-shadow: 0 6px 16px rgba(77,75,255,0.35);
+}
+
+/* 8) Nota bajo flags más discreta */
+#modal-commands .muted{
+  color:#b9bfd4;
+  font-size:.9rem;
+}
+
+.card-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 10px 10px;
+}
+#modal-commands #copyBtn{
+ 
+  width: fit-content;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  color:black;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .2s ease, transform .06s ease;
+}
+#modal-commands #copyBtn:hover{ filter: brightness(1.07); }
+#modal-commands #copyBtn:active{ transform: translateY(1px); }
+#modal-commands #copyBtn.copied{
+  background-color: #10b981;
+            border-color: #10b981;
+            color: #ffffff;
+}
+
+/* 10) Resumen y comando: jerarquía y tipografía */
+#modal-commands .card h3{
+  margin: 0 0 8px;
+  font-size: 1rem;
+  letter-spacing:.4px;
+  font-weight: bolder;
+   ;
+}
+#modal-commands .card p{
+  margin: 6px 0;
+  color: #e8ecff;
+}
+#modal-commands .card p strong{
+  margin: 6px 0;
+  color: #e8ecff;
+  
+}
+
+
+#modal-commands #commandPreview{
+  background: rgba(0,0,0,0.5);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 22px;
+  margin-top: 8px;
+  color:#e8ecff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
+  font-size:.92rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 11) Accesibilidad / focus visible consistente */
+#modal-commands :focus-visible{
+  outline: 2px solid rgba(77,75,255,0.85);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* 12) Pulido de espaciados finos */
+#modal-commands h3{ margin: 10px 0 6px; }
+#modal-commands .card + .card{ margin-top: 12px; }
