@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Epic Builds By EPG-FNPT - Admin</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css">
+  <style>
+    /* Estilos rápidos para el login */
+    #login-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      gap: 10px;
+      background: #111;
+      color: #fff;
+    }
+    #login-container input {
+      padding: 8px;
+      font-size: 1rem;
+    }
+    #login-container button {
+      padding: 8px 16px;
+      cursor: pointer;
+    }
+    #page-content {
+      display: none; /* oculto hasta que se loguee */
+    }
+  </style>
+</head>
+<body>
+  <!-- Login -->
+  <div id="login-container">
+    <h2>Login Admin</h2>
+    <input type="text" id="username" placeholder="Usuario">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="login-btn">Entrar</button>
+    <p id="login-error" style="color:red; display:none;">❌ Usuario o contraseña incorrectos</p>
+  </div>
+
+  <!-- Contenido de la página -->
+  <div id="page-content">
+    <div class="slider">
+      <img src="./slides/slide1.png" class="slide">
+      <img src="./slides/slide2.png" class="slide">
+      <img src="./slides/slide3.png" class="slide">
+    </div>
+
+    <header>
+      <div class="brand">
+        <img src="./logos/Logo1.png" alt="Logo 1" class="logo">
+        <span class="separator">X</span>
+        <img src="./logos/Logo2.png" alt="Logo 2" class="logo">
+      </div>
+    </header>
+
+    <main>
+      <h1>
+        <span class="plain-text">Admin Panel for </span>
+        <span class="gradient-text">EPG-FNPT</span>
+      </h1>
+      <div class="options">
+        <div class="option" data-modal="modal-builds">
+          <h2>Editar Builds</h2>
+        </div>
+
+        <div class="option" data-modal="modal-install">
+          <h2>Cómo Instalar</h2>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      © <span id="year"></span> EPAM. Made with ❤️ by BOG Team, Tango, Zulu, Whiskey. <br>Ahora quien mejor que yo? no hay ni uno. Arcangel
+    </footer>
+
+    <!-- Modal para editar builds -->
+    <div class="modal" id="modal-builds">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Editar Builds Activas</h2>
+        <p>Aquí puedes modificar la información de cada plataforma.</p>
+        <form id="edit-form" class="plataformas"></form>
+        <button id="export-btn" class="btn-export">Exportar JSON</button>
+      </div>
+    </div>
+
+    <!-- Modal instalación -->
+    <div class="modal" id="modal-install">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Como crear un servidor</h2>
+        <p>Guías paso a paso para instalar fácilmente.</p>
+        <div id="install-container" class="plataformas"></div>
+      </div>
+    </div>
+
+    <div id="nested-modals"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="./js/serverurl.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/admin.js"></script>
+  <script>
+    // Login muy básico
+    document.getElementById("login-btn").addEventListener("click", () => {
+      const user = document.getElementById("username").value;
+      const pass = document.getElementById("password").value;
+
+      if (user === "1234" && pass === "1234") {
+        document.getElementById("login-container").style.display = "none";
+        document.getElementById("page-content").style.display = "block";
+      } else {
+        document.getElementById("login-error").style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

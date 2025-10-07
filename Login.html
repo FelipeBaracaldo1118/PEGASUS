@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro e Inicio de Sesión</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #f4f4f9;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .form-container {
+      margin: 20px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+
+    label {
+      margin-bottom: 4px;
+    }
+
+    input {
+      margin-bottom: 12px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px 15px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #message {
+      color: red;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Iniciar Sesión o Registro</h1>
+
+  <!-- Contenedor de LOGIN -->
+  <div class="form-container">
+    <form id="loginForm">
+      <h2>Iniciar Sesión</h2>
+      <label for="login-username">Nombre de Usuario:</label>
+      <input type="text" id="login-username" placeholder="Ingresa tu usuario" required>
+
+      <label for="login-password">Contraseña:</label>
+      <input type="password" id="login-password" placeholder="Ingresa tu contraseña" required>
+
+      <button type="submit">Iniciar Sesión</button>
+    </form>
+  </div>
+
+  <!-- Contenedor de REGISTRO -->
+  <div class="form-container" id="registerContainer">
+    <form id="registerForm">
+      <h2>Registrarse</h2>
+      <label for="register-username">Nombre de Usuario:</label>
+      <input type="text" id="register-username" placeholder="Crea un usuario" required>
+
+      <label for="register-password">Contraseña:</label>
+      <input type="password" id="register-password" placeholder="Crea una contraseña" required>
+
+      <button type="submit">Registrarse</button>
+    </form>
+  </div>
+
+  <!-- Mensaje de error o éxito -->
+  <p id="message"></p>
+
+  <script>
+    // -----------------------------------------------
+    // CONFIGURACIÓN: Flag para desactivar el registro
+    // -----------------------------------------------
+    const ENABLE_REGISTRATION = true; // Cambia esto a "false" para desactivar el registro
+    if (!ENABLE_REGISTRATION) {
+      document.getElementById("registerContainer").classList.add("hidden");
+    }
+
+    // -----------------------------------------------
+    // FUNCIÓN PARA EL INICIO DE SESIÓN
+    // -----------------------------------------------
+    document.getElementById("loginForm").addEventListener("submit", async function (event) {
+      event.preventDefault(); // Evita que se recargue la página
+
+      // Capturamos los valores del formulario
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+
+      try {
+        // Enviar solicitud al backend
+        const response = await fetch("http://10.13.46.195:3000/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Mostrar mensaje de éxito
+          document.getElementById("message").innerText = "Inicio de sesión exitoso.";
+          document.getElementById("message").style.color = "green";
+          // Opcional: Guardar token o redirigir a otra página
+          // localStorage.setItem('token', result.token);
+        } else {
+          // Mostrar mensaje de error
+          document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";
+          document.getElementById("message").style.color = "red";
+        }
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+        document.getElementById("message").innerText = "No se pudo conectar con el servidor.";
+        document.getElementById("message").style.color = "red";
+      }
+    });
+
+    // -----------------------------------------------
+    // FUNCIÓN PARA EL REGISTRO
+    // -----------------------------------------------
+    document.getElementById("registerForm").addEventListener("submit", async function (event) {
+      event.preventDefault(); // Evita que se recargue la página
+
+      // Capturamos los valores del formulario
+      const username = document.getElementById("register-username").value;
+      const password = document.getElementById("register-password").value;
+
+      try {
+        // Enviar solicitud al backend
+        const response = await fetch("http:///10.13.46.195:3000/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Mostrar mensaje de éxito
+          document.getElementById("message").innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
+          document.getElementById("message").style.color = "green";
+
+          // Opcional: Limpiar formulario
+          document.getElementById("registerForm").reset();
+        } else {
+          // Mostrar mensaje de error
+          document.getElementById("message").innerText = result.message || "Error al registrarse.";
+          document.getElementById("message").style.color = "red";
+        }
+      } catch (error) {
+        console.error("Error al registrarse:", error);
+        document.getElementById("message").innerText = "No se pudo conectar con el servidor.";
+        document.getElementById("message").style.color = "red";
+      }
+    });
+  </script>
+</body>
+
+</html>

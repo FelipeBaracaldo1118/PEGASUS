@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Epic Builds By EPG-FNPT</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+
+<body>
+  <div class="slider">
+    <img src="./slides/slide1.png" class="slide">
+    <img src="./slides/slide2.png" class="slide">
+    <img src="./slides/slide3.png" class="slide">
+  </div>
+
+  <header>
+    <div class="brand">
+      <img src="./logos/Logo1.png" alt="Logo 1" class="logo">
+      <span class="separator">X</span>
+      <img src="./logos/Logo2.png" alt="Logo 2" class="logo">
+    </div>
+  </header>
+
+  <main>
+    <h1>
+      <span class="gradient-text">BIENVENIDOS A PEGASUS</span>
+      <br>
+      <span class="plain-text">Página web para EPG-FNPT</span>
+      
+    </h1>
+    <div class="options">
+      <div class="option" data-modal="modal-builds">
+        <h2>Builds</h2>
+      </div>
+
+      <div class="option" data-modal="modal-install">
+        <h2>Cómo Instalar</h2>
+      </div>
+
+      <div class="option" data-modal="modal-commands">
+        <h2>Creador de Comandos</h2>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © <span id="year"></span> EPAM. Made with ❤️ by BOG Team, Tango, Zulu, Whiskey. <br>Ahora quien mejor que yo? no hay ni uno. Arcangel
+  </footer>
+
+  <div class="modal" id="modal-builds">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2>Builds</h2>
+      <p>Aquí encontrarás compilaciones listas para descargar y probar.</p>
+      <div id="plataformas-container" class="plataformas"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-install">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2>Cómo Instalar</h2>
+      <p>Guías paso a paso para instalar fácilmente.</p>
+      <div id="install-container" class="plataformas"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="modal-commands">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2>Generador de Commandos </h2>
+      <p>Aquí podra seleccionar los parametros que debe capturar para cada sesión y podra enviar el backend correcto</p>
+      <div id="commnads-container" class="plataformas"></div>
+    </div>
+  </div>
+
+
+  <div id="nested-modals"></div>
+
+  <script src="./js/serverurl.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/commands.js"></script>
+</body>
+
+</html>
