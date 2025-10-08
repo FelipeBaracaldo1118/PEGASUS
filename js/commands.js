@@ -1,11 +1,8 @@
-// js/commands-app.js
-// Renderiza y opera el Generador de Comandos en #commnads-container (modal-commands)
-
 (function () {
-  // ====== UI MARKUP ======
   function renderCommandsPanel() {
     const cont = document.getElementById('commnads-container');
     if (!cont) return;
+
     cont.innerHTML = `
       <form id="configForm" onsubmit="return false;">
         <fieldset class="grid">
@@ -16,85 +13,92 @@
           <label>
             Backend
             <select id="backend">
-              <option value="Backflip">Backflip</option>
+              <option value="Cry">Cry</option>
+              <option value="DevPlatestH">DevPlatestH</option>
               <option value="Baseball">Baseball</option>
-              <option value="DevPlaytestH">DevPlayTestH</option>
+              <option value="Backflip">Backflip</option>
             </select>
           </label>
           <label>
             Región
-            <input type="text" id="region" placeholder="ej. NAE, EU" />
+            <select id="region">
+              <option value="ASIA">ASIA</option>
+              <option value="BR">BR</option>
+              <option value="EU">EU</option>
+              <option value="ME">ME</option>
+              <option value="NAC">NAC</option>
+              <option value="NAE">NAE</option>
+              <option value="NAW">NAW</option>
+              <option value="OCE">OCE</option>
+            </select>
           </label>
         </fieldset>
 
-        <div style="margin-top:10px">
-          <h3 style="margin:10px 0;">Flags</h3>
-          <div id="flagsContainer" class="options"></div>
-          <small class="muted">
-            Nota: <strong>PC</strong> y <strong>Switch</strong> son excluyentes.
-            <strong>LWM (BR)</strong> y <strong>LWM (No BR)</strong> también.
-          </small>
+        <div style="margin-top: 14px">
+          <h3 style="margin-bottom: 6px;">Plataformas</h3>
+          <div class="platforms-container options">
+            <button class="filter-btn" type="button" data-filter="PC">PC</button>
+            <button class="filter-btn" type="button" data-filter="Switch">Switch</button>
+          </div>
+          <small class="muted">Nota: PC y Switch son excluyentes.</small>
         </div>
 
-        <div class="grid" style="margin-top:12px;">
-        
+        <div style="margin-top: 14px">
+          <h3 style="margin-bottom: 6px;">Flags</h3>
+          <div class="flags-container options">
+            <button class="filter-btn" type="button" data-filter="Trace">TRACE</button>
+            <button class="filter-btn" type="button" data-filter="LLM">LLM</button>
+            <button class="filter-btn" type="button" data-filter="LWM (BR)">LWM (BR)</button>
+            <button class="filter-btn" type="button" data-filter="LWM (No BR)">LWM (NO BR)</button>
+          </div>
+          <small class="muted">Nota: LWM (BR) y LWM (No BR) son excluyentes.</small>
         </div>
       </form>
 
-      <div class="card " >
-      
+      <div class="card">
         <h3>Resumen</h3>
         <p><span class="gradient-text">Build ID:</span> <span id="summaryBuildId">Not set</span></p>
         <p><span class="gradient-text">Backend:</span> <span id="summaryBackend">Cry</span></p>
-        <p><span class="gradient-text">Región:</span> <span id="summaryRegion">Not set</span></p>
+        <p><span class="gradient-text">Región:</span> <span id="summaryRegion">ASIA</span></p>
         <p><span class="gradient-text">Flags:</span> <span id="summaryFlags">None</span></p>
       </div>
 
-      <section class="card-2" style="margin-top:14px;"> 
+      <div class="card-2">
         <div class="card-header">
-        <h3>Comando generado</h3>
-         <button id="copyBtn" class="primary" type="button">
-         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </button>
-
+          <h3>Comando generado</h3>
+          <button id="copyBtn" class="primary" type="button">Copiar</button>
         </div>
-        <pre id="commandPreview" style="white-space:pre-wrap;word-break:break-word;margin:0;"></pre>
-      </section>
+        <pre id="commandPreview"></pre>
+      </div>
     `;
   }
 
   class AppConfiguration {
     constructor() {
       this.buildId = '';
-      this.backend = 'Baseball';
-      this.region = '';
+      this.backend = 'Cry';
+      this.region = 'ASIA';
       this.activeFlags = [];
+      this.activePlatforms = [];
+      this.copying = false;
 
-      // Catálogo de flags del UI
-      this.AVAILABLE_FLAGS = [
-        'PC', 'Switch', 
-        'Trace', 'LLM',
-        'LWM (BR)', 'LWM (No BR)',
-        // agrega más si quieres:
-        // 'forcetest', 'skippatchcheck', ...
-      ];
+      this.init();
+    }
 
-      this.initializeElements();
-      this.renderFlagButtons();
+    init() {
+      this.getElements();
       this.bindEvents();
       this.updateSummary();
       this.updatePreview();
     }
 
-    initializeElements() {
+    getElements() {
       this.buildIdInput = document.getElementById('buildId');
       this.backendSelect = document.getElementById('backend');
-      this.regionInput = document.getElementById('region');
+      this.regionSelect = document.getElementById('region');
 
-      this.flagsContainer = document.getElementById('flagsContainer');
-      this.copyBtn = document.getElementById('copyBtn');
+      this.platformButtons = document.querySelectorAll('.platforms-container .filter-btn');
+      this.flagButtons = document.querySelectorAll('.flags-container .filter-btn');
 
       this.summaryBuildId = document.getElementById('summaryBuildId');
       this.summaryBackend = document.getElementById('summaryBackend');
@@ -102,220 +106,202 @@
       this.summaryFlags = document.getElementById('summaryFlags');
 
       this.commandPreview = document.getElementById('commandPreview');
-    }
-
-    renderFlagButtons() {
-      this.flagsContainer.innerHTML = '';
-      this.AVAILABLE_FLAGS.forEach(flag => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'filter-btn';
-        btn.dataset.filter = flag;
-        btn.textContent = flag;
-        this.flagsContainer.appendChild(btn);
-      });
-      this.flagButtons = this.flagsContainer.querySelectorAll('.filter-btn');
+      this.copyBtn = document.getElementById('copyBtn');
     }
 
     bindEvents() {
-      // Build ID
-      this.buildIdInput.addEventListener('input', (e) => {
-        this.buildId = e.target.value.trim();
-        this.updateSummary(); this.updatePreview();
+      this.buildIdInput.addEventListener('input', () => {
+        this.buildId = this.buildIdInput.value.trim();
+        this.updateSummary();
+        this.updatePreview();
       });
 
-      // Backend
-      this.backendSelect.addEventListener('change', (e) => {
-        this.backend = e.target.value;
-        this.updateSummary(); this.updatePreview();
+      this.backendSelect.addEventListener('change', () => {
+        this.backend = this.backendSelect.value;
+        this.updateSummary();
+        this.updatePreview();
       });
 
-      // Región
-      this.regionInput.addEventListener('input', (e) => {
-        this.region = e.target.value.trim();
-        this.updateSummary(); this.updatePreview();
+      this.regionSelect.addEventListener('change', () => {
+        this.region = this.regionSelect.value;
+        this.updateSummary();
+        this.updatePreview();
       });
 
-      // Flags
-      this.flagButtons.forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const flag = e.currentTarget.dataset.filter;
-          this.toggleFlag(flag);
-          this.updateSummary(); this.updatePreview();
+      this.platformButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.togglePlatform(btn.dataset.filter);
+          this.updateSummary();
+          this.updatePreview();
         });
       });
 
-      // Copiar
-      this.copyBtn.addEventListener('click', () => this.copyConfiguration());
+      this.flagButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          this.toggleFlag(btn.dataset.filter);
+          this.updateSummary();
+          this.updatePreview();
+        });
+      });
 
-      // Atajo Ctrl+C (fuera de inputs/select/textarea)
-      document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'C') &&
-            !['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) {
+      this.copyBtn.addEventListener('click', () => {
+        if (this.validate()) this.copyConfiguration();
+      });
+
+      document.addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key.toLowerCase() === 'c' &&
+            !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
           e.preventDefault();
-          this.copyConfiguration();
+          if (this.validate()) this.copyConfiguration();
         }
       });
+    }
+
+    togglePlatform(platform) {
+      const btn = document.querySelector(`[data-filter="${platform}"]`);
+
+      if (this.activePlatforms.includes(platform)) {
+        this.activePlatforms = this.activePlatforms.filter(p => p !== platform);
+        btn.classList.remove('active');
+      } else {
+        if (platform === 'PC') {
+          this.activePlatforms = this.activePlatforms.filter(p => p !== 'Switch');
+          document.querySelector(`[data-filter="Switch"]`)?.classList.remove('active');
+        } else if (platform === 'Switch') {
+          this.activePlatforms = this.activePlatforms.filter(p => p !== 'PC');
+          document.querySelector(`[data-filter="PC"]`)?.classList.remove('active');
+        }
+        this.activePlatforms.push(platform);
+        btn.classList.add('active');
+      }
     }
 
     toggleFlag(flag) {
-      const button = this.flagsContainer.querySelector(`[data-filter="${CSS.escape(flag)}"]`);
+      const btn = document.querySelector(`[data-filter="${flag}"]`);
 
       if (this.activeFlags.includes(flag)) {
-        // quitar
         this.activeFlags = this.activeFlags.filter(f => f !== flag);
-        button?.classList.remove('active');
+        btn.classList.remove('active');
       } else {
-        // Exclusiones PC/Switch
-        if (flag === 'PC' && this.activeFlags.includes('Switch')) {
-          this.activeFlags = this.activeFlags.filter(f => f !== 'Switch');
-          this.flagsContainer.querySelector(`[data-filter="Switch"]`)?.classList.remove('active');
-        } else if (flag === 'Switch' && this.activeFlags.includes('PC')) {
-          this.activeFlags = this.activeFlags.filter(f => f !== 'PC');
-          this.flagsContainer.querySelector(`[data-filter="PC"]`)?.classList.remove('active');
-        }
-
-        // Exclusiones LWM
-        if (flag === 'LWM (BR)' && this.activeFlags.includes('LWM (No BR)')) {
+        if (flag === 'LWM (BR)') {
           this.activeFlags = this.activeFlags.filter(f => f !== 'LWM (No BR)');
-          this.flagsContainer.querySelector(`[data-filter="LWM (No BR)"]`)?.classList.remove('active');
-        } else if (flag === 'LWM (No BR)' && this.activeFlags.includes('LWM (BR)')) {
+          document.querySelector(`[data-filter="LWM (No BR)"]`)?.classList.remove('active');
+        } else if (flag === 'LWM (No BR)') {
           this.activeFlags = this.activeFlags.filter(f => f !== 'LWM (BR)');
-          this.flagsContainer.querySelector(`[data-filter="LWM (BR)"]`)?.classList.remove('active');
+          document.querySelector(`[data-filter="LWM (BR)"]`)?.classList.remove('active');
         }
-
-        // añadir
         this.activeFlags.push(flag);
-        button?.classList.add('active');
+        btn.classList.add('active');
       }
-
-      this.syncVisualState();
-    }
-
-    syncVisualState() {
-      this.flagButtons.forEach(btn => {
-        const flag = btn.dataset.filter;
-        if (this.activeFlags.includes(flag)) btn.classList.add('active');
-        else btn.classList.remove('active');
-      });
     }
 
     updateSummary() {
       this.summaryBuildId.textContent = this.buildId || 'Not set';
       this.summaryBackend.textContent = this.backend;
-      this.summaryRegion.textContent = this.region || 'Not set';
-      this.summaryFlags.textContent = this.activeFlags.length ? this.activeFlags.join(', ') : 'None';
+      this.summaryRegion.textContent = this.region;
+
+      const allFlags = [...this.activePlatforms, ...this.activeFlags];
+      this.summaryFlags.textContent = allFlags.length ? allFlags.join(', ') : 'None';
     }
 
     updatePreview() {
-      this.commandPreview.textContent = this.generateConfigurationText();
+      this.commandPreview.textContent = this.generateCommand();
     }
 
-    generateConfigurationText() {
+    generateCommand() {
       const buildId = this.buildId || 'Not set';
-      const region = this.region || 'Not set';
+      const region = this.region;
       const backend = this.backend;
-
-      const isPC = this.activeFlags.includes('PC');
-      const isSwitch = this.activeFlags.includes('Switch');
-      
-
+      const isPC = this.activePlatforms.includes('PC');
+      const isSwitch = this.activePlatforms.includes('Switch');
       const { autoperfFlag, otherFlags } = this.generateFlags(isPC, isSwitch);
 
-      let command = `${autoperfFlag} -mcpregion=${region} -buildidoverride=${buildId} -epicapp=${backend}`;
-      if (otherFlags.length > 0) command += ` ${otherFlags}`;
-      return command;
+      let cmd = `${autoperfFlag} -mcpregion=${region} -buildidoverride=${buildId}`;
+      if (!isPC) cmd += ` -epicapp=${backend}`;
+      if (otherFlags) cmd += ` ${otherFlags}`;
+      return cmd;
     }
 
     generateFlags(isPC, isSwitch) {
       const flags = [];
       let autoperfFlag = '-autoperf';
 
-      // Base por plataforma
-      if (isPC) {
-        flags.push('-forcetest');
-      } else if (isSwitch) {
-        flags.push('-skippatchcheck');
-        flags.push('-hostwrite=C:\\\\SwitchLogs');
-      } else {
-        flags.push('-skippatchcheck');
-      }
+      if (isPC) flags.push('-forcetest');
+      else if (isSwitch) flags.push('-skippatchcheck', '-hostwrite=C:\\\\SwitchLogs');
+      else flags.push('-skippatchcheck');
 
-      // Perfiles
-      const hasTrace = this.activeFlags.includes('Trace');
-      const hasLLM = this.activeFlags.includes('LLM');
-      const hasLWM_BR = this.activeFlags.includes('LWM (BR)');
-      const hasLWM_NoBR = this.activeFlags.includes('LWM (No BR)');
-
-      if (hasTrace) {
+      if (this.activeFlags.includes('Trace')) {
         autoperfFlag = '-autoperf=trace,csv';
         flags.push('-csvNamedEvents');
       }
 
-      if (hasLLM || hasLWM_BR) {
+      if (this.activeFlags.includes('LLM') || this.activeFlags.includes('LWM (BR)')) {
         flags.push('-llm', '-llmcsv');
       }
 
-      if (hasLWM_BR || hasLWM_NoBR) {
+      if (this.activeFlags.includes('LWM (BR)') || this.activeFlags.includes('LWM (No BR)')) {
         flags.push('-trace=memalloc,memtag,module,log,region,metadata,assetmetadata', '-tracefile');
       }
 
       return { autoperfFlag, otherFlags: flags.join(' ') };
     }
 
-    async copyConfiguration() {
-      try {
-        const configText = this.generateConfigurationText();
-        if (navigator.clipboard && window.isSecureContext) {
-          await navigator.clipboard.writeText(configText);
-          this.showCopyFeedback();
-        } else {
-          this.fallbackCopyTextToClipboard(configText);
-        }
-      } catch (err) {
-        console.error('Failed to copy: ', err);
-        alert(`Copia manual:\n\n${this.generateConfigurationText()}`);
+    validate() {
+      if (!this.buildId || this.buildId.length < 3 || isNaN(this.buildId)) {
+        alert('Por favor ingresa un Build ID válido (mínimo 3 dígitos, numérico).');
+        return false;
       }
+      return true;
     }
 
-    fallbackCopyTextToClipboard(text) {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.top = '0';
-      ta.style.left = '0';
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
+    async copyConfiguration() {
+      if (this.copying) return;
+      this.copying = true;
+      const text = this.generateCommand();
+
       try {
-        const ok = document.execCommand('copy');
-        if (ok) this.showCopyFeedback(); else alert(`Copia manual:\n\n${text}`);
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          this.fallbackCopy(text);
+        }
+        this.showCopyFeedback();
       } catch {
         alert(`Copia manual:\n\n${text}`);
       }
+    }
+
+    fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
       document.body.removeChild(ta);
     }
 
     showCopyFeedback() {
+      const old = this.copyBtn.textContent;
       this.copyBtn.classList.add('copied');
-      const prev = this.copyBtn.textContent;
       this.copyBtn.textContent = '¡Copiado!';
       setTimeout(() => {
         this.copyBtn.classList.remove('copied');
-        this.copyBtn.textContent = prev;
-      }, 1500);
+        this.copyBtn.textContent = old;
+        this.copying = false;
+      }, 1800);
     }
   }
 
-  // Montar al cargar (o cuando abras el modal si prefieres)
   document.addEventListener('DOMContentLoaded', () => {
-    renderCommandsPanel();
-    new AppConfiguration();
-  });
+    const container = document.getElementById('commnads-container');
+    if (container) {
+      renderCommandsPanel();
+      new AppConfiguration();
+    }
 
- 
-  // window.renderCommandsApp = function () {
-  //   renderCommandsPanel();
-  //   new AppConfiguration();
-  // };
+    window.renderCommandsApp = function () {
+      renderCommandsPanel();
+      new AppConfiguration();
+    };
+  });
 })();
