@@ -25,6 +25,7 @@ mongoose.connect("mongodb://localhost:27017/loginApp", {
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  admin: { type: Boolean, default: false } // nuevo campo
 });
 const User = mongoose.model("User", userSchema);
 
@@ -72,10 +73,20 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
     }
 
-    // Generar un token JWT
-    const token = jwt.sign({ userId: user._id }, "SECRETO", { expiresIn: "1h" });
+    // Generar un token JWT que incluya si el usuario es admin
+    const token = jwt.sign(
+      { userId: user._id, admin: user.admin || false }, 
+      "SECRETO", 
+      { expiresIn: "1h" }
+    );
 
-    res.status(200).json({ success: true, message: "Login exitoso", token });
+    // Devolver token y rol
+    res.status(200).json({ 
+      success: true, 
+      message: "Login exitoso", 
+      token, 
+      admin: user.admin || false 
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: "Error al iniciar sesión" });
   }
@@ -120,6 +131,6 @@ app.get("/protected", (req, res) => {
 // --------------------------
 // INICIAR SERVIDOR
 // --------------------------
-app.listen(3000, "0.0.0.0",() => {
-  console.log("Servidor Node corriendo en http://10.13.46.195:3000/");
+app.listen(3000, "0.0.0.0", () => {
+  console.log("Servidor Node corriendo en http://localhost:3000/");
 });

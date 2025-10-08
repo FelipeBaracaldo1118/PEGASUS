@@ -7,49 +7,151 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/styles.css">
+
   <style>
-    /* Estilos rápidos para el login */
-    #login-container {
+    body {
+      font-family: "Source Sans 3", sans-serif;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+
+    @keyframes slideAnim {
+      0% { opacity: 0; }
+      5% { opacity: 1; }
+      33% { opacity: 1; }
+      38% { opacity: 0; }
+      100% { opacity: 0; }
+    }
+
+    /* LOGIN / REGISTER */
+    #login-section {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
-      gap: 10px;
-      background: #111;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .form-container {
+      backdrop-filter: blur(15px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 30px 40px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      width: 320px;
+      margin: 10px;
+      text-align: center;
       color: #fff;
+      animation: fadeIn 1s ease;
     }
-    #login-container input {
-      padding: 8px;
+
+    .form-container h2 {
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    .form-container input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
       font-size: 1rem;
+      outline: none;
     }
-    #login-container button {
-      padding: 8px 16px;
+
+    .form-container input::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .form-container button {
+      width: 106%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #007bff, #00c9ff);
+      color: white;
+      font-weight: 600;
+      font-size: 1rem;
       cursor: pointer;
+      transition: 0.3s;
     }
-    #page-content {
-      display: none; /* oculto hasta que se loguee */
+
+    .form-container button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(0, 201, 255, 0.5);
+    }
+
+    .toggle {
+      margin-top: 15px;
+      color: #00c9ff;
+      cursor: pointer;
+      font-weight: 500;
+      text-decoration: underline;
+    }
+
+    #message {
+      color: white;
+      margin-top: 15px;
+      text-align: center;
+      font-weight: 500;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #app-content {
+      display: none;
     }
   </style>
 </head>
+
 <body>
-  <!-- Login -->
-  <div id="login-container">
-    <h2>Login Admin</h2>
-    <input type="text" id="username" placeholder="Usuario">
-    <input type="password" id="password" placeholder="Contraseña">
-    <button id="login-btn">Entrar</button>
-    <p id="login-error" style="color:red; display:none;">❌ Usuario o contraseña incorrectos</p>
+  <!-- Fondo slider -->
+  <div class="slider">
+    <img src="./slides/slide1.png" class="slide">
+    <img src="./slides/slide2.png" class="slide">
+    <img src="./slides/slide3.png" class="slide">
   </div>
 
-  <!-- Contenido de la página -->
-  <div id="page-content">
-    <div class="slider">
-      <img src="./slides/slide1.png" class="slide">
-      <img src="./slides/slide2.png" class="slide">
-      <img src="./slides/slide3.png" class="slide">
-    </div>
+  <!-- LOGIN / REGISTER -->
+  <section id="login-section">
+    <h1 style="color:white; text-shadow:0 0 10px rgba(0,0,0,0.5);">PEGASUS LOGIN - ADMIN</h1>
 
+    <div class="form-container">
+      <form id="loginForm">
+        <h2>Iniciar Sesión</h2>
+        <input type="text" id="login-username" placeholder="Usuario" required>
+        <input type="password" id="login-password" placeholder="Contraseña" required>
+        <button type="submit">Entrar</button>
+      </form>
+
+      <form id="registerForm" style="display:none;">
+        <h2>Registro</h2>
+        <input type="text" id="register-username" placeholder="Nuevo usuario" required>
+        <input type="password" id="register-password" placeholder="Nueva contraseña" required>
+        <button type="submit">Crear cuenta</button>
+      </form>
+
+      <p id="message"></p>
+    </div>
+  </section>
+
+  <!-- CONTENIDO ADMIN -->
+  <div id="app-content">
     <header>
       <div class="brand">
         <img src="./logos/Logo1.png" alt="Logo 1" class="logo">
@@ -67,7 +169,6 @@
         <div class="option" data-modal="modal-builds">
           <h2>Editar Builds</h2>
         </div>
-
         <div class="option" data-modal="modal-install">
           <h2>Cómo Instalar</h2>
         </div>
@@ -78,28 +179,27 @@
       © <span id="year"></span> EPAM. Made with ❤️ by BOG Team, Tango, Zulu, Whiskey. <br>Ahora quien mejor que yo? no hay ni uno. Arcangel
     </footer>
 
-    <!-- Modal para editar builds -->
     <div class="modal" id="modal-builds">
       <div class="modal-content">
         <span class="close-btn">&times;</span>
         <h2>Editar Builds Activas</h2>
-        <p>Aquí puedes modificar la información de cada plataforma.</p>
+        <div class="version-controls">
+          <select id="version-selector"></select>
+          <input type="text" id="new-version" placeholder="Nueva versión (ej: 39.00)">
+          <button id="create-version-btn">Crear versión</button>
+        </div>
         <form id="edit-form" class="plataformas"></form>
-        <button id="export-btn" class="btn-export">Exportar JSON</button>
+        <button id="export-btn" class="btn-export">Guardar</button>
       </div>
     </div>
 
-    <!-- Modal instalación -->
     <div class="modal" id="modal-install">
       <div class="modal-content">
         <span class="close-btn">&times;</span>
         <h2>Como crear un servidor</h2>
-        <p>Guías paso a paso para instalar fácilmente.</p>
         <div id="install-container" class="plataformas"></div>
       </div>
     </div>
-
-    <div id="nested-modals"></div>
   </div>
 
   <!-- Scripts -->
@@ -107,16 +207,89 @@
   <script src="./js/app.js"></script>
   <script src="./js/admin.js"></script>
   <script>
-    // Login muy básico
-    document.getElementById("login-btn").addEventListener("click", () => {
-      const user = document.getElementById("username").value;
-      const pass = document.getElementById("password").value;
+    const SERVER_URL = window.location.hostname === "localhost"
+      ? "http://localhost:3000"
+      : "http://10.13.46.195:3000";
 
-      if (user === "1234" && pass === "1234") {
-        document.getElementById("login-container").style.display = "none";
-        document.getElementById("page-content").style.display = "block";
-      } else {
-        document.getElementById("login-error").style.display = "block";
+    const loginSection = document.getElementById("login-section");
+    const appContent = document.getElementById("app-content");
+    const message = document.getElementById("message");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+
+    async function verifyToken() {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${SERVER_URL}/protected`, {
+          headers: { "Authorization": token }
+        });
+        const data = await res.json();
+        if (res.ok && data.admin) {
+          loginSection.style.display = "none";
+          appContent.style.display = "block";
+        } else {
+          localStorage.removeItem("token");
+        }
+      } catch {
+        localStorage.removeItem("token");
+      }
+    }
+    verifyToken();
+
+    loginForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = document.getElementById("login-username").value;
+      const password = document.getElementById("login-password").value;
+      try {
+        const res = await fetch(`${SERVER_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (res.ok && data.admin) {
+          localStorage.setItem("token", data.token);
+          message.style.color = "lime";
+          message.innerText = "Inicio de sesión exitoso.";
+          setTimeout(() => {
+            loginSection.style.display = "none";
+            appContent.style.display = "block";
+          }, 500);
+        } else {
+          message.style.color = "red";
+          message.innerText = "Usuario o contraseña incorrectos o no tienes permisos";
+        }
+      } catch {
+        message.style.color = "red";
+        message.innerText = "Error de conexión con el servidor";
+      }
+    });
+
+    registerForm.addEventListener("submit", async e => {
+      e.preventDefault();
+      const username = document.getElementById("register-username").value;
+      const password = document.getElementById("register-password").value;
+      try {
+        const res = await fetch(`${SERVER_URL}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          message.style.color = "lime";
+          message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
+          registerForm.reset();
+          loginForm.style.display = "block";
+          registerForm.style.display = "none";
+        } else {
+          message.style.color = "red";
+          message.innerText = data.message || "Error al registrarse.";
+        }
+      } catch {
+        message.style.color = "red";
+        message.innerText = "Error de conexión con el servidor.";
       }
     });
   </script>

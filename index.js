@@ -21,6 +21,7 @@ mongoose.connect('mongodb://localhost:27017/loginDB', {
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  admin: { type: Boolean, default: false } // nuevo campo
 });
 
 // Modelo de usuario

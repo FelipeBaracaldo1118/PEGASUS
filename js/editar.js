@@ -11,12 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
       div.innerHTML = `
         <h3>${p.nombre.toUpperCase()}</h3>
         <label>
-          Servidor Archivos:
+          Activo:
           <input type="checkbox" class="servidor-archivos" ${p.servidor_archivos ? "checked" : ""}>
-        </label>
-        <label>
-          Servidor Plataforma:
-          <input type="checkbox" class="servidor-plataforma" ${p.servidor_plataforma ? "checked" : ""}>
         </label>
         <label>
           URL:
@@ -28,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // Guardar cambios en memoria
       div.querySelector(".save-btn").addEventListener("click", () => {
         p.servidor_archivos = div.querySelector(".servidor-archivos").checked;
-        p.servidor_plataforma = div.querySelector(".servidor-plataforma").checked;
         p.url = div.querySelector(".url-input").value;
 
         alert(`✔ Cambios guardados en ${p.nombre}`);

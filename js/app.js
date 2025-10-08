@@ -71,28 +71,111 @@ window.addEventListener('click', (e) => {
   });
 });
 
-// Render builds con estado de servidores
+// Render builds con estado de servidores y limitación de descarga
 function renderPlataformas() {
   const container = document.getElementById("plataformas-container");
+  const modalBuilds = document.getElementById("modal-builds");
   container.innerHTML = "";
 
-  buildsData.plataformas.forEach(p => {
+  // 🔸 Crear dropdown de versiones si no existe
+  let versionSelect = document.getElementById("version-select");
+  if (!versionSelect) {
+    versionSelect = document.createElement("select");
+    versionSelect.id = "version-select";
+    versionSelect.style.marginBottom = "15px";
+    versionSelect.style.padding = "6px";
+    versionSelect.style.fontSize = "1rem";
+    versionSelect.style.borderRadius = "8px";
+    versionSelect.style.border = "none";
+    versionSelect.style.background = "rgba(255,255,255,0.15)";
+    versionSelect.style.color = "white";
+
+    modalBuilds.querySelector(".modal-content").insertBefore(versionSelect, container);
+
+    // Agregar versiones disponibles
+    Object.keys(buildsData.versiones).forEach(ver => {
+      const opt = document.createElement("option");
+      opt.value = ver;
+      opt.textContent = "Versión " + ver;
+      versionSelect.appendChild(opt);
+    });
+  }
+
+  // 🔹 Renderizar la primera versión por defecto
+  const defaultVersion = Object.keys(buildsData.versiones)[0];
+  renderVersion(defaultVersion);
+
+  // 🔹 Cambiar versión al seleccionar
+  versionSelect.addEventListener("change", () => {
+    renderVersion(versionSelect.value);
+  });
+
+  // 🔹 Función para renderizar una versión
+function renderVersion(version) {
+  container.innerHTML = "";
+  const plataformas = buildsData.versiones[version];
+
+  plataformas.forEach(p => {
     const div = document.createElement("div");
     div.classList.add("plataforma");
 
-    div.innerHTML = `
-      <a href="${p.url}" target="_blank">
-        <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
-      </a>
-      <h3>${p.nombre.toUpperCase()}</h3>
-      <div class="status">
-        Servidor Archivos: ${p.servidor_archivos ? "🟢" : "🔴"}<br>
-        Servidor Plataforma: ${p.servidor_plataforma ? "🟢" : "🔴"}
-      </div>
-    `;
+    // Crear botón de descarga con límite
+    const downloadBtn = document.createElement("button");
+    downloadBtn.textContent = "Descargar " + p.nombre.toUpperCase();
+    downloadBtn.style.marginTop = "10px";
+    downloadBtn.style.padding = "6px 12px";
+    downloadBtn.style.borderRadius = "6px";
+    downloadBtn.style.border = "none";
+    downloadBtn.style.cursor = "pointer";
+    downloadBtn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
+    downloadBtn.style.color = "white";
 
-    container.appendChild(div);
-  });
+    const lastClickKey = `download_${version}_${p.nombre}`;
+
+    // Función para actualizar el botón según tiempo restante
+    function updateButton() {
+      const now = Date.now();
+      const lastClick = parseInt(localStorage.getItem(lastClickKey));
+      if (lastClick && now - lastClick < 10 * 60 * 1000) {
+        downloadBtn.disabled = true;
+        const remaining = Math.ceil((10 * 60 * 1000 - (now - lastClick)) / 1000);
+        downloadBtn.textContent = `Descargar ${p.nombre.toUpperCase()} (disponible en ${remaining}s)`;
+        return false;
+      } else {
+        downloadBtn.disabled = false;
+        downloadBtn.textContent = "Descargar " + p.nombre.toUpperCase();
+        return true;
+      }
+    }
+
+    // Inicializar estado del botón
+    updateButton();
+
+    // Intervalo para actualizar cada segundo
+    const interval = setInterval(updateButton, 1000);
+
+    // Evento click
+    downloadBtn.addEventListener("click", () => {
+      if (!updateButton()) return; // aún bloqueado
+
+      window.open(p.url, "_blank");
+      localStorage.setItem(lastClickKey, Date.now());
+      updateButton();
+    });
+
+      div.innerHTML = `
+          <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
+        </a>
+        <h3>${p.nombre.toUpperCase()}</h3>
+        <div class="status">
+          Activo: ${p.servidor_archivos ? "🟢" : "🔴"}
+        </div>
+      `;
+
+      div.appendChild(downloadBtn);
+      container.appendChild(div);
+    });
+  }
 }
 
 // Render instalación con submodals
