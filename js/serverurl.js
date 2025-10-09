@@ -4,22 +4,26 @@ const buildsData = {
       {
         "nombre": "xsx",
         "servidor_archivos": true,
-        "url": "https://ash-speed.hetzner.com/100MB.bin"
+        "url": "http://10.13.46.201:8080/Xbox/436609B6.FortniteClient_2.0.4670.9821_neutral__9ncxwbgmmv7m8_xs.xvc",
+        "url2": "http://10.13.46.139:8080/436609B6.FortniteClient_2.0.4670.9821_neutral__9ncxwbgmmv7m8_xs.xvc"
       },
       {
         "nombre": "switch",
         "servidor_archivos": true,
-        "url": "https://ash-speed.hetzner.com/100MB.bin"
+        "url": "http://10.13.46.195:8080/builds/suich/38.10SkyMango/FortniteClient-Switch-Test-External.nsp",
+        "url2": "http://10.13.46.195:8080/builds/suich/38.10SkyMango/TinyApp.nsp"
       },
       {
         "nombre": "ps4",
         "servidor_archivos": true,
-        "url": "https://ash-speed.hetzner.com/100MB.bin"
+        "url": "http://10.13.46.152:8080/FortniteClient-PS4-Test-CUSA07022_00.pkg",
+        "url2": ""
       },
       {
         "nombre": "ps5",
         "servidor_archivos": true,
-        "url": "https://ash-speed.hetzner.com/100MB.bin"
+        "url": "http://10.13.46.147:8080/UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg",
+        "url2": ""
       }
     ]
   }

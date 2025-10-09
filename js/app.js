@@ -111,57 +111,97 @@ function renderPlataformas() {
   });
 
   // 🔹 Función para renderizar una versión
-function renderVersion(version) {
-  container.innerHTML = "";
-  const plataformas = buildsData.versiones[version];
+  function renderVersion(version) {
+    container.innerHTML = "";
+    const plataformas = buildsData.versiones[version];
 
-  plataformas.forEach(p => {
-    const div = document.createElement("div");
-    div.classList.add("plataforma");
+    plataformas.forEach(p => {
+      const div = document.createElement("div");
+      div.classList.add("plataforma");
 
-    // Crear botón de descarga con límite
-    const downloadBtn = document.createElement("button");
-    downloadBtn.textContent = "Descargar " + p.nombre.toUpperCase();
-    downloadBtn.style.marginTop = "10px";
-    downloadBtn.style.padding = "6px 12px";
-    downloadBtn.style.borderRadius = "6px";
-    downloadBtn.style.border = "none";
-    downloadBtn.style.cursor = "pointer";
-    downloadBtn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
-    downloadBtn.style.color = "white";
+      // Crear botón de descarga con límite
+      const downloadBtn = document.createElement("button");
+      downloadBtn.textContent = "Descargar " + p.nombre.toUpperCase();
+      downloadBtn.style.marginTop = "10px";
+      downloadBtn.style.padding = "6px 12px";
+      downloadBtn.style.borderRadius = "6px";
+      downloadBtn.style.border = "none";
+      downloadBtn.style.cursor = "pointer";
+      downloadBtn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
+      downloadBtn.style.color = "white";
+      ////// 2 button test 
 
-    const lastClickKey = `download_${version}_${p.nombre}`;
+      const downloadBtn2 = document.createElement("button");
+      downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
+      downloadBtn2.style.marginTop = "10px";
+      downloadBtn2.style.padding = "6px 25px";
+      downloadBtn2.style.borderRadius = "6px";
+      downloadBtn2.style.border = "none";
+      downloadBtn2.style.cursor = "pointer";
+      downloadBtn2.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
+      downloadBtn2.style.color = "white";
 
-    // Función para actualizar el botón según tiempo restante
-    function updateButton() {
-      const now = Date.now();
-      const lastClick = parseInt(localStorage.getItem(lastClickKey));
-      if (lastClick && now - lastClick < 10 * 60 * 1000) {
-        downloadBtn.disabled = true;
-        const remaining = Math.ceil((10 * 60 * 1000 - (now - lastClick)) / 1000);
-        downloadBtn.textContent = `Descargar ${p.nombre.toUpperCase()} (disponible en ${remaining}s)`;
-        return false;
-      } else {
-        downloadBtn.disabled = false;
-        downloadBtn.textContent = "Descargar " + p.nombre.toUpperCase();
-        return true;
+      const lastClickKey = `download_${version}_${p.nombre}`;
+      const lastClickKey2 = `download_${version}_${p.nombre}`;
+
+      // Función para actualizar el botón según tiempo restante
+      function updateButton() {
+        const now = Date.now();
+        const lastClick = parseInt(localStorage.getItem(lastClickKey));
+        if (lastClick && now - lastClick < 10 * 6 * 1000) {
+          downloadBtn.disabled = true;
+          const remaining = Math.ceil((10 * 6 * 1000 - (now - lastClick)) / 1000);
+          downloadBtn.textContent = `${p.nombre.toUpperCase()} Download  (will be available after ${remaining}s)`;
+          return false;
+        } else {
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = "Download " + p.nombre.toUpperCase();
+          return true;
+        }
       }
-    }
+      
+      function updateButton2() {
+        const now = Date.now();
+        const lastClick2 = parseInt(localStorage.getItem(lastClickKey2));
+        if (lastClick2 && now - lastClick2 < 10 * 6 * 1000) {
+          downloadBtn2.disabled = true;
+          const remaining2 = Math.ceil((10 * 6 * 1000 - (now - lastClick2)) / 1000);
+          downloadBtn2.textContent = `${p.nombre.toUpperCase()} Download  (will be available after ${remaining2}s)`;
+          return false;
+        } else {
+          downloadBtn2.disabled = false;
+          downloadBtn2.textContent = "Download " + p.nombre.toUpperCase() + " 2";
+          return true;
+        }
+      }
 
-    // Inicializar estado del botón
-    updateButton();
 
-    // Intervalo para actualizar cada segundo
-    const interval = setInterval(updateButton, 1000);
-
-    // Evento click
-    downloadBtn.addEventListener("click", () => {
-      if (!updateButton()) return; // aún bloqueado
-
-      window.open(p.url, "_blank");
-      localStorage.setItem(lastClickKey, Date.now());
+      // Inicializar estado del botón
       updateButton();
-    });
+
+      updateButton2();
+
+      // Intervalo para actualizar cada segundo
+      const interval = setInterval(updateButton, 1000);
+      const interval2 = setInterval(updateButton, 1000);
+      
+
+      // Evento click
+      downloadBtn.addEventListener("click", () => {
+        if (!updateButton()) return; // aún bloqueado
+
+        window.open(p.url, "_blank");
+        localStorage.setItem(lastClickKey, Date.now());
+        updateButton();
+      });
+
+      downloadBtn2.addEventListener("click", () => {
+        if (!updateButton2()) return; // aún bloqueado
+
+        window.open(p.url2, "_blank");
+        localStorage.setItem(lastClickKey2, Date.now());
+        updateButton2();
+      });
 
       div.innerHTML = `
           <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
@@ -173,6 +213,10 @@ function renderVersion(version) {
       `;
 
       div.appendChild(downloadBtn);
+
+
+      div.appendChild(downloadBtn2);
+
       container.appendChild(div);
     });
   }

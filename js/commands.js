@@ -31,8 +31,8 @@
           <h3 style="margin:10px 0;">Flags</h3>
           <div id="flagsContainer" class="options"></div>
           <small class="muted">
-            Nota: <strong>PC</strong> y <strong>Switch</strong> son excluyentes.
-            <strong>LWM (BR)</strong> y <strong>LWM (No BR)</strong> también.
+            Note: <strong>PC</strong> and <strong>Switch</strong> are not mutually exclusive .
+            <strong>LWM (BR)</strong> y <strong>LWM (No BR)</strong> also.
           </small>
         </div>
 

@@ -2,40 +2,40 @@
   "content_list": [
 
     {
-      "content_name": "Servidor Whisky 1 ",
-      "content_url": "http://10.13.46.133:8080/FortniteClient-PS4-Test-CUSA07022",
+      "content_name": "Servidor Whisky 1  PS5",
+      "content_url": "http://10.13.46.131:8080/UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/Whisky 1.png",
-      "content_description": "playtest  col"
+      "content_description": "playtest  38.00"
     },
     {
-      "content_name": "Servidor Whisky 2  ",
-      "content_url": "http://10.13.46.131:8080/",
+      "content_name": "Servidor Whisky 2  PS4",
+      "content_url": "http://10.13.46.155:8080/FortniteClient-PS4-Test-CUSA07022_00.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/whisky 2.png",
-      "content_description": "playtest  col"
+      "content_description": "playtest  38.10 Skymango"
     },
     {
       "content_name": "Servidor tango 1  PS4 ",
-      "content_url": "http://10.13.46.195:8080/builds/ps4/FortniteClient-PS4-Test-CUSA07022_00.pkg",
+      "content_url": "http://10.13.46.195:8080/builds/ps4/Playtest02-38.009821/FortniteClient-PS4-Test-CUSA07022_00.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/tango1.png",
-      "content_description": "playtest  col"
+      "content_description": "playtest  38.00"
     },
     {
       "content_name": "Servidor tango 2  PS5 ",
       "content_url": "http://10.13.46.147:8080/UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/tango2.png",
-      "content_description": "playtest  col"
+      "content_description": "playtest  38.10 Skymango"
     },
     {
-      "content_name": "Servidor zulu 1 ",
-      "content_url": "http://10.13.46.136:8080/UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackage",
+      "content_name": "Servidor zulu 1 PS5",
+      "content_url": "http://10.13.46.139:8080/UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/zulu 1.png",
-      "content_description": "playtest  col"
+      "content_description": "playtest  38.00"
     },
     {
-      "content_name": "Servidor zulu 2  samuel",
-      "content_url": "http://10.13.46.1:8080/buildPS4.pk",
+      "content_name": "Servidor zulu 2  PS4",
+      "content_url": "http://10.13.46.152:8080/FortniteClient-PS4-Test-CUSA07022_00.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/zulu 2.png",
-      "content_description": "playtest  col"
+      "content_description": "playtest  38.00"
     }
   ]
 }
