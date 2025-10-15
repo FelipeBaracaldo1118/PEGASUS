@@ -109,89 +109,110 @@ function renderPlataformas() {
     renderVersion(versionSelect.value);
   });
 
-  function renderVersion(version) {
-    container.innerHTML = "";
-    const plataformas = buildsData.versiones[version];
+function renderVersion(version) {
+  container.innerHTML = "";
+  const plataformas = buildsData.versiones[version];
 
-    plataformas.forEach(p => {
-      const div = document.createElement("div");
-      div.classList.add("plataforma");
+  plataformas.forEach(p => {
+    const div = document.createElement("div");
+    div.classList.add("plataforma");
 
-      // Botón único
-      const downloadBtn = document.createElement("button");
-      downloadBtn.style.marginTop = "10px";
-      downloadBtn.style.padding = "6px 12px";
-      downloadBtn.style.borderRadius = "6px";
-      downloadBtn.style.border = "none";
-      downloadBtn.style.cursor = "pointer";
-      downloadBtn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
-      downloadBtn.style.color = "white";
+    // Botón 1
+    const downloadBtn1 = document.createElement("button");
+    downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
+    styleBtn(downloadBtn1);
 
-      // Botón para alternar URL 1 / URL 2
-      const toggleBtn = document.createElement("button");
-      toggleBtn.textContent = "Cambiar enlace";
-      toggleBtn.style.marginLeft = "10px";
-      toggleBtn.style.padding = "6px 12px";
-      toggleBtn.style.borderRadius = "6px";
-      toggleBtn.style.border = "none";
-      toggleBtn.style.cursor = "pointer";
-      toggleBtn.style.background = "linear-gradient(90deg, #28a745, #88ff88)";
-      toggleBtn.style.color = "white";
+    // Botón 2 (si existe url2)
+    const downloadBtn2 = document.createElement("button");
+    downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
+    styleBtn(downloadBtn2);
 
-      const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
-      const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
-      const BLOCK_TIME = 60 * 1000; // 60 segundos
-      let currentMode = 1; // Modo actual: 1 o 2
+    // Claves independientes para bloqueo
+    const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
+    const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
 
-      function updateButton() {
-        const now = Date.now();
-        const key = currentMode === 1 ? lastClickKey1 : lastClickKey2;
-        const lastClick = parseInt(localStorage.getItem(key));
+    const BLOCK_TIME = 60 * 1000; // 60 segundos
 
-        if (lastClick && now - lastClick < BLOCK_TIME) {
-          downloadBtn.disabled = true;
-          const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
-          downloadBtn.textContent = `${p.nombre.toUpperCase()} (${currentMode}) bloqueado ${remaining}s`;
-          return false;
-        } else {
-          downloadBtn.disabled = false;
-          downloadBtn.textContent = `Descargar ${p.nombre.toUpperCase()} (${currentMode})`;
-          return true;
-        }
+    function updateButton1() {
+      const now = Date.now();
+      const lastClick = parseInt(localStorage.getItem(lastClickKey1));
+      if (lastClick && now - lastClick < BLOCK_TIME) {
+        downloadBtn1.disabled = true;
+        const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
+        downloadBtn1.textContent = `${p.nombre.toUpperCase()} bloqueado ${remaining}s`;
+        return false;
+      } else {
+        downloadBtn1.disabled = false;
+        downloadBtn1.textContent = `Descargar ${p.nombre.toUpperCase()}`;
+        return true;
       }
+    }
 
-      setInterval(updateButton, 1000);
-      updateButton();
+    function updateButton2() {
+      const now = Date.now();
+      const lastClick = parseInt(localStorage.getItem(lastClickKey2));
+      if (lastClick && now - lastClick < BLOCK_TIME) {
+        downloadBtn2.disabled = true;
+        const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
+        downloadBtn2.textContent = `${p.nombre.toUpperCase()} 2 bloqueado ${remaining}s`;
+        return false;
+      } else {
+        downloadBtn2.disabled = false;
+        downloadBtn2.textContent = `Descargar ${p.nombre.toUpperCase()} 2`;
+        return true;
+      }
+    }
 
-      downloadBtn.addEventListener("click", () => {
-        if (!updateButton()) return;
+    // Actualizar estado inicial y cada segundo
+    updateButton1();
+    updateButton2();
+    setInterval(updateButton1, 1000);
+    setInterval(updateButton2, 1000);
 
-        const url = currentMode === 1 ? p.url : p.url2;
-        const key = currentMode === 1 ? lastClickKey1 : lastClickKey2;
-
-        window.open(url, "_blank");
-        localStorage.setItem(key, Date.now());
-        updateButton();
-      });
-
-      toggleBtn.addEventListener("click", () => {
-        currentMode = currentMode === 1 ? 2 : 1;
-        updateButton();
-      });
-
-      div.innerHTML = `
-        <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
-        <h3>${p.nombre.toUpperCase()}</h3>
-        <div class="status">
-          Activo: ${p.servidor_archivos ? "🟢" : "🔴"}
-        </div>
-      `;
-
-      div.appendChild(downloadBtn);
-      div.appendChild(toggleBtn);
-      container.appendChild(div);
+    // Eventos click
+    downloadBtn1.addEventListener("click", () => {
+      if (!updateButton1()) return;
+      if (p.url) {
+        window.open(p.url, "_blank");
+        localStorage.setItem(lastClickKey1, Date.now());
+        updateButton1();
+      }
     });
+
+    downloadBtn2.addEventListener("click", () => {
+      if (!updateButton2()) return;
+      if (p.url2) {
+        window.open(p.url2, "_blank");
+        localStorage.setItem(lastClickKey2, Date.now());
+        updateButton2();
+      }
+    });
+
+    // Render en el DOM
+    div.innerHTML = `
+      <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
+      <h3>${p.nombre.toUpperCase()}</h3>
+      <div class="status">
+        Activo: ${p.servidor_archivos ? "🟢" : "🔴"}
+      </div>
+    `;
+    div.appendChild(downloadBtn1);
+    if (p.url2) div.appendChild(downloadBtn2); // Sólo si hay segunda URL
+
+    container.appendChild(div);
+  });
+
+  // Función para estilizar botones
+  function styleBtn(btn) {
+    btn.style.marginTop = "10px";
+    btn.style.padding = "6px 12px";
+    btn.style.borderRadius = "6px";
+    btn.style.border = "none";
+    btn.style.cursor = "pointer";
+    btn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
+    btn.style.color = "white";
   }
+}
 }
 
 // Render instalación con submodals
