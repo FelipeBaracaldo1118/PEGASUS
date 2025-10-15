@@ -205,7 +205,7 @@ function renderVersion(version) {
   // Función para estilizar botones
   function styleBtn(btn) {
     btn.style.marginTop = "10px";
-    btn.style.padding = "6px 12px";
+    btn.style.padding = "6px 18px";
     btn.style.borderRadius = "6px";
     btn.style.border = "none";
     btn.style.cursor = "pointer";

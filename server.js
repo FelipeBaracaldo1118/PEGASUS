@@ -132,5 +132,5 @@ app.get("/protected", (req, res) => {
 // INICIAR SERVIDOR
 // --------------------------
 app.listen(3000, "0.0.0.0", () => {
-  console.log("Servidor Node corriendo en http://localhost:3000/");
+  console.log("Servidor Node corriendo en http://test:3000/");
 });
