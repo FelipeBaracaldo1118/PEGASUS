@@ -1,121 +1,140 @@
 import matplotlib
-matplotlib.use('Agg')  # Usar el backend no interactivo
+matplotlib.use('Agg')
+import requests
 import re
 import pandas as pd
 import matplotlib.pyplot as plt
 from flask import Flask, render_template
 import os
+import json
+import numpy as np
 
-# Configurar Flask
 app = Flask(__name__)
 
-# Crear la carpeta 'static' si no existe
 if not os.path.exists('static'):
     os.makedirs('static')
 
-# Expresión regular para leer el log
+log_urls = [
+    'http://10.13.46.155:8080/W3SVC2/u_ex251016.log',
+    'http://10.13.46.195:8080/buildsSharedFolder/u_ex251016.log',
+    'http://10.13.46.147:8080/W3SVC2/u_ex251016.log',
+    'http://10.13.46.131:8080/W3SVC2/u_ex251016.log',
+    'http://10.13.46.139:8080/W3SVC2/u_ex251016.log',
+    'http://10.13.46.152:8080/W3SVC2/u_ex251016.log'
+]
+
 log_pattern = re.compile(
     r'(?P<date>\d{4}-\d{2}-\d{2}) (?P<time>\d{2}:\d{2}:\d{2}) '
     r'(?P<server_ip>\d+\.\d+\.\d+\.\d+) (?P<method>\w+) '
     r'(?P<resource>[^\s]+) .* (?P<client_ip>\d+\.\d+\.\d+\.\d+) '
-    r'.* (?P<status_code>\d{3}) .* (?P<processing_time>\d+)$'
+    r'.* (?P<status_code>\d{3}) .* (?P<processing_time>\d+) (?P<bytes_downloaded>\d+)$'
 )
 
-# Ruta del directorio de logs
-log_directory = r'C:\filesServer\Logs\W3SVC2'
+ip_mapping_file = 'ip_mapping.json'
 
-# Función para obtener el archivo de log más reciente
-def get_latest_log_file():
+def load_ip_mapping():
     try:
-        # Obtener todos los archivos en el directorio
-        files = [os.path.join(log_directory, f) for f in os.listdir(log_directory) if f.endswith('.log')]
-        # Ordenar los archivos por fecha de modificación (el más reciente primero)
-        latest_file = max(files, key=os.path.getmtime)
-        return latest_file
-    except ValueError:
-        print("No se encontraron archivos de log en el directorio.")
-        return None
-
-# Función para leer y procesar el log
-def process_log(log_file):
-    data = []
-    try:
-        with open(log_file, 'r') as file:
-            for line in file:
-                match = log_pattern.match(line)
-                if match:
-                    data.append(match.groupdict())
+        with open(ip_mapping_file, 'r') as file:
+            return json.load(file)
     except FileNotFoundError:
-        print(f"Error: No se encontró el archivo '{log_file}'.")
+        print(f"Error: No se encontró el archivo '{ip_mapping_file}'.")
+        return {}
+
+def download_log(url):
+    try:
+        print(f"Intentando descargar el archivo de log desde: {url}")
+        response = requests.get(url)
+        response.raise_for_status()
+        print(f"Archivo de log descargado correctamente desde: {url}")
+        return response.text.splitlines()
+    except requests.exceptions.RequestException as e:
+        print(f"Error al descargar el archivo de log desde {url}: {e}")
+        return []
+
+def process_log(log_lines, ip_mapping):
+    data = []
+    for line in log_lines:
+        match = log_pattern.match(line)
+        if match:
+            log_data = match.groupdict()
+            client_ip = log_data['client_ip']
+            log_data['client_name'] = ip_mapping.get(client_ip, client_ip)
+            data.append(log_data)
     return pd.DataFrame(data)
 
-# Función para generar las gráficas
-def generate_graphs():
-    log_file = get_latest_log_file()
-    if not log_file:
-        print("No se encontró un archivo de log válido.")
-        return
+def process_multiple_logs():
+    ip_mapping = load_ip_mapping()
+    combined_data = pd.DataFrame()
+    for url in log_urls:
+        log_lines = download_log(url)
+        if log_lines:
+            df = process_log(log_lines, ip_mapping)
+            if not df.empty:
+                combined_data = pd.concat([combined_data, df], ignore_index=True)
+            else:
+                print(f"El archivo descargado desde {url} está vacío o no tiene datos válidos.")
+        else:
+            print(f"No se pudo descargar el archivo desde {url}.")
+    return combined_data
 
-    df = process_log(log_file)
+def generate_pkg_nsp_graph():
+    print("Generando gráfica para .pkg/.nsp...")
+    df = process_multiple_logs()
     if df.empty:
-        print("No hay datos en el archivo de log.")
+        print("No hay datos en los archivos de log.")
         return
 
-    # Procesar los datos
-    df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['time'])
-    df['hour'] = df['datetime'].dt.hour
-    df['status_code'] = df['status_code'].astype(int)
-    df['file_name'] = df['resource'].apply(lambda x: x.split('/')[-1])
+    df['bytes_downloaded'] = df['bytes_downloaded'].astype(int)
+    usuarios = df['client_name'].unique()
+    mask_pkg_nsp = df['resource'].str.endswith('.pkg') | df['resource'].str.endswith('.nsp')
+    paquetes_pkg_nsp = df[mask_pkg_nsp]['resource'].unique()
 
-    # Crear las gráficas
-    fig, axes = plt.subplots(2, 2, figsize=(18, 12))
+    porcentaje_pkg_nsp = []
+    for user in usuarios:
+        user_row = []
+        for paquete in paquetes_pkg_nsp:
+            user_bytes = df[(df['client_name'] == user) & (df['resource'] == paquete)]['bytes_downloaded'].sum()
+            total_bytes = df[df['resource'] == paquete]['bytes_downloaded'].sum()
+            pct = (user_bytes / total_bytes * 100) if total_bytes > 0 else 0
+            user_row.append(pct)
+        porcentaje_pkg_nsp.append(user_row)
+    porcentaje_pkg_nsp = np.array(porcentaje_pkg_nsp)
 
-    # Gráfica 1: Número de solicitudes por dirección IP
-    requests_by_ip = df['client_ip'].value_counts()
-    axes[0, 0].bar(requests_by_ip.index[:10], requests_by_ip.values[:10], color='skyblue')
-    axes[0, 0].set_title('Número de Solicitudes por Dirección IP', fontsize=14)
-    axes[0, 0].set_xlabel('Direcciones IP', fontsize=12)
-    axes[0, 0].set_ylabel('Número de Solicitudes', fontsize=12)
-    axes[0, 0].tick_params(axis='x', rotation=90)
-    axes[0, 0].grid(axis='y', linestyle='--', alpha=0.7)
+    x = np.arange(len(usuarios))
+    width = 0.8 / len(paquetes_pkg_nsp) if len(paquetes_pkg_nsp) > 0 else 0.8
 
-    # Gráfica 2: Distribución de solicitudes por hora
-    requests_by_hour = df['hour'].value_counts().sort_index()
-    axes[0, 1].bar(requests_by_hour.index, requests_by_hour.values, color='lightcoral')
-    axes[0, 1].set_title('Distribución de Solicitudes por Hora', fontsize=14)
-    axes[0, 1].set_xlabel('Hora del Día', fontsize=12)
-    axes[0, 1].set_ylabel('Número de Solicitudes', fontsize=12)
-    axes[0, 1].grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Gráfica 3: Paquetes solicitados (archivos descargados)
-    files_requested = df['file_name'].value_counts()
-    truncated_files = files_requested.index[:10].map(lambda x: x[:15] + '...' if len(x) > 15 else x)
-    axes[1, 0].bar(truncated_files, files_requested.values[:10], color='gold')
-    axes[1, 0].set_title('Paquetes Solicitados (Archivos Descargados)', fontsize=14)
-    axes[1, 0].set_xlabel('Archivos', fontsize=12)
-    axes[1, 0].set_ylabel('Número de Solicitudes', fontsize=12)
-    axes[1, 0].tick_params(axis='x', rotation=90)
-    axes[1, 0].grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Gráfica 4: Respuestas del servidor (códigos HTTP)
-    status_codes = df['status_code'].value_counts()
-    axes[1, 1].bar(status_codes.index, status_codes.values, color='purple')
-    axes[1, 1].set_title('Respuestas del Servidor (Códigos HTTP)', fontsize=14)
-    axes[1, 1].set_xlabel('Códigos HTTP', fontsize=12)
-    axes[1, 1].set_ylabel('Número de Respuestas', fontsize=12)
-    axes[1, 1].grid(axis='y', linestyle='--', alpha=0.7)
-
-    # Guardar las gráficas como imagen
+    fig, ax = plt.subplots(figsize=(max(10, len(usuarios)*0.7), 6))
+    for i, paquete in enumerate(paquetes_pkg_nsp):
+        bars = ax.bar(x + i*width, porcentaje_pkg_nsp[:, i], width, label=paquete)
+        for bar, pct in zip(bars, porcentaje_pkg_nsp[:, i]):
+            if pct > 0:
+                ax.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + 1,
+                    f'{pct:.1f}%',
+                    ha='center', va='bottom', fontsize=8, fontweight='bold', color='navy'
+                )
+    ax.set_title('Porcentaje de Descarga de Archivos .pkg/.nsp por Usuario', fontsize=15)
+    ax.set_xlabel('Usuario/Dispositivo', fontsize=12)
+    ax.set_ylabel('Porcentaje de Descarga (%)', fontsize=12)
+    # Centra las etiquetas bajo el grupo de barras
+    if len(paquetes_pkg_nsp) > 0:
+        tick_positions = x + width * (len(paquetes_pkg_nsp) - 1) / 2
+    else:
+        tick_positions = x
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(usuarios, rotation=90, ha='center', fontsize=8)
+    ax.set_ylim(0, 110)
+    ax.grid(axis='y', linestyle='--', alpha=0.7)
+    ax.legend(title="Archivo", fontsize=8)
     plt.tight_layout()
     plt.savefig('static/graphs.png')
     plt.close()
 
-# Ruta principal para mostrar las gráficas
 @app.route('/')
 def index():
-    generate_graphs()  # Generar las gráficas
+    generate_pkg_nsp_graph()
     return render_template('index.html')
 
-# Ejecutar el servidor Flask
 if __name__ == '__main__':
     app.run(debug=True)
