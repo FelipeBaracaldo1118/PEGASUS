@@ -265,3 +265,115 @@ function renderInstallPlataformas() {
     });
   });
 }
+
+// === Chart.js Estadísticas Dinámicas ===
+let chartInstance = null;
+let statsInterval = null;
+
+/**
+ * Obtiene y organiza los datos desde el JSON
+ */
+async function fetchStatsData() {
+  try {
+    const res = await fetch("/static/output_data.json");
+    if (!res.ok) throw new Error("No se pudo obtener el JSON");
+    const data = await res.json();
+
+    // Obtener archivos únicos y usuarios únicos
+    const archivos = [...new Set(data.map(item => item.archivo))];
+    const usuarios = [...new Set(data.map(item => item.usuario))];
+
+    // Generar un dataset por cada archivo
+    const datasets = archivos.map((archivo, i) => {
+      const color = `hsl(${(i * 60) % 360}, 70%, 55%)`; // paleta automática
+
+      const valores = usuarios.map(usuario => {
+        const registro = data.find(
+          item => item.usuario === usuario && item.archivo === archivo
+        );
+        return registro ? registro.porcentaje_total : 0;
+      });
+
+      return {
+        label: archivo.split("/").pop(), // muestra solo el nombre del archivo
+        data: valores,
+        backgroundColor: color,
+        borderColor: color.replace("55%", "45%"),
+        borderWidth: 1
+      };
+    });
+
+    return { usuarios, datasets };
+  } catch (err) {
+    console.error("❌ Error cargando datos:", err);
+    return { usuarios: [], datasets: [] };
+  }
+}
+
+/**
+ * Renderiza un gráfico dinámico con Chart.js
+ */
+async function renderStatsChart() {
+  const ctx = document.getElementById("statsChart")?.getContext("2d");
+  if (!ctx) {
+    console.warn("⚠️ No se encontró el canvas #statsChart");
+    return;
+  }
+
+  const { usuarios, datasets } = await fetchStatsData();
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: { labels: usuarios, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 110,
+          title: { display: true, text: "Porcentaje de Descarga (%)" },
+          grid: { color: "rgba(255,255,255,0.1)" },
+          ticks: { color: "#fff" }
+        },
+        x: {
+          title: { display: true, text: "Usuario / Dispositivo" },
+          ticks: { color: "#fff", autoSkip: false, maxRotation: 45, minRotation: 45 },
+          grid: { color: "rgba(255,255,255,0.1)" },
+          stacked: true // ✅ cambia a false si prefieres barras separadas
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: { color: "#fff" }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`
+          }
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Control de modal para estadísticas
+ */
+document.querySelector('[data-modal="modal-stats"]').addEventListener("click", async () => {
+  const modal = document.getElementById("modal-stats");
+  modal.style.display = "flex";
+
+  await renderStatsChart(); // render inicial
+  if (statsInterval) clearInterval(statsInterval);
+  statsInterval = setInterval(renderStatsChart, 10000); // recarga cada 10s
+});
+
+document.querySelector("#modal-stats .close-btn").addEventListener("click", () => {
+  document.getElementById("modal-stats").style.display = "none";
+  if (statsInterval) clearInterval(statsInterval);
+});

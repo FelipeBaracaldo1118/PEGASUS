@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -19,11 +20,25 @@
 
 
     @keyframes slideAnim {
-      0% { opacity: 0; }
-      5% { opacity: 1; }
-      33% { opacity: 1; }
-      38% { opacity: 0; }
-      100% { opacity: 0; }
+      0% {
+        opacity: 0;
+      }
+
+      5% {
+        opacity: 1;
+      }
+
+      33% {
+        opacity: 1;
+      }
+
+      38% {
+        opacity: 0;
+      }
+
+      100% {
+        opacity: 0;
+      }
     }
 
     /* LOGIN / REGISTER */
@@ -109,8 +124,15 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     #app-content {
@@ -172,11 +194,16 @@
         <div class="option" data-modal="modal-install">
           <h2>Cómo Instalar</h2>
         </div>
+        <div class="option" data-modal="modal-stats">
+          <h3>Estadísticas</h3>
+        </div>
+
       </div>
     </main>
 
     <footer>
-      © <span id="year"></span> EPAM. Made with ❤️ by BOG Team, Tango, Zulu, Whiskey. <br>Ahora quien mejor que yo? no hay ni uno. Arcangel
+      © <span id="year"></span> EPAM. Made with ❤️ by BOG Team, Tango, Zulu, Whiskey. <br>Ahora quien mejor que yo? no
+      hay ni uno. Arcangel
     </footer>
 
     <div class="modal" id="modal-builds">
@@ -200,9 +227,18 @@
         <div id="install-container" class="plataformas"></div>
       </div>
     </div>
+
+    <div id="modal-stats" class="modal">
+      <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h2>Estadísticas de Descargas</h2>
+        <canvas id="statsChart" width="700" height="400"></canvas>
+      </div>
+    </div>
   </div>
 
   <!-- Scripts -->
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="./js/serverurl.js"></script>
   <script src="./js/app.js"></script>
   <script src="./js/admin.js"></script>
@@ -292,6 +328,15 @@
         message.innerText = "Error de conexión con el servidor.";
       }
     });
+
+    const DEV_MODE = true; // ponlo en false cuando uses el servidor real
+
+if (DEV_MODE) {
+  console.warn("⚠️ MODO DESARROLLO ACTIVADO - Saltando login y verificación de token.");
+  loginSection.style.display = "none";
+  appContent.style.display = "block";
+}
   </script>
 </body>
+
 </html>

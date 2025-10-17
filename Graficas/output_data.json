@@ -1,0 +1,68 @@
+[
+    {
+        "client_ip": "10.13.46.201",
+        "file_name": [
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg"
+        ],
+        "num_requests": 6146,
+        "num_files": 1,
+        "request_to_file_ratio": 6146.0
+    },
+    {
+        "client_ip": "10.13.46.178",
+        "file_name": [
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg"
+        ],
+        "num_requests": 5578,
+        "num_files": 1,
+        "request_to_file_ratio": 5578.0
+    },
+    {
+        "client_ip": "10.13.46.177",
+        "file_name": [
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg"
+        ],
+        "num_requests": 5049,
+        "num_files": 1,
+        "request_to_file_ratio": 5049.0
+    },
+    {
+        "client_ip": "10.13.46.191",
+        "file_name": [
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg"
+        ],
+        "num_requests": 3216,
+        "num_files": 1,
+        "request_to_file_ratio": 3216.0
+    },
+    {
+        "client_ip": "10.13.46.195",
+        "file_name": [
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg",
+            "TinyApp.nsp",
+            "FortniteClient-Switch-Test-External.nsp"
+        ],
+        "num_requests": 9,
+        "num_files": 3,
+        "request_to_file_ratio": 3.0
+    },
+    {
+        "client_ip": "10.13.46.141",
+        "file_name": [
+            "FortniteClient-Switch-Test-External.nsp"
+        ],
+        "num_requests": 3,
+        "num_files": 1,
+        "request_to_file_ratio": 3.0
+    },
+    {
+        "client_ip": "10.13.46.176",
+        "file_name": [
+            "TinyApp.nsp",
+            "FortniteClient-Switch-Test-External.nsp"
+        ],
+        "num_requests": 2,
+        "num_files": 2,
+        "request_to_file_ratio": 1.0
+    }
+]
