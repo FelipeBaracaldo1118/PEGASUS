@@ -17,13 +17,13 @@
       "content_name": "Servidor tango 1  PS4 ",
       "content_url": "http://10.13.46.195:8080/buildsSharedFolder/ps4/FortniteClient-PS4-Test-CUSA07022_00.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/tango1.png",
-      "content_description": "playtest  38.10"
+      "content_description": "playtest  38.00"
     },
     {
       "content_name": "Servidor tango 2  PS5 ",
       "content_url": "http://10.13.46.147:8080/UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/tango2.png",
-      "content_description": "playtest  38.10 "
+      "content_description": "playtest  38.00 "
     },
     {
       "content_name": "Servidor zulu 1 PS5",
