@@ -109,110 +109,110 @@ function renderPlataformas() {
     renderVersion(versionSelect.value);
   });
 
-function renderVersion(version) {
-  container.innerHTML = "";
-  const plataformas = buildsData.versiones[version];
+  function renderVersion(version) {
+    container.innerHTML = "";
+    const plataformas = buildsData.versiones[version];
 
-  plataformas.forEach(p => {
-    const div = document.createElement("div");
-    div.classList.add("plataforma");
+    plataformas.forEach(p => {
+      const div = document.createElement("div");
+      div.classList.add("plataforma");
 
-    // Botón 1
-    const downloadBtn1 = document.createElement("button");
-    downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
-    styleBtn(downloadBtn1);
+      // Botón 1
+      const downloadBtn1 = document.createElement("button");
+      downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
+      styleBtn(downloadBtn1);
 
-    // Botón 2 (si existe url2)
-    const downloadBtn2 = document.createElement("button");
-    downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
-    styleBtn(downloadBtn2);
+      // Botón 2 (si existe url2)
+      const downloadBtn2 = document.createElement("button");
+      downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
+      styleBtn(downloadBtn2);
 
-    // Claves independientes para bloqueo
-    const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
-    const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
+      // Claves independientes para bloqueo
+      const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
+      const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
 
-    const BLOCK_TIME = 60 * 1000; // 60 segundos
+      const BLOCK_TIME = 60 * 1000; // 60 segundos
 
-    function updateButton1() {
-      const now = Date.now();
-      const lastClick = parseInt(localStorage.getItem(lastClickKey1));
-      if (lastClick && now - lastClick < BLOCK_TIME) {
-        downloadBtn1.disabled = true;
-        const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
-        downloadBtn1.textContent = `${p.nombre.toUpperCase()} bloqueado ${remaining}s`;
-        return false;
-      } else {
-        downloadBtn1.disabled = false;
-        downloadBtn1.textContent = `Descargar ${p.nombre.toUpperCase()}`;
-        return true;
+      function updateButton1() {
+        const now = Date.now();
+        const lastClick = parseInt(localStorage.getItem(lastClickKey1));
+        if (lastClick && now - lastClick < BLOCK_TIME) {
+          downloadBtn1.disabled = true;
+          const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
+          downloadBtn1.textContent = `${p.nombre.toUpperCase()} bloqueado ${remaining}s`;
+          return false;
+        } else {
+          downloadBtn1.disabled = false;
+          downloadBtn1.textContent = `Descargar ${p.nombre.toUpperCase()}`;
+          return true;
+        }
       }
-    }
 
-    function updateButton2() {
-      const now = Date.now();
-      const lastClick = parseInt(localStorage.getItem(lastClickKey2));
-      if (lastClick && now - lastClick < BLOCK_TIME) {
-        downloadBtn2.disabled = true;
-        const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
-        downloadBtn2.textContent = `${p.nombre.toUpperCase()} 2 bloqueado ${remaining}s`;
-        return false;
-      } else {
-        downloadBtn2.disabled = false;
-        downloadBtn2.textContent = `Descargar ${p.nombre.toUpperCase()} 2`;
-        return true;
+      function updateButton2() {
+        const now = Date.now();
+        const lastClick = parseInt(localStorage.getItem(lastClickKey2));
+        if (lastClick && now - lastClick < BLOCK_TIME) {
+          downloadBtn2.disabled = true;
+          const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
+          downloadBtn2.textContent = `${p.nombre.toUpperCase()} 2 bloqueado ${remaining}s`;
+          return false;
+        } else {
+          downloadBtn2.disabled = false;
+          downloadBtn2.textContent = `Descargar ${p.nombre.toUpperCase()} 2`;
+          return true;
+        }
       }
-    }
 
-    // Actualizar estado inicial y cada segundo
-    updateButton1();
-    updateButton2();
-    setInterval(updateButton1, 1000);
-    setInterval(updateButton2, 1000);
+      // Actualizar estado inicial y cada segundo
+      updateButton1();
+      updateButton2();
+      setInterval(updateButton1, 1000);
+      setInterval(updateButton2, 1000);
 
-    // Eventos click
-    downloadBtn1.addEventListener("click", () => {
-      if (!updateButton1()) return;
-      if (p.url) {
-        window.open(p.url, "_blank");
-        localStorage.setItem(lastClickKey1, Date.now());
-        updateButton1();
-      }
-    });
+      // Eventos click
+      downloadBtn1.addEventListener("click", () => {
+        if (!updateButton1()) return;
+        if (p.url) {
+          window.open(p.url, "_blank");
+          localStorage.setItem(lastClickKey1, Date.now());
+          updateButton1();
+        }
+      });
 
-    downloadBtn2.addEventListener("click", () => {
-      if (!updateButton2()) return;
-      if (p.url2) {
-        window.open(p.url2, "_blank");
-        localStorage.setItem(lastClickKey2, Date.now());
-        updateButton2();
-      }
-    });
+      downloadBtn2.addEventListener("click", () => {
+        if (!updateButton2()) return;
+        if (p.url2) {
+          window.open(p.url2, "_blank");
+          localStorage.setItem(lastClickKey2, Date.now());
+          updateButton2();
+        }
+      });
 
-    // Render en el DOM
-    div.innerHTML = `
+      // Render en el DOM
+      div.innerHTML = `
       <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
       <h3>${p.nombre.toUpperCase()}</h3>
       <div class="status">
         Activo: ${p.servidor_archivos ? "🟢" : "🔴"}
       </div>
     `;
-    div.appendChild(downloadBtn1);
-    if (p.url2) div.appendChild(downloadBtn2); // Sólo si hay segunda URL
+      div.appendChild(downloadBtn1);
+      if (p.url2) div.appendChild(downloadBtn2); // Sólo si hay segunda URL
 
-    container.appendChild(div);
-  });
+      container.appendChild(div);
+    });
 
-  // Función para estilizar botones
-  function styleBtn(btn) {
-    btn.style.marginTop = "10px";
-    btn.style.padding = "6px 18px";
-    btn.style.borderRadius = "6px";
-    btn.style.border = "none";
-    btn.style.cursor = "pointer";
-    btn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
-    btn.style.color = "white";
+    // Función para estilizar botones
+    function styleBtn(btn) {
+      btn.style.marginTop = "10px";
+      btn.style.padding = "6px 18px";
+      btn.style.borderRadius = "6px";
+      btn.style.border = "none";
+      btn.style.cursor = "pointer";
+      btn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
+      btn.style.color = "white";
+    }
   }
-}
 }
 
 // Render instalación con submodals
@@ -265,3 +265,113 @@ function renderInstallPlataformas() {
     });
   });
 }
+
+// === Chart.js Estadísticas Dinámicas ===
+let chartInstance = null;
+let statsInterval = null;
+
+/**
+ * Obtiene y organiza los datos desde el JSON
+ */
+async function fetchStatsData() {
+  try {
+    const res = await fetch("Logs/W3SVC2/static/output_data.json");
+    if (!res.ok) throw new Error("No se pudo obtener el JSON");
+    
+    const data = await res.json();
+
+    // Validar el formato que tenemos ahora (objeto con propiedades)
+    if (!data.usuarios || !data.archivos || !data.porcentajes) {
+      console.error("Formato JSON inesperado:", data);
+      return { usuarios: [], datasets: [] };
+    }
+
+    const usuarios = data.usuarios;
+    const archivos = data.archivos.map(a => a.nombre);
+    const colores = data.archivos.map(a => a.color);
+
+    // Crear datasets por archivo
+    const datasets = archivos.map((archivo, i) => {
+      const valores = data.porcentajes.map(uPct => uPct[archivo]?.pct || 0);
+      return {
+        label: archivo,
+        data: valores,
+        backgroundColor: colores[i] || `hsl(${(i * 60) % 360}, 70%, 55%)`,
+        borderColor: colores[i] || `hsl(${(i * 60) % 360}, 70%, 55%)`,
+        borderWidth: 1
+      };
+    });
+
+    return { usuarios, datasets, porcentajes_detalle: data.porcentajes, umbral: data.umbral };
+  } catch (err) {
+    console.error("❌ Error cargando datos:", err);
+    return { usuarios: [], datasets: [] };
+  }
+}
+/**
+ * Renderiza un gráfico dinámico con Chart.js
+ */
+async function renderStatsChart() {
+  const ctx = document.getElementById("statsChart")?.getContext("2d");
+  if (!ctx) {
+    console.warn("⚠️ No se encontró el canvas #statsChart");
+    return;
+  }
+
+  const { usuarios, datasets } = await fetchStatsData();
+
+  if (chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: { labels: usuarios, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 110,
+          title: { display: true, text: "Porcentaje de Descarga (%)" },
+          grid: { color: "rgba(255,255,255,0.1)" },
+          ticks: { color: "#fff" }
+        },
+        x: {
+          title: { display: true, text: "Usuario / Dispositivo" },
+          ticks: { color: "#fff", autoSkip: false, maxRotation: 45, minRotation: 45 },
+          grid: { color: "rgba(255,255,255,0.1)" },
+          stacked: true // ✅ cambia a false si prefieres barras separadas
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: "bottom",
+          labels: { color: "#fff" }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`
+          }
+        }
+      }
+    }
+  });
+}
+
+/**
+ * Control de modal para estadísticas
+ */
+document.querySelector('[data-modal="modal-stats"]').addEventListener("click", async () => {
+  const modal = document.getElementById("modal-stats");
+  modal.style.display = "flex";
+
+  await renderStatsChart(); // render inicial
+  if (statsInterval) clearInterval(statsInterval);
+  statsInterval = setInterval(renderStatsChart, 10000); // recarga cada 10s
+});
+
+document.querySelector("#modal-stats .close-btn").addEventListener("click", () => {
+  document.getElementById("modal-stats").style.display = "none";
+  if (statsInterval) clearInterval(statsInterval);
+});
