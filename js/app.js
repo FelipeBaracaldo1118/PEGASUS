@@ -275,43 +275,39 @@ let statsInterval = null;
  */
 async function fetchStatsData() {
   try {
-    const res = await fetch("/static/output_data.json");
+    const res = await fetch("Logs/W3SVC2/static/output_data.json");
     if (!res.ok) throw new Error("No se pudo obtener el JSON");
+    
     const data = await res.json();
 
-    if (!Array.isArray(data) || data.length === 0) {
+    // Validar el formato que tenemos ahora (objeto con propiedades)
+    if (!data.usuarios || !data.archivos || !data.porcentajes) {
+      console.error("Formato JSON inesperado:", data);
       return { usuarios: [], datasets: [] };
     }
 
-    // 1️⃣ Labels: todos los usuarios
-    const usuarios = data.map(item => item.usuario);
+    const usuarios = data.usuarios;
+    const archivos = data.archivos.map(a => a.nombre);
+    const colores = data.archivos.map(a => a.color);
 
-    // 2️⃣ Lista de archivos (usamos el primero, pero todos están igual)
-    const archivos = data[0].archivos;
-
-    // 3️⃣ Crear datasets por archivo
+    // Crear datasets por archivo
     const datasets = archivos.map((archivo, i) => {
-      const color = `hsl(${(i * 60) % 360}, 70%, 55%)`;
-
-      // Extraer todos los valores de porcentaje para este archivo (en la misma posición i)
-      const valores = data.map(item => item.porcentajes[i] || 0);
-
+      const valores = data.porcentajes.map(uPct => uPct[archivo]?.pct || 0);
       return {
-        label: archivo.split("/").pop(), // nombre limpio
+        label: archivo,
         data: valores,
-        backgroundColor: color,
-        borderColor: color,
+        backgroundColor: colores[i] || `hsl(${(i * 60) % 360}, 70%, 55%)`,
+        borderColor: colores[i] || `hsl(${(i * 60) % 360}, 70%, 55%)`,
         borderWidth: 1
       };
     });
 
-    return { usuarios, datasets };
+    return { usuarios, datasets, porcentajes_detalle: data.porcentajes, umbral: data.umbral };
   } catch (err) {
     console.error("❌ Error cargando datos:", err);
     return { usuarios: [], datasets: [] };
   }
 }
-
 /**
  * Renderiza un gráfico dinámico con Chart.js
  */
