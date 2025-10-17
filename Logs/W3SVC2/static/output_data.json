@@ -1,0 +1,116 @@
+{
+    "usuarios": [
+        "10.13.46.135",
+        "10.13.46.151",
+        "10.13.46.172",
+        "10.13.46.173",
+        "10.253.226.207",
+        "PS4_CamiloVargas",
+        "PS4_haruyoshie",
+        "PS5_JeisonP",
+        "PS5_LuisH"
+    ],
+    "archivos": [
+        {
+            "nombre": "FortniteClient-PS4-Test-CUSA07022_00.pkg",
+            "color": "#2ca02c"
+        },
+        {
+            "nombre": "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg",
+            "color": "#7f7f7f"
+        }
+    ],
+    "porcentajes": [
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.01,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        },
+        {
+            "FortniteClient-PS4-Test-CUSA07022_00.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            },
+            "UP1477-PPSA01922_00-FORTNITETESTING2-FortniteClient-PS5-Test-Repackaged.pkg": {
+                "pct": 0.0,
+                "forzado": false
+            }
+        }
+    ],
+    "umbral": 80
+}
