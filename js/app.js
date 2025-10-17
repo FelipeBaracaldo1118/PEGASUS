@@ -109,110 +109,110 @@ function renderPlataformas() {
     renderVersion(versionSelect.value);
   });
 
-function renderVersion(version) {
-  container.innerHTML = "";
-  const plataformas = buildsData.versiones[version];
+  function renderVersion(version) {
+    container.innerHTML = "";
+    const plataformas = buildsData.versiones[version];
 
-  plataformas.forEach(p => {
-    const div = document.createElement("div");
-    div.classList.add("plataforma");
+    plataformas.forEach(p => {
+      const div = document.createElement("div");
+      div.classList.add("plataforma");
 
-    // Botón 1
-    const downloadBtn1 = document.createElement("button");
-    downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
-    styleBtn(downloadBtn1);
+      // Botón 1
+      const downloadBtn1 = document.createElement("button");
+      downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
+      styleBtn(downloadBtn1);
 
-    // Botón 2 (si existe url2)
-    const downloadBtn2 = document.createElement("button");
-    downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
-    styleBtn(downloadBtn2);
+      // Botón 2 (si existe url2)
+      const downloadBtn2 = document.createElement("button");
+      downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
+      styleBtn(downloadBtn2);
 
-    // Claves independientes para bloqueo
-    const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
-    const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
+      // Claves independientes para bloqueo
+      const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
+      const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
 
-    const BLOCK_TIME = 60 * 1000; // 60 segundos
+      const BLOCK_TIME = 60 * 1000; // 60 segundos
 
-    function updateButton1() {
-      const now = Date.now();
-      const lastClick = parseInt(localStorage.getItem(lastClickKey1));
-      if (lastClick && now - lastClick < BLOCK_TIME) {
-        downloadBtn1.disabled = true;
-        const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
-        downloadBtn1.textContent = `${p.nombre.toUpperCase()} bloqueado ${remaining}s`;
-        return false;
-      } else {
-        downloadBtn1.disabled = false;
-        downloadBtn1.textContent = `Descargar ${p.nombre.toUpperCase()}`;
-        return true;
+      function updateButton1() {
+        const now = Date.now();
+        const lastClick = parseInt(localStorage.getItem(lastClickKey1));
+        if (lastClick && now - lastClick < BLOCK_TIME) {
+          downloadBtn1.disabled = true;
+          const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
+          downloadBtn1.textContent = `${p.nombre.toUpperCase()} bloqueado ${remaining}s`;
+          return false;
+        } else {
+          downloadBtn1.disabled = false;
+          downloadBtn1.textContent = `Descargar ${p.nombre.toUpperCase()}`;
+          return true;
+        }
       }
-    }
 
-    function updateButton2() {
-      const now = Date.now();
-      const lastClick = parseInt(localStorage.getItem(lastClickKey2));
-      if (lastClick && now - lastClick < BLOCK_TIME) {
-        downloadBtn2.disabled = true;
-        const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
-        downloadBtn2.textContent = `${p.nombre.toUpperCase()} 2 bloqueado ${remaining}s`;
-        return false;
-      } else {
-        downloadBtn2.disabled = false;
-        downloadBtn2.textContent = `Descargar ${p.nombre.toUpperCase()} 2`;
-        return true;
+      function updateButton2() {
+        const now = Date.now();
+        const lastClick = parseInt(localStorage.getItem(lastClickKey2));
+        if (lastClick && now - lastClick < BLOCK_TIME) {
+          downloadBtn2.disabled = true;
+          const remaining = Math.ceil((BLOCK_TIME - (now - lastClick)) / 1000);
+          downloadBtn2.textContent = `${p.nombre.toUpperCase()} 2 bloqueado ${remaining}s`;
+          return false;
+        } else {
+          downloadBtn2.disabled = false;
+          downloadBtn2.textContent = `Descargar ${p.nombre.toUpperCase()} 2`;
+          return true;
+        }
       }
-    }
 
-    // Actualizar estado inicial y cada segundo
-    updateButton1();
-    updateButton2();
-    setInterval(updateButton1, 1000);
-    setInterval(updateButton2, 1000);
+      // Actualizar estado inicial y cada segundo
+      updateButton1();
+      updateButton2();
+      setInterval(updateButton1, 1000);
+      setInterval(updateButton2, 1000);
 
-    // Eventos click
-    downloadBtn1.addEventListener("click", () => {
-      if (!updateButton1()) return;
-      if (p.url) {
-        window.open(p.url, "_blank");
-        localStorage.setItem(lastClickKey1, Date.now());
-        updateButton1();
-      }
-    });
+      // Eventos click
+      downloadBtn1.addEventListener("click", () => {
+        if (!updateButton1()) return;
+        if (p.url) {
+          window.open(p.url, "_blank");
+          localStorage.setItem(lastClickKey1, Date.now());
+          updateButton1();
+        }
+      });
 
-    downloadBtn2.addEventListener("click", () => {
-      if (!updateButton2()) return;
-      if (p.url2) {
-        window.open(p.url2, "_blank");
-        localStorage.setItem(lastClickKey2, Date.now());
-        updateButton2();
-      }
-    });
+      downloadBtn2.addEventListener("click", () => {
+        if (!updateButton2()) return;
+        if (p.url2) {
+          window.open(p.url2, "_blank");
+          localStorage.setItem(lastClickKey2, Date.now());
+          updateButton2();
+        }
+      });
 
-    // Render en el DOM
-    div.innerHTML = `
+      // Render en el DOM
+      div.innerHTML = `
       <img src="./iconos/${p.nombre}.png" alt="${p.nombre}">
       <h3>${p.nombre.toUpperCase()}</h3>
       <div class="status">
         Activo: ${p.servidor_archivos ? "🟢" : "🔴"}
       </div>
     `;
-    div.appendChild(downloadBtn1);
-    if (p.url2) div.appendChild(downloadBtn2); // Sólo si hay segunda URL
+      div.appendChild(downloadBtn1);
+      if (p.url2) div.appendChild(downloadBtn2); // Sólo si hay segunda URL
 
-    container.appendChild(div);
-  });
+      container.appendChild(div);
+    });
 
-  // Función para estilizar botones
-  function styleBtn(btn) {
-    btn.style.marginTop = "10px";
-    btn.style.padding = "6px 18px";
-    btn.style.borderRadius = "6px";
-    btn.style.border = "none";
-    btn.style.cursor = "pointer";
-    btn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
-    btn.style.color = "white";
+    // Función para estilizar botones
+    function styleBtn(btn) {
+      btn.style.marginTop = "10px";
+      btn.style.padding = "6px 18px";
+      btn.style.borderRadius = "6px";
+      btn.style.border = "none";
+      btn.style.cursor = "pointer";
+      btn.style.background = "linear-gradient(90deg, #007bff, #00c9ff)";
+      btn.style.color = "white";
+    }
   }
-}
 }
 
 // Render instalación con submodals
@@ -279,26 +279,28 @@ async function fetchStatsData() {
     if (!res.ok) throw new Error("No se pudo obtener el JSON");
     const data = await res.json();
 
-    // Obtener archivos únicos y usuarios únicos
-    const archivos = [...new Set(data.map(item => item.archivo))];
-    const usuarios = [...new Set(data.map(item => item.usuario))];
+    if (!Array.isArray(data) || data.length === 0) {
+      return { usuarios: [], datasets: [] };
+    }
 
-    // Generar un dataset por cada archivo
+    // 1️⃣ Labels: todos los usuarios
+    const usuarios = data.map(item => item.usuario);
+
+    // 2️⃣ Lista de archivos (usamos el primero, pero todos están igual)
+    const archivos = data[0].archivos;
+
+    // 3️⃣ Crear datasets por archivo
     const datasets = archivos.map((archivo, i) => {
-      const color = `hsl(${(i * 60) % 360}, 70%, 55%)`; // paleta automática
+      const color = `hsl(${(i * 60) % 360}, 70%, 55%)`;
 
-      const valores = usuarios.map(usuario => {
-        const registro = data.find(
-          item => item.usuario === usuario && item.archivo === archivo
-        );
-        return registro ? registro.porcentaje_total : 0;
-      });
+      // Extraer todos los valores de porcentaje para este archivo (en la misma posición i)
+      const valores = data.map(item => item.porcentajes[i] || 0);
 
       return {
-        label: archivo.split("/").pop(), // muestra solo el nombre del archivo
+        label: archivo.split("/").pop(), // nombre limpio
         data: valores,
         backgroundColor: color,
-        borderColor: color.replace("55%", "45%"),
+        borderColor: color,
         borderWidth: 1
       };
     });
