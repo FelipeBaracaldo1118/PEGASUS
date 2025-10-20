@@ -37,10 +37,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Plantilla base
     const basePlataformas = [
-      { nombre: "xsx", servidor_archivos: true, url: "test" },
-      { nombre: "switch", servidor_archivos: true, url: "test" },
-      { nombre: "ps4", servidor_archivos: true, url: "test" },
-      { nombre: "ps5", servidor_archivos: true, url: "test" }
+      { nombre: "xsx", servidor_archivos: true, url: "test", url2: "" },
+      { nombre: "switch", servidor_archivos: true, url: "test", url2: "" },
+      { nombre: "ps4", servidor_archivos: true, url: "test", url2: "" },
+      { nombre: "ps5", servidor_archivos: true, url: "test", url2: "" }
     ];
 
     buildsData.versiones[newVer] = JSON.parse(JSON.stringify(basePlataformas));
@@ -63,16 +63,20 @@ document.addEventListener("DOMContentLoaded", () => {
       div.classList.add("plataforma-card");
 
       div.innerHTML = `
-        <h3>${p.nombre.toUpperCase()}</h3>
-        <label>
-          <input type="checkbox" class="servidor-archivos" ${p.servidor_archivos ? "checked" : ""}>
-          Activo
-        </label>
-        <label>
-          URL:
-          <input type="text" class="url-input" value="${p.url}">
-        </label>
-      `;
+      <h3>${p.nombre.toUpperCase()}</h3>
+      <label>
+        <input type="checkbox" class="servidor-archivos" ${p.servidor_archivos ? "checked" : ""}>
+        Activo
+      </label>
+      <label>
+        URL 1:
+        <input type="text" class="url-input" value="${p.url || ""}">
+      </label>
+      <label>
+        URL 2:
+        <input type="text" class="url2-input" value="${p.url2 || ""}">
+      </label>
+    `;
 
       div.querySelector(".servidor-archivos").addEventListener("change", (e) => {
         p.servidor_archivos = e.target.checked;
@@ -81,6 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
       div.querySelector(".url-input").addEventListener("input", (e) => {
         p.url = e.target.value;
       });
+      div.querySelector(".url2-input").addEventListener("input", (e) => {
+      p.url2 = e.target.value;
+    });
 
       container.appendChild(div);
     });

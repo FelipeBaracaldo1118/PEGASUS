@@ -15,7 +15,7 @@
     },
     {
       "content_name": "Servidor tango 1  PS4 ",
-      "content_url": "http://10.13.46.195:8080/buildsSharedFolder/ps4/FortniteClient-PS4-Test-CUSA07022_00.pkg",
+      "content_url": "http://10.13.46.195:8080/buildsSharedFolder/ps4/38.00/FortniteClient-PS4-Test-CUSA07022_00.pkg",
       "content_icon": "http://10.13.46.195:8080/iconsPS/tango1.png",
       "content_description": "playtest  38.00"
     },

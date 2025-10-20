@@ -673,7 +673,13 @@ grid-row: 1 / 2;
   outline-offset: 2px;
   border-radius: 10px;
 }
+.plataforma button:first-of-type {
+  margin-top: 10px;
+}
 
+.plataforma button + button {
+  margin-top: 10px; /* separación entre botones */
+}
 /* 12) Pulido de espaciados finos */
 #modal-commands h3{ margin: 10px 0 6px; }
 #modal-commands .card + .card{ margin-top: 12px; }

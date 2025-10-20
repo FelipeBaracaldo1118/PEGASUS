@@ -118,15 +118,21 @@ function renderPlataformas() {
       div.classList.add("plataforma");
 
       // Botón 1
-      const downloadBtn1 = document.createElement("button");
+    const downloadBtn1 = document.createElement("button");
+    if (p.nombre.toLowerCase() === "switch") {
+      downloadBtn1.textContent = "TinyApp.nsp";
+    } else {
       downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
-      styleBtn(downloadBtn1);
-
-      // Botón 2 (si existe url2)
-      const downloadBtn2 = document.createElement("button");
+    }
+    styleBtn(downloadBtn1);
+    // Botón 2 (si existe url2)
+    const downloadBtn2 = document.createElement("button");
+    if (p.nombre.toLowerCase() === "switch") {
+      downloadBtn2.textContent = "Build";
+    } else {
       downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
-      styleBtn(downloadBtn2);
-
+    }
+    styleBtn(downloadBtn2);
       // Claves independientes para bloqueo
       const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
       const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
@@ -275,7 +281,7 @@ let statsInterval = null;
  */
 async function fetchStatsData() {
   try {
-    const res = await fetch("Logs/W3SVC2/static/output_data.json");
+    const res = await fetch("Logs/W3SVC2/static/output_data.json?ts=" + Date.now());
     if (!res.ok) throw new Error("No se pudo obtener el JSON");
     
     const data = await res.json();
@@ -331,14 +337,14 @@ async function renderStatsChart() {
       scales: {
         y: {
           beginAtZero: true,
-          max: 110,
+          max: 100,
           title: { display: true, text: "Porcentaje de Descarga (%)" },
           grid: { color: "rgba(255,255,255,0.1)" },
           ticks: { color: "#fff" }
         },
         x: {
           title: { display: true, text: "Usuario / Dispositivo" },
-          ticks: { color: "#fff", autoSkip: false, maxRotation: 45, minRotation: 45 },
+          ticks: { color: "#fff", autoSkip: false, maxRotation: 90, minRotation: 90 },
           grid: { color: "rgba(255,255,255,0.1)" },
           stacked: true // ✅ cambia a false si prefieres barras separadas
         }
