@@ -139,7 +139,7 @@
     // -----------------------------------------------
     // FUNCIÓN PARA EL INICIO DE SESIÓN
     // -----------------------------------------------
-    document.getElementById("loginForm").addEventListener("submit", async function (event) {
+   document.getElementById("loginForm").addEventListener("submit", async function (event) {
       event.preventDefault(); // Evita que se recargue la página
 
       // Capturamos los valores del formulario
@@ -166,8 +166,12 @@
           // Mostrar mensaje de éxito
           document.getElementById("message").innerText = "Inicio de sesión exitoso.";
           document.getElementById("message").style.color = "green";
-          // Opcional: Redirigir o recargar
-          // window.location.href = "perfil.html";
+                    setTimeout(() => {
+            loginSection.style.display = "none";
+            appContent.style.display = "block";
+          }, 800);
+          //Opcional: Redirigir o recargar
+          //window.location.href = "Profile.html";
         } else {
           // Mostrar mensaje de error
           document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";
@@ -179,6 +183,7 @@
         document.getElementById("message").style.color = "red";
       }
     });
+
 
     // -----------------------------------------------
     // FUNCIÓN PARA EL REGISTRO

@@ -25,14 +25,12 @@ mongoose.connect("mongodb://localhost:27017/loginApp", {
 const userSchema = new mongoose.Schema({
   Epam_user: { type: String, required: true, unique: true },
   Accounts: { type: [String], default: [] },
-  Devices: [{
-    name: String,
-    priority: Number
-  }],
+  Devices: [{ name: String, priority: Number }],
   availability: { type: String },
   Mmr: { type: Number },
   Password: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
+  userType: { type: String, enum: ['tester', 'keytester'], default: 'tester' }, // <--- NUEVO
   Date_Time: { type: Date, default: Date.now },
   Pod: { type: String },
   Region: { type: String },
@@ -45,14 +43,16 @@ const User = mongoose.model("User", userSchema);
 // RUTA: REGISTRO DE USUARIO
 // --------------------------
 app.post("/register", async (req, res) => {
-  const {
+ const {
     Epam_user,
     Accounts = [],
     Devices = [],
-    availability = "",
+   
+ availability = "",
     Mmr = 0,
     Password,
-    isAdmin, // <--- CAMBIO AQUÍ
+    isAdmin = false,
+    userType = "tester", // <--- IMPORTANTE
     Pod = "",
     Region = "",
     Station = "",
@@ -64,13 +64,8 @@ app.post("/register", async (req, res) => {
     // Encriptar la contraseña
     const hashedPassword = await bcrypt.hash(Password, 10);
 
-    // Generar un Id_User único (puedes cambiar la lógica si lo deseas)
-
-
     // Crear nuevo usuario
-
-
-    const newUser = new User({
+     const newUser = new User({
       Epam_user,
       Accounts,
       Devices,
@@ -78,6 +73,7 @@ app.post("/register", async (req, res) => {
       Mmr,
       Password: hashedPassword,
       isAdmin,
+      userType, // <--- IMPORTANTE
       Pod,
       Region,
       Station,

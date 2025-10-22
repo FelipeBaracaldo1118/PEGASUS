@@ -283,14 +283,20 @@
 
         const result = await response.json();
 
-        if (res.ok) {
-          localStorage.setItem("token", data.token || "logged");
-          message.style.color = "lime";
-          message.innerText = "Inicio de sesión exitoso.";
-          setTimeout(() => {
+        if (response.ok) {
+          // Guardar token en localStorage
+          if (result.token) {
+            localStorage.setItem('token', result.token);
+          }
+          // Mostrar mensaje de éxito
+          document.getElementById("message").innerText = "Inicio de sesión exitoso.";
+          document.getElementById("message").style.color = "green";
+                    setTimeout(() => {
             loginSection.style.display = "none";
             appContent.style.display = "block";
           }, 800);
+          //Opcional: Redirigir o recargar
+          //window.location.href = "Profile.html";
         } else {
           // Mostrar mensaje de error
           document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";
