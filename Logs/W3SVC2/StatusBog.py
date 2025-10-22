@@ -15,12 +15,12 @@ if not os.path.exists("static"):
     os.makedirs("static")
 
 log_urls = [
-    "http://10.13.46.155:8080/W3SVC2/u_ex251020.log",
-    "http://10.13.46.195:8080/Logs/W3SVC2/u_ex251020.log",
-    "http://10.13.46.147:8080/W3SVC2/u_ex251020.log",
-    "http://10.13.46.131:8080/W3SVC2/u_ex251020.log",
-    "http://10.13.46.139:8080/W3SVC2/u_ex251020.log",
-    "http://10.13.46.152:8080/W3SVC2/u_ex251020.log",
+    "http://10.13.46.155:8080/W3SVC2/u_ex251022.log",
+    "http://10.13.46.195:8080/Logs/W3SVC2/u_ex251022.log",
+    "http://10.13.46.147:8080/W3SVC2/u_ex251022.log",
+    "http://10.13.46.131:8080/W3SVC2/u_ex251022.log",
+    "http://10.13.46.139:8080/W3SVC2/u_ex251022.log",
+    "http://10.13.46.152:8080/W3SVC2/u_ex251022.log",
 ]
 
 ip_mapping_file = "ip_mapping.json"

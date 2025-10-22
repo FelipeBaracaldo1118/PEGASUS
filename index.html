@@ -132,12 +132,33 @@
 
       <!-- REGISTER -->
       <form id="registerForm" style="display:none;">
-        <h2>Registro</h2>
-        <input type="text" id="register-username" placeholder="Nuevo usuario" required>
-        <input type="password" id="register-password" placeholder="Nueva contraseña" required>
-        <button type="submit">Crear cuenta</button>
-      </form>
+   <h2>Registrarse</h2>
+        <label for="register-epam">Usuario EPAM:</label>
+        <input type="text" id="register-epam" placeholder="Usuario EPAM" required>
 
+        <label for="register-password">Contraseña:</label>
+        <input type="password" id="register-password" placeholder="Crea una contraseña" required>
+
+        <label for="register-accounts">Cuentas dispobiles (separados por coma):</label>
+        <input type="text" id="register-accounts" placeholder="account1,account2">
+
+        <label for="register-device1">Dispositivo Principal:</label>
+        <input type="text" id="register-device1" placeholder="Nombre dispositivo">
+
+        <label for="register-device2">Dispositivo Secundario:</label>
+        <input type="text" id="register-device2" placeholder="Nombre dispositivo">
+
+        <label for="register-pod">Pod:</label>
+        <input type="text" id="register-pod" placeholder="Pod">
+
+        <label for="register-region">Región:</label>
+        <input type="text" id="register-region" placeholder="Región">
+
+        <label for="register-station">Estación:</label>
+        <input type="text" id="register-station" placeholder="Estación">
+
+        <button type="submit">Registrarse</button>
+      </form>
       <!-- Toggle -->
       <p id="toggleForm" class="toggle">¿No tienes cuenta? Regístrate</p>
     </div>
@@ -243,19 +264,25 @@
     }
 
     // Login
-    loginForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("login-username").value;
-      const password = document.getElementById("login-password").value;
+   document.getElementById("loginForm").addEventListener("submit", async function (event) {
+      event.preventDefault(); // Evita que se recargue la página
+
+      // Capturamos los valores del formulario
+      const Epam_user = document.getElementById("login-username").value;
+      const Password = document.getElementById("login-password").value;
 
       try {
-        const res = await fetch(`${SERVER_URL}/login`, {
+        // Enviar solicitud al backend
+        const response = await fetch("http://10.13.46.195:3000/login", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ Epam_user, Password }),
         });
 
-        const data = await res.json();
+        const result = await response.json();
+
         if (res.ok) {
           localStorage.setItem("token", data.token || "logged");
           message.style.color = "lime";
@@ -265,41 +292,77 @@
             appContent.style.display = "block";
           }, 800);
         } else {
-          message.style.color = "red";
-          message.innerText = data.message || "Error al iniciar sesión.";
+          // Mostrar mensaje de error
+          document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";
+          document.getElementById("message").style.color = "red";
         }
-      } catch {
-        message.style.color = "red";
-        message.innerText = "Error de conexión con el servidor.";
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+        document.getElementById("message").innerText = "No se pudo conectar con el servidor.";
+        document.getElementById("message").style.color = "red";
       }
     });
 
-    // Registro
-    registerForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("register-username").value;
-      const password = document.getElementById("register-password").value;
+   // Registro
+registerForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-      try {
-        const res = await fetch(`${SERVER_URL}/register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
+  // Captura los valores del formulario
+  const Epam_user = document.getElementById("register-epam").value;
+  const Password = document.getElementById("register-password").value;
+  const Accounts = document.getElementById("register-accounts").value
+    .split(",")
+    .map(a => a.trim())
+    .filter(a => a);
 
-        const data = await res.json();
-        if (res.ok) {
-          message.style.color = "lime";
-          message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
-        } else {
-          message.style.color = "red";
-          message.innerText = data.message || "Error al registrarse.";
-        }
-      } catch {
-        message.style.color = "red";
-        message.innerText = "Error de conexión con el servidor.";
-      }
+  // Solo nombre de dispositivos, prioridad fija
+  const Devices = [];
+  const device1 = document.getElementById("register-device1").value;
+  if (device1) Devices.push({ name: device1, priority: 1 });
+  const device2 = document.getElementById("register-device2").value;
+  if (device2) Devices.push({ name: device2, priority: 2 });
+
+  //const isAdmin = document.getElementById("register-isadmin").checked;
+  const Pod = document.getElementById("register-pod").value;
+  const Region = document.getElementById("register-region").value;
+  const Station = document.getElementById("register-station").value;
+
+  // Valores por defecto para los campos ocultos
+  const userData = {
+    Epam_user,
+    Password,
+    Accounts,
+    Devices,
+    availability: "", // No editable por el usuario
+    Mmr: 0,           // No editable por el usuario
+    isAdmin:false,
+    Pod,
+    Region,
+    Station,
+    IsPlaying: false  // No editable por el usuario
+  };
+
+  try {
+    const res = await fetch(`${SERVER_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
     });
+
+    const data = await res.json();
+    if (res.ok) {
+      message.style.color = "lime";
+      message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
+      registerForm.reset();
+    } else {
+      message.style.color = "red";
+      message.innerText = data.message || "Error al registrarse.";
+    }
+  } catch {
+    message.style.color = "red";
+    message.innerText = "Error de conexión con el servidor.";
+  }
+});
   </script>
 </body>
 </html>

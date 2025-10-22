@@ -96,11 +96,29 @@
   <div class="form-container" id="registerContainer">
     <form id="registerForm">
       <h2>Registrarse</h2>
-      <label for="register-username">Nombre de Usuario:</label>
-      <input type="text" id="register-username" placeholder="Crea un usuario" required>
+      <label for="register-epam">Usuario EPAM:</label>
+      <input type="text" id="register-epam" placeholder="Usuario EPAM" required>
 
       <label for="register-password">Contraseña:</label>
       <input type="password" id="register-password" placeholder="Crea una contraseña" required>
+
+      <label for="register-accounts">Cuentas dispobiles (separados por coma):</label>
+      <input type="text" id="register-accounts" placeholder="account1,account2">
+
+      <label for="register-device1">Dispositivo Principal:</label>
+      <input type="text" id="register-device1" placeholder="Nombre dispositivo">
+
+      <label for="register-device2">Dispositivo Secundario:</label>
+      <input type="text" id="register-device2" placeholder="Nombre dispositivo">
+
+      <label for="register-pod">Pod:</label>
+      <input type="text" id="register-pod" placeholder="Pod">
+
+      <label for="register-region">Región:</label>
+      <input type="text" id="register-region" placeholder="Región">
+
+      <label for="register-station">Estación:</label>
+      <input type="text" id="register-station" placeholder="Estación">
 
       <button type="submit">Registrarse</button>
     </form>
@@ -125,8 +143,8 @@
       event.preventDefault(); // Evita que se recargue la página
 
       // Capturamos los valores del formulario
-      const username = document.getElementById("login-username").value;
-      const password = document.getElementById("login-password").value;
+      const Epam_user = document.getElementById("login-username").value;
+      const Password = document.getElementById("login-password").value;
 
       try {
         // Enviar solicitud al backend
@@ -135,17 +153,21 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ Epam_user, Password }),
         });
 
         const result = await response.json();
 
         if (response.ok) {
+          // Guardar token en localStorage
+          if (result.token) {
+            localStorage.setItem('token', result.token);
+          }
           // Mostrar mensaje de éxito
           document.getElementById("message").innerText = "Inicio de sesión exitoso.";
           document.getElementById("message").style.color = "green";
-          // Opcional: Guardar token o redirigir a otra página
-          // localStorage.setItem('token', result.token);
+          // Opcional: Redirigir o recargar
+          // window.location.href = "perfil.html";
         } else {
           // Mostrar mensaje de error
           document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";
@@ -165,17 +187,48 @@
       event.preventDefault(); // Evita que se recargue la página
 
       // Capturamos los valores del formulario
-      const username = document.getElementById("register-username").value;
-      const password = document.getElementById("register-password").value;
+      const Epam_user = document.getElementById("register-epam").value;
+      const Password = document.getElementById("register-password").value;
+      const Accounts = document.getElementById("register-accounts").value
+        .split(",")
+        .map(a => a.trim())
+        .filter(a => a);
+
+      // Solo nombre de dispositivos, prioridad fija
+      const Devices = [];
+      const device1 = document.getElementById("register-device1").value;
+      if (device1) Devices.push({ name: device1, priority: 1 });
+      const device2 = document.getElementById("register-device2").value;
+      if (device2) Devices.push({ name: device2, priority: 2 });
+
+      //const isAdmin = document.getElementById("register-isadmin").checked;
+      const Pod = document.getElementById("register-pod").value;
+      const Region = document.getElementById("register-region").value;
+      const Station = document.getElementById("register-station").value;
+
+      // Valores por defecto para los campos ocultos
+      const userData = {
+        Epam_user,
+        Password,
+        Accounts,
+        Devices,
+        availability: "", // No editable por el usuario
+        Mmr: 0,           // No editable por el usuario
+        isAdmin,
+        Pod,
+        Region,
+        Station,
+        IsPlaying: false  // No editable por el usuario
+      };
 
       try {
         // Enviar solicitud al backend
-        const response = await fetch("http:///10.13.46.195:3000/register", {
+        const response = await fetch("http://10.13.46.195:3000/register", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify(userData),
         });
 
         const result = await response.json();
@@ -184,8 +237,7 @@
           // Mostrar mensaje de éxito
           document.getElementById("message").innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
           document.getElementById("message").style.color = "green";
-
-          // Opcional: Limpiar formulario
+          // Limpiar formulario
           document.getElementById("registerForm").reset();
         } else {
           // Mostrar mensaje de error
