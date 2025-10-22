@@ -28479,3 +28479,105 @@
 2025-10-22 17:34:07 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 304 0 0 143 432 0
 2025-10-22 17:34:40 10.13.46.195 GET / - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 304 0 0 143 532 1
 2025-10-22 17:34:45 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 304 0 0 143 544 0
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2025-10-22 17:59:25
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) cs(Referer) sc-status sc-substatus sc-win32-status sc-bytes cs-bytes time-taken
+2025-10-22 17:59:25 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 64 0 618 121
+2025-10-22 17:59:25 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 143 590 127
+2025-10-22 18:03:43 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 3040 458 37
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2025-10-22 18:59:27
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) cs(Referer) sc-status sc-substatus sc-win32-status sc-bytes cs-bytes time-taken
+2025-10-22 18:59:27 10.13.46.195 GET / - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 12257 565 118
+2025-10-22 18:59:27 10.13.46.195 GET /css/styles.css - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 468 4
+2025-10-22 18:59:27 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 454 2
+2025-10-22 18:59:27 10.13.46.195 GET /js/app.js - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 448 42
+2025-10-22 18:59:29 10.13.46.195 GET /iconos/ps4.png - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 514 45
+2025-10-22 18:59:29 10.13.46.195 GET /iconos/switch.png - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 517 45
+2025-10-22 18:59:29 10.13.46.195 GET /iconos/xsx.png - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 514 45
+2025-10-22 18:59:29 10.13.46.195 GET /iconos/ps5.png - 8080 - 10.13.46.146 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/ 304 0 0 143 514 45
+2025-10-22 19:02:03 10.13.46.195 GET /content_list.json - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 2030 123 10
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/Whisky+1.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 16848 104 4
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/whisky+2.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 17925 104 6
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/zulu+1.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 8516 102 1
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/tango2.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 16349 100 3
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/tango1.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 15245 100 61
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/tango2.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 16349 100 2
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/zulu+1.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 8516 102 2
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/Whisky+1.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 16848 104 4
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/tango1.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 15245 100 103
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/whisky+2.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 17925 104 103
+2025-10-22 19:02:03 10.13.46.195 GET /iconsPS/zulu+2.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 9682 102 102
+2025-10-22 19:02:06 10.13.46.195 GET /iconsPS/whisky+2.png - 8080 - 10.13.46.132 psm/13.02+(PlayStation+4) - 200 0 0 17925 104 101
+2025-10-22 19:02:33 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 304 0 0 143 570 0
+2025-10-22 19:02:34 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 143 590 0
+2025-10-22 19:02:34 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 64 0 618 11
+2025-10-22 19:02:34 10.13.46.195 GET /css/styles.css - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 304 0 0 143 445 0
+2025-10-22 19:02:34 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 304 0 0 143 431 0
+2025-10-22 19:02:34 10.13.46.195 GET /js/app.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 304 0 0 143 425 0
+2025-10-22 19:02:36 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 0 3874 616 3
+2025-10-22 19:03:00 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 0 3874 530 0
+2025-10-22 19:03:00 10.13.46.195 GET /css/styles.css - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 15084 359 0
+2025-10-22 19:03:00 10.13.46.195 GET /logos/Logo2.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 26169 406 3
+2025-10-22 19:03:00 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 1297 345 3
+2025-10-22 19:03:00 10.13.46.195 GET /logos/Logo1.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 5498 406 4
+2025-10-22 19:03:00 10.13.46.195 GET /js/app.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 12649 339 6
+2025-10-22 19:03:00 10.13.46.195 GET /js/commands.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 11492 344 8
+2025-10-22 19:03:00 10.13.46.195 GET /slides/slide1.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 6129101 408 114
+2025-10-22 19:03:00 10.13.46.195 GET /slides/slide3.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 5885240 408 123
+2025-10-22 19:03:00 10.13.46.195 GET /slides/slide2.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 200 0 0 7868513 408 155
+2025-10-22 19:03:00 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 142 615 0
+2025-10-22 19:11:34 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 0 12257 615 2
+2025-10-22 19:11:40 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 3040 458 0
+2025-10-22 19:11:41 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 0 1394 618 1
+2025-10-22 19:11:57 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 143 618 0
+2025-10-22 19:12:00 10.13.46.195 GET /editor.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 304 0 0 142 542 0
+2025-10-22 19:13:56 10.13.46.195 GET /editor.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 9772 568 1
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2025-10-22 19:35:04
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) cs(Referer) sc-status sc-substatus sc-win32-status sc-bytes cs-bytes time-taken
+2025-10-22 19:35:04 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 64 0 618 110
+2025-10-22 19:37:48 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 6033 458 0
+2025-10-22 19:41:13 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 6052 569 1
+2025-10-22 19:44:52 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 143 620 0
+2025-10-22 19:44:52 10.13.46.195 GET /index.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 143 590 0
+2025-10-22 19:44:52 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/index.html 304 0 0 143 431 0
+2025-10-22 19:45:26 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 304 0 0 143 546 0
+2025-10-22 19:56:34 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 304 0 0 143 620 0
+2025-10-22 20:01:20 10.13.46.195 GET /Profile.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 6462 572 0
+2025-10-22 20:01:22 10.13.46.195 GET /keytester_sessions.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 0 7828 517 0
+2025-10-22 20:02:26 10.13.46.195 GET /keytester_sessions.html - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/Profile.html 200 0 0 7840 629 1
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2025-10-22 20:37:40
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) cs(Referer) sc-status sc-substatus sc-win32-status sc-bytes cs-bytes time-taken
+2025-10-22 20:37:40 10.13.46.195 GET / - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 12257 447 105
+2025-10-22 20:37:40 10.13.46.195 GET /css/styles.css - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 15084 351 0
+2025-10-22 20:37:40 10.13.46.195 GET /logos/Logo1.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 5498 398 1
+2025-10-22 20:37:40 10.13.46.195 GET /logos/Logo2.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 26169 398 1
+2025-10-22 20:37:40 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 1297 337 1
+2025-10-22 20:37:40 10.13.46.195 GET /js/app.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 12649 331 24
+2025-10-22 20:37:40 10.13.46.195 GET /js/commands.js - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 11492 336 12
+2025-10-22 20:37:40 10.13.46.195 GET /slides/slide1.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 6129101 400 120
+2025-10-22 20:37:40 10.13.46.195 GET /slides/slide3.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 5885240 400 179
+2025-10-22 20:37:40 10.13.46.195 GET /slides/slide2.png - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 200 0 0 7868513 400 204
+2025-10-22 20:37:40 10.13.46.195 GET /favicon.ico - 8080 - 10.13.46.195 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://pegasus.local:8080/ 404 0 2 5021 394 0
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2025-10-22 20:40:36
+#Fields: date time s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs(User-Agent) cs(Referer) sc-status sc-substatus sc-win32-status sc-bytes cs-bytes time-taken
+2025-10-22 20:40:36 10.13.46.195 GET /editor.html - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 - 200 0 0 9877 457 5
+2025-10-22 20:40:36 10.13.46.195 GET /css/styles.css - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 200 0 0 15084 446 1
+2025-10-22 20:40:36 10.13.46.195 GET /slides/slide1.png - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 304 0 0 142 494 5
+2025-10-22 20:40:36 10.13.46.195 GET /slides/slide2.png - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 304 0 0 143 495 3
+2025-10-22 20:40:36 10.13.46.195 GET /js/serverurl.js - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 200 0 0 1297 432 4
+2025-10-22 20:40:36 10.13.46.195 GET /logos/Logo2.png - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 304 0 0 143 493 5
+2025-10-22 20:40:36 10.13.46.195 GET /js/app.js - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 200 0 0 12649 426 6
+2025-10-22 20:40:36 10.13.46.195 GET /js/admin.js - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 200 0 0 5724 342 8
+2025-10-22 20:40:36 10.13.46.195 GET /logos/Logo1.png - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 304 0 0 143 493 43
+2025-10-22 20:40:36 10.13.46.195 GET /slides/slide3.png - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 304 0 0 143 495 49
+2025-10-22 20:40:36 10.13.46.195 GET /favicon.ico - 8080 - 10.13.46.201 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/141.0.0.0+Safari/537.36+Edg/141.0.0.0 http://10.13.46.195:8080/editor.html 404 0 2 1383 403 58
+2025-10-22 20:43:23 10.13.46.195 GET /iconsPS/whisky+2.png - 8080 - 10.13.46.177 psm/13.02+(PlayStation+4) - 200 0 0 17925 104 102

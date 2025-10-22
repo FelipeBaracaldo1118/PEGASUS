@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Sesiones de Juego - Keytester</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f4f9; }
+    .container { max-width: 700px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 30px; }
+    h2 { text-align: center; }
+    form { margin-bottom: 30px; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, textarea { width: 100%; padding: 8px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc; }
+    .session { border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-bottom: 15px; background: #f9f9f9; }
+    .actions button { margin-right: 10px; }
+    .actions { margin-top: 10px; }
+    .logout-btn { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2> información para el focus </h2>
+    <form id="sessionForm">
+      <label>Comms Lead:</label>
+      <input type="text" id="commsLead" required placeholder="@key tester principal">
+      <label>Comms Assist:</label>
+      <input type="text" id="commsAssist" required placeholder="@Secondary key tester">
+      <label>Backend Name:</label>
+      <input type="text" id="backendName" required placeholder="Baseball">
+      <label>Build String:</label>
+      <input type="text" id="buildString" required placeholder="++Fortnite+Release-38.10-CL-47160256">
+      <label>Google Drive:</label>
+      <input type="url" id="googleDrive" required placeholder="https://drive.google.com/drive/folders/...">
+      <label>Game Modes / Playlists:</label>
+      <input type="text" id="gameModes" required placeholder="BR: Squads / Reload (Dash
+berry) / Blitz">
+      <label>ID Override:</label>
+      <input type="text" id="idOverride" required placeholder="42069">
+      <label>Start Time:</label>
+      <input type="text" id="startTime" required placeholder="1PM">
+      <label>Premade Teams:</label>
+      <input type="text" id="premadeTeams" required placeholder="No">
+      <label>Team Size:</label>
+      <input type="text" id="teamSize" required placeholder="Squad (4), Fill">
+      <label>Test Plan / BTR:</label>
+      <input type="url" id="testPlan" required placeholder="https://jira.it.epicgames.com/browse/FNTEST-202139">
+      <button type="submit" id="submitBtn">Crear Sesión</button>
+      <input type="hidden" id="sessionId">
+    </form>
+    <div id="sessions"></div>
+    <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+  </div>
+
+  <script>
+    const SERVER_URL = "http://10.13.46.195:3000";
+    const token = localStorage.getItem("token");
+
+    // Cargar sesiones al iniciar
+    fetchSessions();
+
+    // Crear o editar sesión
+    document.getElementById("sessionForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      const sessionId = document.getElementById("sessionId").value;
+      const data = {
+        commsLead: document.getElementById("commsLead").value,
+        commsAssist: document.getElementById("commsAssist").value,
+        backendName: document.getElementById("backendName").value,
+        buildString: document.getElementById("buildString").value,
+        googleDrive: document.getElementById("googleDrive").value,
+        gameModes: document.getElementById("gameModes").value,
+        idOverride: document.getElementById("idOverride").value,
+        startTime: document.getElementById("startTime").value,
+        premadeTeams: document.getElementById("premadeTeams").value,
+        teamSize: document.getElementById("teamSize").value,
+        testPlan: document.getElementById("testPlan").value
+      };
+
+      let url = `${SERVER_URL}/api/sessions`;
+      let method = "POST";
+      if (sessionId) {
+        url += `/${sessionId}`;
+        method = "PUT";
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json", "Authorization": token },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        this.reset();
+        document.getElementById("submitBtn").textContent = "Crear Sesión";
+        fetchSessions();
+      } else {
+        alert("Error al guardar la sesión");
+      }
+    });
+
+    // Mostrar sesiones
+    async function fetchSessions() {
+      const res = await fetch(`${SERVER_URL}/api/sessions`, {
+        headers: { "Authorization": token }
+      });
+      const sessions = await res.json();
+      const container = document.getElementById("sessions");
+      if (!res.ok || !Array.isArray(sessions)) {
+        container.innerHTML = "No se pudieron cargar las sesiones.";
+        return;
+      }
+      if (sessions.length === 0) {
+        container.innerHTML = "<i>No hay sesiones creadas.</i>";
+        return;
+      }
+      container.innerHTML = "";
+      sessions.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "session";
+        div.innerHTML = `
+          <b>Comms Lead:</b> ${s.commsLead}<br>
+          <b>Comms Assist:</b> ${s.commsAssist}<br>
+          <b>Backend Name:</b> ${s.backendName}<br>
+          <b>Build String:</b> ${s.buildString}<br>
+          <b>Google Drive:</b> <a href="${s.googleDrive}" target="_blank">${s.googleDrive}</a><br>
+          <b>Game Modes:</b> ${s.gameModes}<br>
+          <b>ID Override:</b> ${s.idOverride}<br>
+          <b>Start Time:</b> ${s.startTime}<br>
+          <b>Premade Teams:</b> ${s.premadeTeams}<br>
+          <b>Team Size:</b> ${s.teamSize}<br>
+          <b>Test Plan:</b> <a href="${s.testPlan}" target="_blank">${s.testPlan}</a><br>
+          <div class="actions">
+            <button onclick="editSession('${s._id}')">Editar</button>
+            <button onclick="deleteSession('${s._id}')">Borrar</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Editar sesión
+    window.editSession = async function(id) {
+      const res = await fetch(`${SERVER_URL}/api/sessions/${id}`, {
+        headers: { "Authorization": token }
+      });
+      const s = await res.json();
+      document.getElementById("commsLead").value = s.commsLead;
+      document.getElementById("commsAssist").value = s.commsAssist;
+      document.getElementById("backendName").value = s.backendName;
+      document.getElementById("buildString").value = s.buildString;
+      document.getElementById("googleDrive").value = s.googleDrive;
+      document.getElementById("gameModes").value = s.gameModes;
+      document.getElementById("idOverride").value = s.idOverride;
+      document.getElementById("startTime").value = s.startTime;
+      document.getElementById("premadeTeams").value = s.premadeTeams;
+      document.getElementById("teamSize").value = s.teamSize;
+      document.getElementById("testPlan").value = s.testPlan;
+      document.getElementById("sessionId").value = s._id;
+      document.getElementById("submitBtn").text
+Content = "Actualizar Sesión";
+    };
+
+    // Borrar sesión
+    window.deleteSession = async function(id) {
+      if (!confirm("¿Seguro que quieres borrar esta sesión?")) return;
+      const res = await fetch(`${SERVER_URL}/api/sessions/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": token }
+      });
+      if (res.ok) fetchSessions();
+      else alert("Error al borrar la sesión");
+    };
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.reload();
+    }
+  </script>
+</body>
+</html>

@@ -26,51 +26,144 @@
   <div class="profile-container" id="profile">
     <h2>Perfil de Usuario</h2>
     <div id="profile-data" class="profile-data"></div>
+    <div id="profile-actions"></div> <!-- Aquí van los botones dinámicos -->
     <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
     <p id="message"></p>
   </div>
 
-  <script>
-    async function fetchProfile() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        document.getElementById("profile-data").innerHTML = "No has iniciado sesión.";
+<script>
+  async function fetchProfile() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      document.getElementById("profile-data").innerHTML = "No has iniciado sesión.";
+      return;
+    }
+
+    try {
+      const response = await fetch("http://10.13.46.195:3000/api/user/me", {
+        headers: { "Authorization": token }
+      });
+      const user = await response.json();
+
+      if (!response.ok) {
+        document.getElementById("profile-data").innerHTML = user.message || "No se pudo obtener la información del usuario.";
         return;
       }
 
-      try {
-        const response = await fetch("http://10.13.46.195:3000/api/user/me", {
-          headers: { "Authorization": token }
-        });
-        const user = await response.json();
+      let html = "";
+      html += `<div><label>Usuario EPAM:</label> ${user.Epam_user}</div>`;
+      html += `<div><label>Accounts:</label> ${user.Accounts.join(", ")}</div>`;
+      html += `<div><label>Devices:</label> ${user.Devices.map(d => d.name).join(", ")}</div>`;
+      html +=
+ `<div><label>Pod:</label> ${user.Pod}</div>`;
+      html += `<div><label>Región:</label> ${user.Region}</div>`;
+      html += `<div><label>Estación:</label> ${user.Station}</div>`;
+      html += `<div><label>Disponibilidad:</label> ${user.availability}</div>`;
+      html += `<div><label>IsPlaying:</label> ${user.IsPlaying ? "Sí" : "No"}</div>`;
+      html += `<div><label>Rol:</label> ${user.userType || (user.isAdmin ? "keytester" : "tester")}</div>`;
+      document.getElementById("profile-data").innerHTML = html;
 
-        if (!response.ok) {
-          document.getElementById("profile-data").innerHTML = user.message || "No se pudo obtener la información del usuario.";
-          return;
-        }
+      // Botones según el tipo de usuario
+      const actions = document.getElementById("profile-actions");
+      actions.innerHTML = ""; // Limpia acciones previas
 
-        let html = "";
-        html += `<div><label>Usuario EPAM:</label> ${user.Epam_user}</div>`;
-        html += `<div><label>Accounts:</label> ${user.Accounts.join(", ")}</div>`;
-        html += `<div><label>Devices:</label> ${user.Devices.map(d => d.name).join(", ")}</div>`;
-        html += `<div><label>Pod:</label> ${user.Pod}</div>`;
-        html += `<div><label>Región:</label> ${user.Region}</div>`;
-        html += `<div><label>Estación:</label> ${user.Station}</div>`;
-        html += `<div><label>Disponibilidad:</label> ${user.availability}</div>`;
-        html += `<div><label>IsPlaying:</label> ${user.IsPlaying ? "Sí" : "No"}</div>`;
-        document.getElementById("profile-data").innerHTML = html;
-      } catch (err) {
-        document.getElementById("profile-data").innerHTML = "Error al conectar con el servidor.";
+      if (user.userType === "keytester" || user.isAdmin) {
+        // Botón para ir a la página de sesiones de juego
+        const btnGoToSessions = document.createElement("button");
+        btnGoToSessions.textContent = "Crear sesión de juego";
+        btnGoToSessions.className = "logout-btn";
+        btnGoToSessions.onclick = function() {
+          window.location.href = "keytester_sessions.html";
+        };
+        actions.appendChild(btnGoToSessions);
+
+        // Botón para ver testers del pod
+        const btnPod = document.createElement("button");
+        btnPod.textContent = "Ver testers de mi pod";
+        btnPod.className = "logout-btn";
+        btnPod.onclick = fetchTestersInPod;
+        actions.appendChild(btnPod);
+
+        // Botón para ver todos los testers
+        const btnAll = document.createElement("button");
+        btnAll.textContent = "Ver todos los testers registrados";
+        btnAll.className = "logout-btn";
+        btnAll.onclick = fetchAllTesters;
+        actions.appendChild(btnAll);
+
+        // Contenedor para mostrar la lista
+        const testerList = document.createElement("div");
+        testerList.id = "tester-list";
+        actions.appendChild(testerList);
       }
+    } catch (err) {
+      document.getElementById("profile-data").innerHTML = "Error al conectar con el servidor.";
     }
+  }
 
-    function logout() {
-      localStorage.removeItem("token");
-      window.location.reload();
-      window.location.href = "index.html";
+  async function fetchTestersInPod() {
+    const token = localStorage.getItem("token");
+    const testerList = document.getElementById("tester-list");
+    testerList.innerHTML = "Cargando...";
+    try {
+      const res = await fetch("http://10.13.46.195:3000/api/testers-in-pod", {
+        headers: { "Authorization": token }
+      });
+      const testers = await res.json();
+      if (!res.ok) {
+        testerList.innerHTML = testers.message || "No autorizado.";
+        return;
+      }
+      if (testers.length === 0) {
+        testerList.innerHTML = "No hay testers en tu pod.";
+        return;
+      }
+      let html = "<h3>Testers en tu pod:</h3><ul>";
+      testers.forEach(t => {
+        html += `<li>${t.Epam_user} (${t.Pod})</li>`;
+      });
+      html += "</ul>";
+      testerList.innerHTML = html;
+    } catch (err) {
+      testerList.innerHTML = "Error al conectar con el servidor.";
     }
+  }
 
-    fetchProfile();
-  </script>
+  async function fetchAllTesters() {
+    const token = localStorage.getItem("token");
+    const testerList = document.getElementById("tester-list");
+    testerList.innerHTML = "Cargando...";
+    try {
+      const res = await fetch("http://10.13.46.195:3000/api/all-testers", {
+        headers: { "Authorization": token }
+      });
+      const testers = await res.json();
+      if (!res.ok) {
+        testerList.innerHTML = testers.message || "No autorizado.";
+        return;
+      }
+      if (testers.length === 0) {
+        testerList.innerHTML = "No hay testers registrados.";
+        return;
+      }
+      let html = "<h3>Todos los testers registrados:</h3><ul>";
+      testers.forEach(t => {
+        html += `<li>${t.Epam_user} (${t.Pod})</li>`;
+      });
+      html += "</ul>";
+      testerList.innerHTML = html;
+    } catch (err) {
+      testerList.innerHTML = "Error al conectar con el servidor.";
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    window.location.reload();
+    window.location.href = "index.html";
+  }
+
+  fetchProfile();
+</script>
 </body>
 </html>

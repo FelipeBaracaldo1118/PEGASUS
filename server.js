@@ -39,16 +39,37 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
+//------------------------------------
+//esquema playtest
+//------------------------------------
+const sessionSchema = new mongoose.Schema({
+  commsLead: String,
+  commsAssist: String,
+  backendName: String,
+  buildString: String,
+  googleDrive: String,
+  gameModes: String,
+  idOverride: String,
+  startTime: String,
+  premadeTeams: String,
+  teamSize: String,
+  testPlan: String,
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  pod: String,
+  createdAt: { type: Date, default: Date.now }
+});
+const Session = mongoose.model("Session", sessionSchema);
+
 // --------------------------
 // RUTA: REGISTRO DE USUARIO
 // --------------------------
 app.post("/register", async (req, res) => {
- const {
+  const {
     Epam_user,
     Accounts = [],
     Devices = [],
-   
- availability = "",
+
+    availability = "",
     Mmr = 0,
     Password,
     isAdmin = false,
@@ -65,7 +86,7 @@ app.post("/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(Password, 10);
 
     // Crear nuevo usuario
-     const newUser = new User({
+    const newUser = new User({
       Epam_user,
       Accounts,
       Devices,
@@ -175,6 +196,54 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
   } catch {
     res.status(500).json({ message: "Error al obtener usuario" });
   }
+});
+// Testers en el mismo pod
+app.get("/api/testers-in-pod", authMiddleware, async (req, res) => {
+  const user = await User.findById(req.userId);
+  if (!user || user.userType !== "keytester") return res.status(403).json({ message: "No autorizado" });
+  const testers = await User.find({ Pod: user.Pod, userType: "tester" }).select("-Password -__v");
+  res.json(testers);
+});
+
+// Todos los testers registrados
+app.get("/api/all-testers", authMiddleware, async (req, res) => {
+  const user = await User.findById(req.userId);
+  if (!user || user.userType !== "keytester") return res.status(403).json({ message: "No autorizado" });
+  const testers = await User.find({ userType: "tester" }).select("-Password -__v");
+  res.json(testers);
+});
+
+// Crear sesión
+app.post("/api/sessions", authMiddleware, async (req, res) => {
+  // ...validar que sea keytester...
+  const session = new Session({ ...req.body, createdBy: req.userId });
+  await session.save();
+  res.json(session);
+});
+
+// Listar sesiones
+app.get("/api/sessions", authMiddleware, async (req, res) => {
+  // ...puedes filtrar por pod si quieres...
+  const sessions = await Session.find({}).sort({ createdAt: -1 });
+  res.json(sessions);
+});
+
+// Obtener una sesión
+app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
+  const session = await Session.findById(req.params.id);
+  res.json(session);
+});
+
+// Editar sesión
+app.put("/api/sessions/:id", authMiddleware, async (req, res) => {
+  const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  res.json(session);
+});
+
+// Borrar sesión
+app.delete("/api/sessions/:id", authMiddleware, async (req, res) => {
+  await Session.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
 });
 
 // --------------------------
