@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -28,6 +29,7 @@
       align-items: center;
       justify-content: center;
       z-index: 10;
+      padding: 20px;
     }
 
     .form-container {
@@ -38,10 +40,21 @@
       padding: 30px 40px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
       width: 320px;
-      margin: 10px;
+      max-height: 85vh;
+      overflow-y: auto;
       text-align: center;
       color: #fff;
       animation: fadeIn 1s ease;
+    }
+
+    /* Scroll solo si es necesario */
+    .form-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .form-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 10px;
     }
 
     .form-container h2 {
@@ -49,8 +62,13 @@
       font-weight: 600;
     }
 
-    .form-container input {
+    .form-container input,
+    .form-container label {
       width: 100%;
+      text-align: left;
+    }
+
+    .form-container input {
       padding: 10px;
       margin-bottom: 12px;
       border: none;
@@ -59,6 +77,13 @@
       color: white;
       font-size: 1rem;
       outline: none;
+    }
+
+    .form-container label {
+      margin: 8px 0 4px;
+      font-size: 0.9rem;
+      color: rgba(255, 255, 255, 0.8);
+      display: block;
     }
 
     .form-container input::placeholder {
@@ -99,13 +124,118 @@
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     #app-content {
       display: none;
     }
+
+    /* ✅ RESPONSIVE: mejora en pantallas chicas */
+    @media (max-width: 768px) {
+      .form-container {
+        width: 90%;
+        max-width: 400px;
+        padding: 20px;
+      }
+
+      body {
+        overflow-y: auto;
+      }
+
+      #login-section {
+        height: auto;
+      }
+    }
+
+    /* Estilo general para select tipo glass */
+    .glass-select,
+    #register-accounts-select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      font-size: 1rem;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Contenedor de tags */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* Tag individual estilo glass */
+    .tag-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      width: auto;
+      max-width: fit-content;
+      backdrop-filter: blur(8px);
+    }
+
+    .tag-item:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .tag-item span:last-child {
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+/* Contenedor del prefijo + input */
+.epam-input-wrapper {
+  display: flex;
+  align-items: center;     /* Centra verticalmente ambos elementos */
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 0 10px;
+  height: 40px;            /* Igual altura que los demás inputs */
+  backdrop-filter: blur(10px);
+}
+
+/* Prefijo fijo EPAM- */
+.fixed-prefix {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
+  margin-right: 5px;
+  user-select: none;
+}
+
+/* Input editable */
+.epam-input-wrapper input {
+  border: none;
+  background: transparent;
+  color: white;
+  outline: none;
+  width: 100%;
+  font-size: 1rem;
+  line-height: 40px;       /* ✅ Esto centra visualmente el texto dentro del input */
+  padding: 0;              /* Elimina padding extra */
+  margin-bottom: 0;
+}
+
   </style>
 </head>
 
@@ -132,33 +262,96 @@
 
       <!-- REGISTER -->
       <form id="registerForm" style="display:none;">
-   <h2>Registrarse</h2>
-        <label for="register-epam">Usuario EPAM:</label>
-        <input type="text" id="register-epam" placeholder="Usuario EPAM" required>
+        <h2>Registrarse</h2>
+
+        <label for="epam-user">Usuario EPAM:</label>
+        <div class="epam-input-wrapper">
+          <span class="fixed-prefix">EPAM-</span>
+          <input type="text" id="epam-user" placeholder="usuario">
+        </div>
 
         <label for="register-password">Contraseña:</label>
         <input type="password" id="register-password" placeholder="Crea una contraseña" required>
 
-        <label for="register-accounts">Cuentas dispobiles (separados por coma):</label>
-        <input type="text" id="register-accounts" placeholder="account1,account2">
+        <!-- ✅ Cuentas disponibles mejorado con TAGS -->
+        <!-- Cuentas disponibles -->
+        <label for="register-accounts" class="block font-semibold mb-2">Cuentas disponibles:</label>
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <select id="register-accounts-select"
+              class="border border-gray-600 bg-gray-800 text-white rounded-lg p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Seleccionar cuenta</option>
+              <option value="PS4">PS4</option>
+              <option value="PS5">PS5</option>
+              <option value="Switch">Switch</option>
+              <option value="XSX">XSX</option>
+              <option value="PC">PC</option>
+            </select>
+          </div>
+          <!-- Contenedor de chips -->
+          <div id="selected-accounts" class="flex flex-wrap gap-2 mt-2"></div>
+        </div>
 
+        <!-- ✅ Dispositivo Principal -->
         <label for="register-device1">Dispositivo Principal:</label>
-        <input type="text" id="register-device1" placeholder="Nombre dispositivo">
+        <select id="register-device1" class="glass-select">
+          <option value="">Selecciona una opción</option>
+          <option>PS4</option>
+          <option>PS4 Dev</option>
+          <option>PS5</option>
+          <option>PS5 Dev</option>
+          <option>Switch</option>
+          <option>XSX</option>
+          <option>PC</option>
+        </select>
 
+        <!-- ✅ Dispositivo Secundario -->
         <label for="register-device2">Dispositivo Secundario:</label>
-        <input type="text" id="register-device2" placeholder="Nombre dispositivo">
+        <select id="register-device2" class="glass-select">
+          <option value="">(Opcional)</option>
+          <option>PS4</option>
+          <option>PS4 Dev</option>
+          <option>PS5</option>
+          <option>PS5 Dev</option>
+          <option>Switch</option>
+          <option>XSX</option>
+          <option>PC</option>
+        </select>
 
+        <!-- ✅ Pod -->
         <label for="register-pod">Pod:</label>
-        <input type="text" id="register-pod" placeholder="Pod">
+        <select id="register-pod" class="glass-select">
+          <option value="">Selecciona Pod</option>
+          <option>Tango</option>
+          <option>Whiskey</option>
+          <option>Zulu</option>
+        </select>
 
+        <!-- ✅ Región -->
         <label for="register-region">Región:</label>
-        <input type="text" id="register-region" placeholder="Región">
+        <select id="register-region" class="glass-select">
+          <option>Bogota</option>
+        </select>
 
+        <!-- ✅ Estación -->
         <label for="register-station">Estación:</label>
-        <input type="text" id="register-station" placeholder="Estación">
+        <select id="register-station" class="glass-select">
+          <option value="">Selecciona Estación</option>
+          <script>
+            for (let i = 1; i <= 50; i++) {
+              const opt = document.createElement("option");
+              const val = `BO${String(i).padStart(2, '0')}`;
+              opt.value = val;
+              opt.textContent = val;
+              document.currentScript.parentElement.appendChild(opt);
+            }
+          </script>
+        </select>
 
         <button type="submit">Registrarse</button>
       </form>
+
+
       <!-- Toggle -->
       <p id="toggleForm" class="toggle">¿No tienes cuenta? Regístrate</p>
     </div>
@@ -183,9 +376,15 @@
       </h1>
 
       <div class="options">
-        <div class="option" data-modal="modal-builds"><h2>Builds</h2></div>
-        <div class="option" data-modal="modal-install"><h2>How to install</h2></div>
-        <div class="option" data-modal="modal-commands"><h2>Command creator</h2></div>
+        <div class="option" data-modal="modal-builds">
+          <h2>Builds</h2>
+        </div>
+        <div class="option" data-modal="modal-install">
+          <h2>How to install</h2>
+        </div>
+        <div class="option" data-modal="modal-commands">
+          <h2>Command creator</h2>
+        </div>
       </div>
     </main>
 
@@ -194,7 +393,7 @@
       Ahora quien mejor que yo? no hay ni uno. Arcangel
     </footer>
   </div>
-<div class="modal" id="modal-builds">
+  <div class="modal" id="modal-builds">
     <div class="modal-content">
       <span class="close-btn">&times;</span>
       <h2>Builds</h2>
@@ -264,11 +463,11 @@
     }
 
     // Login
-   document.getElementById("loginForm").addEventListener("submit", async function (event) {
+    document.getElementById("loginForm").addEventListener("submit", async function (event) {
       event.preventDefault(); // Evita que se recargue la página
 
       // Capturamos los valores del formulario
-      const Epam_user = document.getElementById("login-username").value;
+      const Epam_user = "EPAM-" + document.getElementById("login-username").value;
       const Password = document.getElementById("login-password").value;
 
       try {
@@ -291,7 +490,7 @@
           // Mostrar mensaje de éxito
           document.getElementById("message").innerText = "Inicio de sesión exitoso.";
           document.getElementById("message").style.color = "green";
-                    setTimeout(() => {
+          setTimeout(() => {
             loginSection.style.display = "none";
             appContent.style.display = "block";
           }, 800);
@@ -309,66 +508,109 @@
       }
     });
 
-   // Registro
-registerForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
+    // Registro
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  // Captura los valores del formulario
-  const Epam_user = document.getElementById("register-epam").value;
-  const Password = document.getElementById("register-password").value;
-  const Accounts = document.getElementById("register-accounts").value
-    .split(",")
-    .map(a => a.trim())
-    .filter(a => a);
+      // Captura los valores del formulario
+      const Epam_user = "EPAM-" + document.getElementById("register-epam").value;
+      const Password = document.getElementById("register-password").value;
+      const Accounts = selectedAccounts;
 
-  // Solo nombre de dispositivos, prioridad fija
-  const Devices = [];
-  const device1 = document.getElementById("register-device1").value;
-  if (device1) Devices.push({ name: device1, priority: 1 });
-  const device2 = document.getElementById("register-device2").value;
-  if (device2) Devices.push({ name: device2, priority: 2 });
 
-  //const isAdmin = document.getElementById("register-isadmin").checked;
-  const Pod = document.getElementById("register-pod").value;
-  const Region = document.getElementById("register-region").value;
-  const Station = document.getElementById("register-station").value;
+      // Solo nombre de dispositivos, prioridad fija
+      const Devices = [];
+      const device1 = document.getElementById("register-device1").value;
+      if (device1) Devices.push({ name: device1, priority: 1 });
+      const device2 = document.getElementById("register-device2").value;
+      if (device2) Devices.push({ name: device2, priority: 2 });
 
-  // Valores por defecto para los campos ocultos
-  const userData = {
-    Epam_user,
-    Password,
-    Accounts,
-    Devices,
-    availability: "", // No editable por el usuario
-    Mmr: 0,           // No editable por el usuario
-    isAdmin:false,
-    Pod,
-    Region,
-    Station,
-    IsPlaying: false  // No editable por el usuario
-  };
+      //const isAdmin = document.getElementById("register-isadmin").checked;
+      const Pod = document.getElementById("register-pod").value;
+      const Region = document.getElementById("register-region").value;
+      const Station = document.getElementById("register-station").value;
 
-  try {
-    const res = await fetch(`${SERVER_URL}/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
+      // Valores por defecto para los campos ocultos
+      const userData = {
+        Epam_user,
+        Password,
+        Accounts,
+        Devices,
+        availability: "", // No editable por el usuario
+        Mmr: 0,           // No editable por el usuario
+        isAdmin: false,
+        Pod,
+        Region,
+        Station,
+        IsPlaying: false  // No editable por el usuario
+      };
+
+      try {
+        const res = await fetch(`${SERVER_URL}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          message.style.color = "lime";
+          message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
+          registerForm.reset();
+        } else {
+          message.style.color = "red";
+          message.innerText = data.message || "Error al registrarse.";
+        }
+      } catch {
+        message.style.color = "red";
+        message.innerText = "Error de conexión con el servidor.";
+      }
+    });
+    // --- Manejo de selección múltiple (Cuentas Disponibles) ---
+    const accountSelect = document.getElementById("register-accounts-select");
+    const accountContainer = document.getElementById("selected-accounts");
+    let selectedAccounts = [];
+
+    accountSelect.addEventListener("change", () => {
+      const value = accountSelect.value;
+      if (value && !selectedAccounts.includes(value)) {
+        selectedAccounts.push(value);
+        renderAccountChips();
+      }
+      accountSelect.value = ""; // reset
     });
 
-    const data = await res.json();
-    if (res.ok) {
-      message.style.color = "lime";
-      message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
-      registerForm.reset();
-    } else {
-      message.style.color = "red";
-      message.innerText = data.message || "Error al registrarse.";
+    function renderAccountChips() {
+      accountContainer.innerHTML = "";
+      selectedAccounts.forEach(account => {
+        const chip = document.createElement("div");
+        chip.className = "tag-item"; // ✅ Usamos tu clase ya definida en CSS
+
+        // ✅ Nombre de la cuenta
+        const label = document.createElement("span");
+        label.textContent = account;
+
+        // ✅ Botón (X) pequeño para eliminar
+        const removeBtn = document.createElement("span");
+        removeBtn.textContent = "✕";
+        removeBtn.setAttribute("data-account", account);
+        removeBtn.style.cursor = "pointer";
+
+        // ✅ Evento para eliminar chip
+        removeBtn.addEventListener("click", () => {
+          selectedAccounts = selectedAccounts.filter(acc => acc !== account);
+          renderAccountChips();
+        });
+
+        // ✅ Agregar elementos al chip
+        chip.appendChild(label);
+        chip.appendChild(removeBtn);
+        accountContainer.appendChild(chip);
+      });
     }
-  } catch {
-    message.style.color = "red";
-    message.innerText = "Error de conexión con el servidor.";
-  }
-});
+
+
   </script>
 </body>
+
 </html>
