@@ -54,6 +54,21 @@ const sessionSchema = new mongoose.Schema({
   premadeTeams: String,
   teamSize: String,
   testPlan: String,
+  totalPlayers: Number,
+  captureRequirements: { type: Object, default: {} },
+  assignedTesters: [
+    {
+      testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      Epam_user: String,
+      device: String,
+      region: String,
+      mmr: Number,
+      pod: String,
+      station: String,
+      dispositivos: [String] // o [{ name: String, priority: Number }]
+      // Puedes agregar más campos si lo necesitas
+    }
+  ],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   pod: String,
   createdAt: { type: Date, default: Date.now }
@@ -245,7 +260,110 @@ app.delete("/api/sessions/:id", authMiddleware, async (req, res) => {
   await Session.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
+//--------------------------------
+//Asignación automatica de tester
+//--------------------------------
+app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
+  const session = await Session.findById(req.params.id);
+  if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
 
+  // Matriz de compatibilidad actualizada
+  const CAPTURA_DISPOSITIVO = {
+    CSVProfile: ["PS4", "PS4 Dev", "PS5", "PS5 Dev", "PC", "Android", "iOS", "XSX", "XB1", "Switch", "iPad"],
+    LLM: ["PS4 Dev", "PS5 Dev", "PC", "Android", "XSX"],
+    LWM: ["PS4 Dev", "PS5 Dev", "XSX"],
+    Trace: ["PC", "Android", "iOS"],
+    Razor: ["PS4 Dev", "PS5 Dev", "XSX"],
+    DX11: ["PC"],
+    DX12: ["PC"],
+    Performance: ["PC"]
+  };
+
+  const captureReq = session.captureRequirements || {};
+  const assignedTesters = [];
+
+  // Obtén todos los dispositivos únicos de la tabla
+  const dispositivos = new Set();
+  for (const distros of Object.values(captureReq)) {
+    Object.keys(distros).forEach(d => dispositivos.add(d));
+  }
+
+  for (const device of dispositivos) {
+    // 1. Junta capturas exclusivas y CSVProfile requeridas para este dispositivo
+    let capturasExclusivas = [];
+    let csvCount = 0;
+    for (const [tipoCaptura, distros] of Object.entries(captureReq)) {
+      const cantidad = distros[device] || 0;
+      if (!CAPTURA_DISPOSITIVO[tipoCaptura] || !CAPTURA_DISPOSITIVO[tipoCaptura].includes(device)) continue;
+      if (tipoCaptura === "CSVProfile") {
+        csvCount = cantidad;
+      } else {
+        for (let i = 0; i < cantidad; i++) capturasExclusivas.push(tipoCaptura);
+      }
+    }
+    // Para Dev, si hay LLM y LWM, agrúpalos juntos
+    let agruparLLMLWM = false;
+    if ((device.includes("Dev")) && capturasExclusivas.includes("LLM") && capturasExclusivas.includes("LWM")) {
+      agruparLLMLWM = true;
+    }
+
+    const totalTesters = Math.max(
+      agruparLLMLWM ? Math.max(csvCount, 2) : Math.max(capturasExclusivas.length, csvCount),
+      1
+    );
+
+    // 2. Busca testers disponibles para este dispositivo (prioridad 1 primero, luego secundarios)
+    let testers = await User.find({
+      Region: "Bogota",
+      "Devices.name": device,
+      userType: "tester"
+    }).sort({ "Devices.priority": 1, Mmr: 1 }).limit(totalTesters);
+
+    // 3. Asigna capturas a testers
+    let llmAsignado = false, lwmAsignado = false;
+    for (let i = 0; i < testers.length; i++) {
+      const tester = testers[i];
+      const capturas = [];
+
+      // Siempre asigna CSVProfile si el dispositivo lo permite
+      if (csvCount > 0 && CAPTURA_DISPOSITIVO["CSVProfile"].includes(device)) {
+        capturas.push("CSVProfile");
+        csvCount--;
+      }
+
+      // Asigna capturas exclusivas
+      if (agruparLLMLWM && !llmAsignado) {
+        capturas.push("LLM", "LWM");
+        capturasExclusivas = capturasExclusivas.filter(c => c !== "LLM" && c !== "LWM");
+        llmAsignado = lwmAsignado = true;
+      } else if (capturasExclusivas.length > 0) {
+        capturas.push(capturasExclusivas[0]);
+        capturasExclusivas.shift();
+      }
+
+      // Solo agrega el tester si tiene al menos una captura
+      if (capturas.length > 0) {
+        assignedTesters.push({
+          testerId: tester._id,
+          Epam_user: tester.Epam_user,
+          device: device,
+          region: tester.Region,
+          mmr: tester.Mmr,
+          pod: tester.Pod,
+         
+ station: tester.Station,
+          dispositivos: [device],
+          capturas: capturas
+        });
+      }
+    }
+  }
+
+  session.assignedTesters = assignedTesters;
+  await session.save();
+
+  res.json({ assignedTesters });
+});
 // --------------------------
 // INICIAR SERVIDOR
 // --------------------------

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Asignar Testers a Sesión</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f9;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 12 px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .session-info {
+            margin-bottom: 30px;
+        }
+
+        .assigned-list {
+            margin-top: 20px;
+        }
+
+        .assigned-list table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .assigned-list th,
+        .assigned-list td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .assigned-list th {
+            background: #f0f0f0;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        #message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Asignar Testers a Sesión</h2>
+        <div class="session-info" id="session-info"></div>
+        <button class="btn" id="assignBtn">Asignar testers automáticamente</button>
+        <div class="assigned-list" id="assigned-list"></div>
+        <div id="message"></div>
+    </div>
+
+    <!-- Mueve el script aquí, al final del body -->
+    <script>
+        const SERVER_URL = "http://10.13.46.195:3000";
+        const token = localStorage.getItem("token");
+        let sessionCaptureRequirements = {};
+
+        // Obtener sessionId de la URL
+        function getSessionId() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get("sessionId");
+        }
+
+        // Mostrar info de la sesión
+        async function fetchSessionInfo() {
+            const sessionId = getSessionId();
+            if (!sessionId) return;
+            const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
+                headers: { "Authorization": token }
+            });
+            const session = await res.json();
+            if (!res.ok) {
+                document.getElementById("session-info").innerText = session.message || "No se pudo cargar la sesión";
+                return;
+            }
+            let html = `<b>Comms Lead:</b> ${session.commsLead}<br>`;
+            html += `<b>Game Modes:</b> ${session.gameModes}<br>`;
+            html += `<b>Cantidad de jugadores:</b> ${session.totalPlayers}<br>`;
+            html += `<b>Start Time:</b> ${session.startTime}<br>`;
+            document.getElementById("session-info").innerHTML = html;
+
+            // Guarda los requerimientos de captura para usarlos en la tabla
+            sessionCaptureRequirements = session.captureRequirements || {};
+
+            // Si ya hay asignación, muéstrala
+            if (session.assignedTesters && session.assignedTesters.length > 0) {
+                renderAssignedList(session.assignedTesters);
+            }
+        }
+
+        // Asignar testers automáticamente
+        document.getElementById("assignBtn").addEventListener("click", async function () {
+            const sessionId = getSessionId();
+            if (!sessionId) return;
+            document.getElementById("message").innerText = "Asignando testers...";
+            const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/assign`, {
+                method: "POST",
+                headers: { "Authorization": token }
+            });
+            const data = await res.json();
+            if (res.ok) {
+                document.getElementById("message").style.color = "green";
+                document.getElementById("message").innerText = "Testers asignados correctamente.";
+                renderAssignedList(data.assignedTesters);
+            } else {
+                document.getElementById("message").style.color = "red";
+                document.getElementById("message").innerText = data.message || "Error en la asignación";
+            }
+        });
+
+        // Determina qué debe capturar cada tester según su dispositivo y los requerimientos de la sesión
+        function getCapturasParaTester(tester, captureRequirements) {
+            const capturas = [];
+            for (const [tipo, distros] of Object.entries(captureRequirements)) {
+                if (distros && distros[tester.device] && distros[tester.device] > 0) {
+                    capturas.push(tipo);
+                }
+            }
+            return capturas.join(", ");
+        }
+
+        // Renderizar la lista de testers asignados
+        function renderAssignedList(list) {
+            if (!list || list.length === 0) {
+                document.getElementById("assigned-list").innerHTML = "<i>No hay testers asignados aún.</i>";
+                return;
+            }
+            let html = `<h3>Testers asignados:</h3>
+  <table>
+    <tr>
+      <th>Tester</th>
+      <th>Device</th>
+      <th>Región</th>
+      <th>MMR</th>
+      <th>Pod</th>
+      <th>Estación</th>
+      <th>Captura asignada</th>
+    </tr>`;
+            list.forEach(t => {
+                html += `<tr>
+      <td>${t.Epam_user || t.testerId}</td>
+      <td>${t.device}</td>
+      <td>${t.region}</td>
+      <td>${t.mmr}</td>
+      <td>${t.pod}</td>
+      <td>${t.station}</td>
+      <td>${Array.isArray(t.capturas) ? t.capturas.join(", ") : ""}</td>
+    </tr>`;
+            });
+            html += "</table>";
+            document.getElementById("assigned-list").innerHTML = html;
+        }
+
+        // Inicializar
+        fetchSessionInfo();
+    </script>
+</body>
+
+</html>
