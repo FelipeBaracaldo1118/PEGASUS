@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Command Generator - Embeddable Web Version</title>
+    <link rel="stylesheet" href="epic-cmd-gen.css">
+</head>
+<body>
+    <!-- Standalone Version -->
+    <div id="epicCmdGenRoot"></div>
+
+    <!-- Include all scripts -->
+    <script src="epic-cmd-gen-localization.js"></script>
+    <script src="epic-cmd-gen-launch-configs.js"></script>
+    <script src="epic-cmd-gen-command-generator.js"></script>
+    <script src="epic-cmd-gen-core.js"></script>
+    <script src="epic-cmd-gen.js"></script>
+    
+    <!-- Initialize standalone version -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize as standalone (non-modal)
+            EpicCmdGen.init({
+                containerId: 'epicCmdGenRoot',
+                modal: false
+            });
+        });
+    </script>
+</body>
+</html>

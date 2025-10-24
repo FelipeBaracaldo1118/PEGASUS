@@ -1,0 +1,619 @@
+/* Epic Command Generator - Scoped Styles */
+/* All styles are prefixed with .epic-cmd-gen to avoid conflicts */
+
+.epic-cmd-gen * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Container */
+.epic-cmd-gen {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    color: #ffffff;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: default;
+    padding: 20px 25px;
+    box-sizing: border-box;
+}
+
+.epic-cmd-gen.fullscreen {
+    min-height: 100vh;
+}
+
+/* Modal Overlay */
+.epic-cmd-gen-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999;
+    padding: 20px;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.epic-cmd-gen-modal-overlay .epic-cmd-gen {
+    padding: 0;
+    background: transparent;
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Main card */
+.epic-cmd-gen .main-card {
+    background-color: #2a2a2a;
+    border-radius: 12px;
+    border: 1px solid #404040;
+    padding: 20px;
+    width: 100%;
+    max-width: 1200px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* Header */
+.epic-cmd-gen .header {
+    margin-bottom: 20px;
+}
+
+.epic-cmd-gen .header-content {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    position: relative;
+}
+
+.epic-cmd-gen .title-section {
+    text-align: center;
+}
+
+.epic-cmd-gen .close-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 32px;
+    height: 32px;
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.epic-cmd-gen .title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 6px;
+}
+
+.epic-cmd-gen .subtitle {
+    font-size: 14px;
+    color: #b0b0b0;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+.epic-cmd-gen .close-btn:hover {
+    background-color: #3a3a3a;
+}
+
+.epic-cmd-gen .close-btn:active {
+    transform: scale(0.95);
+}
+
+/* Main content - Two columns */
+.epic-cmd-gen .main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    flex: 1;
+}
+
+/* Left column - Configuration */
+.epic-cmd-gen .config-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Right column - Summary and Command */
+.epic-cmd-gen .summary-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Input section */
+.epic-cmd-gen .input-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.epic-cmd-gen .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.epic-cmd-gen .input-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    user-select: none;
+}
+
+.epic-cmd-gen .input-field,
+.epic-cmd-gen .select-field {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: #3a3a3a;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.epic-cmd-gen .input-field::placeholder {
+    color: #a0a0a0;
+}
+
+.epic-cmd-gen .input-field:focus,
+.epic-cmd-gen .select-field:focus {
+    background-color: #4a4a4a;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.epic-cmd-gen .select-field {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+}
+
+/* Platforms section */
+.epic-cmd-gen .platforms-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.epic-cmd-gen .platforms-container {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    align-items: stretch;
+}
+
+/* Arguments section */
+.epic-cmd-gen .args-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.epic-cmd-gen .args-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    max-width: 100%;
+    align-items: stretch;
+}
+
+.epic-cmd-gen .filter-btn {
+    padding: 5px 10px;
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
+    border-radius: 16px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+    user-select: none;
+}
+
+.epic-cmd-gen .filter-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(180deg, #00d9ff, #008cff, #5416ff);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: 20px;
+    z-index: -1;
+}
+
+.epic-cmd-gen .filter-btn.active {
+    background: linear-gradient(180deg, #00d9ff, #008cff, #5416ff);
+    border: 1px solid #5f49af;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 110, 255, 0.3), 0 0 20px rgba(207, 155, 255, 0.15);
+    cursor: pointer;
+}
+
+.epic-cmd-gen .filter-btn.active::before {
+    opacity: 1;
+}
+
+.epic-cmd-gen .filter-btn:hover:not(.active) {
+    background-color: #4a4a4a;
+    border-color: #666666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+}
+
+/* Notes */
+.epic-cmd-gen .note {
+    font-size: 12px;
+    color: #a0a0a0;
+    font-style: italic;
+    margin-top: 4px;
+    user-select: none;
+}
+
+/* Region header with toggle */
+.epic-cmd-gen .region-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+/* Toggle switch for All Regions */
+.epic-cmd-gen .toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.epic-cmd-gen .toggle-switch input[type="checkbox"] {
+    display: none;
+}
+
+.epic-cmd-gen .toggle-slider {
+    width: 36px;
+    height: 20px;
+    background-color: #3a3a3a;
+    border-radius: 10px;
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.epic-cmd-gen .toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+}
+
+.epic-cmd-gen .toggle-switch input[type="checkbox"]:checked + .toggle-slider {
+    background: linear-gradient(135deg, #00d9ff, #5416ff);
+}
+
+.epic-cmd-gen .toggle-switch input[type="checkbox"]:checked + .toggle-slider::before {
+    transform: translateX(16px);
+}
+
+.epic-cmd-gen .toggle-label {
+    font-size: 12px;
+    color: #ffffff;
+    font-weight: 500;
+    user-select: none;
+}
+
+/* Hidden region options */
+.epic-cmd-gen select option[hidden] {
+    display: none !important;
+}
+
+/* Disabled argument button */
+.epic-cmd-gen .filter-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.epic-cmd-gen .filter-btn.disabled:hover {
+    background-color: #3a3a3a;
+    border-color: #555555;
+}
+
+/* Summary section */
+.epic-cmd-gen .summary-section {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.epic-cmd-gen .summary-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 12px;
+}
+
+.epic-cmd-gen .summary-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.epic-cmd-gen .summary-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    gap: 8px;
+}
+
+.epic-cmd-gen .summary-label {
+    background: linear-gradient(135deg, #b87bff, #9185ff, #85ceff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 500;
+}
+
+.epic-cmd-gen .summary-value {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* Command section */
+.epic-cmd-gen .command-section {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 16px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.epic-cmd-gen .command-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.epic-cmd-gen .command-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+}
+
+.epic-cmd-gen .command-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.epic-cmd-gen .command-textarea {
+    width: 100%;
+    flex: 1;
+    min-height: 120px;
+    padding: 12px;
+    background-color: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    resize: none;
+    outline: none;
+}
+
+.epic-cmd-gen .command-textarea:focus {
+    border-color: #422e70;
+}
+
+/* Action buttons container */
+.epic-cmd-gen .action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Launch button */
+.epic-cmd-gen .launch-btn {
+    background: linear-gradient(135deg, #00d9ff, #5416ff);
+    border: 1px solid #5416ff;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    height: 40px;
+    gap: 6px;
+    box-shadow: 0 0 10px rgba(0, 110, 255, 0.3);
+}
+
+.epic-cmd-gen .launch-btn:hover {
+    background: linear-gradient(135deg, #00c3e6, #4a12e6);
+    box-shadow: 0 0 15px rgba(0, 110, 255, 0.5);
+}
+
+.epic-cmd-gen .launch-btn:active {
+    transform: scale(0.95);
+}
+
+.epic-cmd-gen .launch-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.epic-cmd-gen .launch-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.epic-cmd-gen .launch-text {
+    user-select: none;
+}
+
+/* Copy button */
+.epic-cmd-gen .copy-btn {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    color: #2d2d2d;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    width: 40px;
+    height: 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+.epic-cmd-gen .copy-btn:hover {
+    background-color: #f5f5f5;
+    border-color: #d0d0d0;
+}
+
+.epic-cmd-gen .copy-btn:active {
+    transform: scale(0.95);
+}
+
+.epic-cmd-gen .copy-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.epic-cmd-gen .copy-text {
+    display: none;
+}
+
+/* Animation for copy feedback */
+.epic-cmd-gen .copy-btn.copied {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+    width: auto;
+    padding: 8px 12px;
+}
+
+.epic-cmd-gen .copy-btn.copied .copy-icon {
+    display: none;
+}
+
+.epic-cmd-gen .copy-btn.copied .copy-text {
+    display: inline;
+    user-select: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .epic-cmd-gen {
+        padding: 12px;
+    }
+    
+    .epic-cmd-gen .main-card {
+        padding: 16px;
+    }
+    
+    .epic-cmd-gen .main-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .epic-cmd-gen .title {
+        font-size: 24px;
+    }
+    
+    .epic-cmd-gen .platforms-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .epic-cmd-gen .args-container {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .epic-cmd-gen .command-textarea {
+        min-height: 100px;
+    }
+}
+
+@media (max-width: 480px) {
+    .epic-cmd-gen .main-card {
+        padding: 12px;
+    }
+    
+    .epic-cmd-gen .title {
+        font-size: 20px;
+    }
+    
+    .epic-cmd-gen .subtitle {
+        font-size: 12px;
+    }
+    
+    .epic-cmd-gen .filter-btn {
+        padding: 4px 8px;
+        font-size: 11px;
+    }
+}
+

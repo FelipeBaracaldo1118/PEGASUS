@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Command Generator - Modal Example</title>
+    <link rel="stylesheet" href="epic-cmd-gen.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .demo-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 500px;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .button-group button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button-group button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .button-group button:active {
+            transform: translateY(0);
+        }
+
+        .button-group button.secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .button-group button.secondary:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .code-example {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .code-example h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .code-example pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-card">
+        <h1>🚀 Epic Command Generator</h1>
+        <p>This is a demonstration of the modal implementation. Click the button below to open the command generator as a modal dialog.</p>
+        
+        <div class="button-group">
+            <button onclick="openCommandGenerator()">Open Modal (English)</button>
+            <button class="secondary" onclick="openCommandGeneratorSpanish()">Abrir Modal (Español)</button>
+        </div>
+
+        <div class="code-example">
+            <h3>Usage Example</h3>
+            <pre><code>// Open as modal
+const modal = EpicCmdGen.openModal({
+    language: 'en',
+    onClose: () => {
+        console.log('Modal closed');
+    }
+});
+
+// Close programmatically
+modal.close();</code></pre>
+        </div>
+    </div>
+
+    <!-- Include all scripts -->
+    <script src="epic-cmd-gen-localization.js"></script>
+    <script src="epic-cmd-gen-launch-configs.js"></script>
+    <script src="epic-cmd-gen-command-generator.js"></script>
+    <script src="epic-cmd-gen-core.js"></script>
+    <script src="epic-cmd-gen.js"></script>
+    
+    <script>
+        function openCommandGenerator() {
+            const modal = EpicCmdGen.openModal({
+                language: 'en',
+                onClose: () => {
+                    console.log('Modal closed');
+                }
+            });
+        }
+
+        function openCommandGeneratorSpanish() {
+            const modal = EpicCmdGen.openModal({
+                language: 'es',
+                onClose: () => {
+                    console.log('Modal cerrado');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+

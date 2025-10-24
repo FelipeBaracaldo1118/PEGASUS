@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Editar Sesión de Juego</title>
+  <link rel="stylesheet" href="../css/editSessions.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Editar Sesión de Juego</h2>
+    <form id="editSessionForm">
+      <!-- Los mismos campos que el formulario de creación -->
+      <label for="commsLead">Comms Lead:</label>
+      <input type="text" id="commsLead" required>
+
+      <label for="commsAssist">Comms Assist:</label>
+      <input type="text" id="commsAssist" required>
+
+      <label for="backendName">Backend Name:</label>
+      <input type="text" id="backendName" required>
+
+      <label for="buildString">Build String:</label>
+      <input type="text" id="buildString" required>
+
+      <label for="googleDrive">Google Drive:</label>
+      <input type="url" id="googleDrive" required>
+
+            <label for="gameModes">Game Modes / Playlists:</label>
+      <textarea id="gameModes" required></textarea>
+
+      <label for="idOverride">ID Override:</label>
+      <input type="text" id="idOverride" required>
+
+      <label for="startTime">Start Time:</label>
+      <input type="text" id="startTime" required>
+
+      <label for="premadeTeams">Premade Teams:</label>
+      <input type="text" id="premadeTeams" required>
+
+      <label for="teamSize">Team Size:</label>
+      <input type="text" id="teamSize" required>
+
+      <label for="testPlan">Test Plan / BTR:</label>
+      <input type="url" id="testPlan" required>
+
+      <label for="totalPlayers">Cantidad de jugadores:</label>
+      <input type="number" id="totalPlayers" min="1" required>
+
+      <!-- Tabla de requerimientos de captura -->
+      <h3>Requerimientos de Captura</h3>
+      <table>
+        <tr>
+          <th>Tipo de Captura</th>
+          <th>PS4</th>
+          <th>PS4 Dev</th>
+          <th>PS5</th>
+          <th>PS5 Dev</th>
+          <th>PC</th>
+          <th>Android</th>
+          <th>iOS</th>
+          <th>XSX</th>
+          <th>Switch</th>
+        </tr>
+        <tr>
+          <td>CSVProfile</td>
+          <td><input type="number" min="0" id="csv_ps4"></td>
+          <td><input type="number" min="0" id="csv_ps4dev"></td>
+          <td><input type="number" min="0" id="csv_ps5"></td>
+          <td><input type="number" min="0" id="csv_ps5dev"></td>
+          <td><input type="number" min="0" id="csv_pc"></td>
+          <td><input type="number" min="0" id="csv_android"></td>
+          <td><input type="number" min="0" id="csv_ios"></td>
+          <td><input type="number" min="0" id="csv_xsx"></td>
+          <td><input type="number" min="0" id="csv_switch"></td>
+        </tr>
+        <tr>
+          <td>LLM</td>
+          <td></td>
+          <td><input type="number" min="0" id="llm_ps4dev"></td>
+          <td></td>
+          <td><input type="number" min="0" id="llm_ps5dev"></td>
+          <td><input type="number" min="0" id="llm_pc"></td>
+          <td><input type="number" min="0" id="llm_android"></td>
+          <td></td>
+          <td><input type="number" min="0" id="llm_xsx"></td>
+          <td><input type="number" min="0" id="llm_switch"></td>
+        </tr>
+        <tr>
+          <td>LWM</td>
+          <td></td>
+          <td><input type="number" min="0" id="lwm_ps4dev"></td>
+          <td></td>
+          <td><input type="number" min="0" id="lwm_ps5dev"></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td><input type="number" min="0" id="lwm_xsx"></td>
+          <td><input type="number" min="0" id="lwm_switch"></td>
+        </tr>
+        <tr>
+          <td>Trace</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td><input type="number" min="0" id="trace_pc"></td>
+          <td><input type="number" min="0" id="trace_android"></td>
+          <td><input type="number" min="0" id="trace_ios"></td>
+          <td></td>
+          <td><input type="number" min="0" id="trace_switch"></td>
+        </tr>
+      </table>
+
+      <div class="button-group">
+        <button type="submit" class="btn save-btn">Guardar Cambios</button>
+        <button type
+="button" class="btn cancel-btn" onclick="window.location.href='profile.html'">Cancelar</button>
+      </div>
+    </form>
+    <div id="message"></div>
+  </div>
+
+  <script src="../js/editSessions.js"></script>
+</body>
+</html>

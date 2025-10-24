@@ -1,0 +1,491 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f9;
+}
+
+.profile-container {
+    max-width: 800px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 30px;
+}
+
+.profile-container h2 {
+    text-align: center;
+}
+
+.profile-data {
+    margin: 20px 0;
+}
+
+.profile-data label {
+    font-weight: bold;
+}
+
+.logout-btn {
+    display: block;
+    margin: 20px auto 0 auto;
+    padding: 10px 20px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.logout-btn:hover {
+    background: #0056b3;
+}
+
+#message {
+    color: red;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.sessions-container {
+    margin-top: 20px;
+    border-top: 1px solid #ddd;
+    padding-top: 20px;
+}
+
+.session-card {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.loading {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
+.error {
+    color: red;
+    text-align: center;
+    padding: 10px;
+}
+
+.tester-list {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.edit-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.edit-btn:hover {
+    background: #218838;
+}
+
+.session-details p strong {
+    color: #007bff;
+    min-width: 150px;
+    display: inline-block;
+}
+
+.session-details p:nth-child(2) {
+    /* El ID Override */
+    background: #d4d6d8;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.actions-container {
+    margin: 20px 0;
+    text-align: center;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin: 0 10px;
+}
+
+.create-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+}
+
+.create-btn:hover {
+    background: #218838;
+}
+
+.session-card {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.session-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.edit-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 5px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.edit-btn:hover {
+    background: #0056b3;
+}
+
+.session-details {
+    margin-top: 10px;
+}
+
+.session-details p {
+    margin: 5px 0;
+    padding: 5px 0;
+}
+
+.session-details strong {
+    color: #495057;
+    min-width: 150px;
+    display: inline-block;
+}
+
+.id-override {
+    background: #e9ecef;
+    padding: 8px !important;
+    border-radius: 4px;
+    border-left: 4px solid #007bff;
+}
+
+.loading {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+}
+
+.error {
+    color: #dc3545;
+    text-align: center;
+    padding: 10px;
+    background: #f8d7da;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* Estilos adicionales para mejorar la visualización */
+.session-details p:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.session-details p:hover {
+    background: #e9ecef;
+}
+
+/* Estilo para el contenedor de sesiones */
+#sessions-list {
+    margin-top: 20px;
+}
+
+#sessions-list h3 {
+    color: #343a40;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .session-header {
+        flex-direction: column;
+
+        gap: 10px;
+    }
+
+    .session-details strong {
+        min-width: 120px;
+    }
+
+    .action-btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Contenedor general de la sesión */
+.session-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fafbfc;
+    padding: 20px;
+    margin-bottom: 24px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Encabezado de la sesión */
+.session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.session-title {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #2366d1;
+}
+
+.session-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    padding: 7px 18px;
+    border-radius: 4px;
+    border: 1.5px solid #2366d1;
+    background: #fff;
+    color: #2366d1;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.action-btn.edit-btn {
+    background: #2366d1;
+    color: #fff;
+    border: none;
+}
+
+.action-btn.view-btn {
+    background: #fff;
+    color: #2366d1;
+}
+
+.action-btn:hover {
+    background: #eaf1fb;
+}
+
+/* Detalles de la sesión */
+.session-details p {
+    margin: 2px 0;
+    font-size: 1em;
+}
+
+.session-details strong {
+    color: #2366d1;
+}
+
+/* Tabla de testers asignados */
+.assigned-testers-list {
+    margin-top: 18px;
+}
+
+.assigned-testers-list h4 {
+    margin-bottom: 10px;
+    color: #222;
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.testers-table {
+    overflow-x: auto;
+}
+
+.testers-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.testers-table th,
+.testers-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e3e3e3;
+    text-align: left;
+    font-size: 0.98em;
+}
+
+.testers-table th {
+    background: #f3f6fa;
+    color: #2366d1;
+    font-weight: 600;
+}
+
+.testers-table tr:last-child td {
+    border-bottom: none;
+}
+
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 4px solid #e3e3e3;
+    border-top: 4px solid #2366d1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Ocultar contenedor */
+.hidden {
+    display: none;
+}
+.close-table-btn {
+    background: #fff;
+    color: #2366d1;
+    border: 1.5px solid #2366d1;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 12px;
+    float: right;
+    transition: background 0.2s, color 0.2s;
+}
+.close-table-btn:hover {
+    background: #eaf1fb;
+}
+.assigned-session-card {
+    background: #f8f9fa;
+    border: 1px solid #fffdfd;
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+    max-width: 600px;
+}
+
+.assigned-session-title {
+    font-size: 1.15em;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.assigned-session-details p {
+    margin: 6px 0;
+    font-size: 1em;
+}
+
+.assigned-session-row {
+    background: #e9e8e8;
+    border-radius: 4px;
+    padding: 6px 12px;
+    margin: 8px 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.assigned-session-label {
+    color: #2366d1;
+    font-weight: 600;
+    margin-right: 8px;
+}
+.command-section {
+    margin-top: 12px;
+}
+.command-box {
+    background: #222;
+    color: #fff;
+   
+ padding: 8px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.98em;
+    margin-bottom: 6px;
+    overflow-x: auto;
+}
+.copy-btn {
+    background: #2366d1;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 14px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background 0.2s;
+}
+.copy-btn:hover {
+    background: #174a96;
+}
+.toggle-br-btn {
+    background: #fff;
+    color: #d11a1a;
+    border: 2px solid #d11a1a;
+    border-radius: 4px;
+    padding: 2px 16px;
+    font-weight: bold;
+    font-size: 1.2em;
+    margin-left: 10px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.toggle-br-btn.active {
+    background: #d11a1a;
+    color: #fff;
+}
