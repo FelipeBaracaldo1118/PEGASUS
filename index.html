@@ -8,7 +8,6 @@
 
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/styles.css">
-  <link rel="stylesheet" href="./css/profile.css">
 
   <style>
     body {
@@ -16,6 +15,7 @@
       margin: 0;
       padding: 0;
       height: 100vh;
+      overflow: hidden;
     }
 
     #login-section {
@@ -370,29 +370,13 @@
 
   <!-- CONTENIDO PRINCIPAL -->
   <div id="app-content">
-    <header class="top-header">
+    <header>
       <div class="brand">
         <img src="./logos/Logo1.png" alt="Logo 1" class="logo">
         <span class="separator">X</span>
         <img src="./logos/Logo2.png" alt="Logo 2" class="logo">
       </div>
-      <button id="hamburger-btn" class="hamburger">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
     </header>
-
-    <nav id="side-menu">
-      <ul>
-        <li><a href="#" data-modal="modal-builds">📁 Builds</a></li>
-        <li><a href="#" data-modal="modal-install">⚙ How to Install</a></li>
-        <li><a href="#" data-modal="modal-commands">🧾 Command Creator</a></li>
-      </ul>
-    </nav>
-
-    <!-- ✅ Glass Overlay -->
-    <div id="overlay"></div>
 
     <main>
       <h1>
@@ -400,14 +384,16 @@
         <span class="plain-text">Website for EPG-FNPT</span>
       </h1>
 
-      <div class="profile-container">
-        <h2>Perfil de Usuario</h2>
-        <div id="profile-data" class="profile-data"></div>
-        <div id="tester-sessions"></div>
-        <div id="profile-actions"></div>
-        <div id="sessions-container" class="sessions-container"></div>
-        <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
-        <div id="message"></div>
+      <div class="options">
+        <div class="option" data-modal="modal-builds">
+          <h2>Builds</h2>
+        </div>
+        <div class="option" data-modal="modal-install">
+          <h2>How to install</h2>
+        </div>
+        <div class="option" data-modal="modal-commands">
+          <h2>Command creator</h2>
+        </div>
       </div>
     </main>
 
@@ -448,13 +434,194 @@
 
 
   <!-- Scripts -->
-  <script src="./js/main.js"></script>
   <script src="./js/serverurl.js"></script>
   <script src="./js/app.js"></script>
   <script src="./js/commands.js"></script>
-  <script src="./js/profile.js"></script>
-  <script src="./js/testerManagement.js"></script>
-  <script src="./CommandGenerator/epic-cmd-gen-command-generator.js"></script>
+
+  <script>
+    const SERVER_URL = window.location.hostname === "localhost"
+      ? "http://localhost:3000"
+      : "http://10.13.46.195:3000";
+
+    const loginSection = document.getElementById("login-section");
+    const appContent = document.getElementById("app-content");
+    const message = document.getElementById("message");
+    const toggleForm = document.getElementById("toggleForm");
+    const loginForm = document.getElementById("loginForm");
+    const registerForm = document.getElementById("registerForm");
+
+    // Alternar entre Login y Registro
+    toggleForm.addEventListener("click", () => {
+      const showingLogin = loginForm.style.display !== "none";
+
+      if (showingLogin) {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        toggleForm.textContent = "¿Ya tienes cuenta? Inicia sesión";
+      } else {
+        registerForm.style.display = "none";
+        loginForm.style.display = "block";
+        toggleForm.textContent = "¿No tienes cuenta? Regístrate";
+      }
+    });
+
+    // Mostrar app si hay token
+    if (localStorage.getItem("token")) {
+      loginSection.style.display = "none";
+      appContent.style.display = "block";
+    }
+
+    // Login
+    document.getElementById("loginForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const Epam_user = "EPAM-" + document.getElementById("login-username").value;
+      const Password = document.getElementById("login-password").value;
+
+      try {
+        const response = await fetch("http://10.13.46.195:3000/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ Epam_user, Password }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.token) {
+          localStorage.setItem('token', result.token);
+
+          // Consulta el perfil para saber el tipo de usuario
+          const userRes = await fetch(`${SERVER_URL}/api/user/me`, {
+            headers: { "Authorization": result.token }
+          });
+          const user = await userRes.json();
+
+          // Redirige según el tipo de usuario
+          if (user.isAdmin || user.userType === "keytester") {
+            window.location.href = "/pages/profile.html"; // O el HTML que desees
+          } else {
+            // Renderiza la vista normal
+            document.getElementById("message").innerText = "Inicio de sesión exitoso.";
+            document.getElementById("message").style.color = "green";
+            setTimeout(() => {
+              loginSection.style.display = "none";
+              appContent.style.display = "block";
+            }, 800);
+          }
+        } else {
+          document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";
+          document.getElementById("message").style.color = "red";
+        }
+      } catch (error) {
+        console.error("Error al iniciar sesión:", error);
+        document.getElementById("message").innerText = "No se pudo conectar con el servidor.";
+        document.getElementById("message").style.color = "red";
+      }
+    });
+
+    // Registro
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // Captura los valores del formulario
+      const Epam_user = "EPAM-" + document.getElementById("epam-user").value;
+      const Password = document.getElementById("register-password").value;
+      const Accounts = selectedAccounts;
+
+
+      // Solo nombre de dispositivos, prioridad fija
+      const Devices = [];
+      const device1 = document.getElementById("register-device1").value;
+      if (device1) Devices.push({ name: device1, priority: 1 });
+      const device2 = document.getElementById("register-device2").value;
+      if (device2) Devices.push({ name: device2, priority: 2 });
+
+      //const isAdmin = document.getElementById("register-isadmin").checked;
+      const Pod = document.getElementById("register-pod").value;
+      const Region = document.getElementById("register-region").value;
+      const Station = document.getElementById("register-station").value;
+
+      // Valores por defecto para los campos ocultos
+      const userData = {
+        Epam_user,
+        Password,
+        Accounts,
+        Devices,
+        availability: "", // No editable por el usuario
+        Mmr: 0,           // No editable por el usuario
+        isAdmin: false,
+        Pod,
+        Region,
+        Station,
+        IsPlaying: false  // No editable por el usuario
+      };
+
+      try {
+        const res = await fetch(`${SERVER_URL}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(userData),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          message.style.color = "lime";
+          message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
+          registerForm.reset();
+        } else {
+          message.style.color = "red";
+          message.innerText = data.message || "Error al registrarse.";
+        }
+      } catch {
+        message.style.color = "red";
+        message.innerText = "Error de conexión con el servidor.";
+      }
+    });
+    // --- Manejo de selección múltiple (Cuentas Disponibles) ---
+    const accountSelect = document.getElementById("register-accounts-select");
+    const accountContainer = document.getElementById("selected-accounts");
+    let selectedAccounts = [];
+
+    accountSelect.addEventListener("change", () => {
+      const value = accountSelect.value;
+      if (value && !selectedAccounts.includes(value)) {
+        selectedAccounts.push(value);
+        renderAccountChips();
+      }
+      accountSelect.value = ""; // reset
+    });
+
+    function renderAccountChips() {
+      accountContainer.innerHTML = "";
+      selectedAccounts.forEach(account => {
+        const chip = document.createElement("div");
+        chip.className = "tag-item"; // ✅ Usamos tu clase ya definida en CSS
+
+        // ✅ Nombre de la cuenta
+        const label = document.createElement("span");
+        label.textContent = account;
+
+        // ✅ Botón (X) pequeño para eliminar
+        const removeBtn = document.createElement("span");
+        removeBtn.textContent = "✕";
+        removeBtn.setAttribute("data-account", account);
+        removeBtn.style.cursor = "pointer";
+
+        // ✅ Evento para eliminar chip
+        removeBtn.addEventListener("click", () => {
+          selectedAccounts = selectedAccounts.filter(acc => acc !== account);
+          renderAccountChips();
+        });
+
+        // ✅ Agregar elementos al chip
+        chip.appendChild(label);
+        chip.appendChild(removeBtn);
+        accountContainer.appendChild(chip);
+      });
+    }
+
+
+  </script>
 </body>
 
 </html>
