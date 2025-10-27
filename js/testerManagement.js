@@ -94,29 +94,112 @@ async function showPodTesters() {
     }
 }
 // Función para mostrar todos los testers
-async function showAllTesters() {
-    const container = document.getElementById("testers-container");
-    container.innerHTML = '<div class="loading-spinner"></div>';
+function showAllTesters() {
+    const token = getToken();
+    if (!token) return;
 
-    try {
-        const response = await fetch(`${SERVER_URL}/api/all-testers`, {
-            headers: { "Authorization": getToken() }
+    fetch(`${SERVER_URL}/api/all-testers`, {
+        headers: { "Authorization": token }
+    })
+    .then(res => res.json())
+    .then(testers => {
+        let html = `
+            <div class="testers-list-header">
+                <h3>Todos los Testers</h3>
+                <button class="btn-close-list" onclick="document.getElementById('testers-container').innerHTML = ''">Cerrar</button>
+            </div>
+            <table class="styled-table">
+                <thead>
+                    <tr>
+                        <th>Usuario EPAM</th>
+                        <th>Pod</th>
+                        <th>Estación</th>
+                        <th>Región</th>
+                        <th>Dispositivos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        testers.forEach(t => {
+            html += `
+                <tr>
+                    <td>${t.Epam_user}</td>
+                    <td>${t.Pod || ''}</td>
+                    <td>${t.Station || ''}</td>
+                    <td>${t.Region || ''}</td>
+                    <td>${Array.isArray(t.Devices) ? t.Devices.map(d => d.name).join(", ") : ''}</td>
+                    <td>
+                        <button class="view-btn" onclick="viewTesterProfile('${t._id}')">Ver Perfil</button>
+                    </td>
+                </tr>
+            `;
         });
 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const testers = await response.json();
+        html += `</tbody></table>`;
 
-        let html = `
-  <div class="testers-section">
-    <button class="close-table-btn" onclick="closeTestersTable()">Cerrar</button>
-    <h3>Todos los Testers</h3>
-    ${renderTestersTable(testers)}
-  </div>
-`;
-        container.innerHTML = html;
-    } catch (error) {
-        container.innerHTML = `<div class="error">Error al cargar testers: ${error.message}</div>`;
-    }
+        document.getElementById("testers-container").innerHTML = html;
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById("testers-container").innerHTML = "Error al cargar testers.";
+    });
+}
+//funcion para ver el perfil de un tester
+function viewTesterProfile(testerId) {
+    const token = getToken();
+    if (!token) return;
+
+    fetch(`${SERVER_URL}/api/user/${testerId}`, {
+        headers: { "Authorization": token }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+    })
+    .then(user => {
+        // Overlay que bloquea y difumina el fondo
+        const overlay = document.createElement("div");
+        overlay.classList.add("modal-overlay");
+
+        // Caja modal
+        const modal = document.createElement("div");
+        modal.classList.add("modal-box");
+        modal.innerHTML = `
+            <h3>Perfil de ${user.Epam_user}</h3>
+            <p><strong>Accounts:</strong> ${user.Accounts?.join(", ") || "-"}</p>
+            <p><strong>Devices:</strong> ${user.Devices?.map(d => d.name).join(", ") || "-"}</p>
+            <p><strong>Pod:</strong> ${user.Pod || '-'}</p>
+            <p><strong>Región:</strong> ${user.Region || '-'}</p>
+            <p><strong>Estación:</strong> ${user.Station || '-'}</p>
+            <p><strong>Disponibilidad:</strong> ${user.availability || '-'}</p>
+            <p><strong>Rol:</strong> ${user.userType}</p>
+            <p><strong>IsPlaying:</strong> ${user.IsPlaying ? "Sí" : "No"}</p>
+            <div style="text-align:right;">
+                <button class="close-btn">Cerrar</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // Botón cerrar
+        modal.querySelector(".close-btn").addEventListener("click", () => {
+            overlay.remove();
+        });
+
+        // Cerrar si dan click fuera
+        overlay.addEventListener("click", (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Error al cargar el perfil del tester");
+    });
 }
 // Función para ver testers asignados a una sesión específica
 async function viewAssignedTesters(sessionId) {
@@ -154,17 +237,18 @@ async function viewAssignedTesters(sessionId) {
                                 <th>Capturas</th>
                                 <th>Pod</th>
                                 <th>Estación</th>
+                                ${session.isSprout ? "<th>Grupo</th>" : ""}
                             </tr>
                         </thead>
                         <tbody>
-                            
-${session.assignedTesters.map(tester => `
+                            ${session.assignedTesters.map(tester => `
                                 <tr>
                                     <td>${tester.Epam_user}</td>
                                     <td>${tester.device}</td>
-                                    <td>${tester.capturas.join(', ')}</td>
+                                    <td>${tester.capturas ? tester.capturas.join(', ') : ''}</td>
                                     <td>${tester.pod}</td>
                                     <td>${tester.station}</td>
+                                    ${session.isSprout ? `<td>${tester.group || ''}</td>` : ""}
                                 </tr>
                             `).join('')}
                         </tbody>

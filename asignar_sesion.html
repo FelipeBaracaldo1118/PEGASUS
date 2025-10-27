@@ -72,6 +72,10 @@
 <body>
     <div class="container">
         <h2>Asignar Testers a Sesión</h2>
+
+        <!-- BOTÓN VOLVER ATRÁS -->
+        <button class="btn" onclick="window.location.href='pages/profile.html'">⬅ Volver al Perfil</button>
+
         <div class="session-info" id="session-info"></div>
         <button class="btn" id="assignBtn">Asignar testers automáticamente</button>
         <div class="assigned-list" id="assigned-list"></div>
@@ -108,16 +112,13 @@
             html += `<b>Start Time:</b> ${session.startTime}<br>`;
             document.getElementById("session-info").innerHTML = html;
 
-            // Guarda los requerimientos de captura para usarlos en la tabla
             sessionCaptureRequirements = session.captureRequirements || {};
 
-            // Si ya hay asignación, muéstrala
             if (session.assignedTesters && session.assignedTesters.length > 0) {
                 renderAssignedList(session.assignedTesters);
             }
         }
 
-        // Asignar testers automáticamente
         document.getElementById("assignBtn").addEventListener("click", async function () {
             const sessionId = getSessionId();
             if (!sessionId) return;
@@ -137,52 +138,39 @@
             }
         });
 
-        // Determina qué debe capturar cada tester según su dispositivo y los requerimientos de la sesión
-        function getCapturasParaTester(tester, captureRequirements) {
-            const capturas = [];
-            for (const [tipo, distros] of Object.entries(captureRequirements)) {
-                if (distros && distros[tester.device] && distros[tester.device] > 0) {
-                    capturas.push(tipo);
-                }
-            }
-            return capturas.join(", ");
-        }
-
-        // Renderizar la lista de testers asignados
         function renderAssignedList(list) {
             if (!list || list.length === 0) {
                 document.getElementById("assigned-list").innerHTML = "<i>No hay testers asignados aún.</i>";
                 return;
             }
             let html = `<h3>Testers asignados:</h3>
-  <table>
-    <tr>
-      <th>Tester</th>
-      <th>Device</th>
-      <th>Región</th>
-      <th>MMR</th>
-      <th>Pod</th>
-      <th>Estación</th>
-      <th>Captura asignada</th>
-    </tr>`;
+              <table>
+                <tr>
+                  <th>Tester</th>
+                  <th>Device</th>
+                  <th>Región</th>
+                  <th>MMR</th>
+                  <th>Pod</th>
+                  <th>Estación</th>
+                  <th>Captura asignada</th>
+                  <th>Grupo</th>
+                </tr>`;
             list.forEach(t => {
                 html += `<tr>
-      <td>${t.Epam_user || t.testerId}</td>
-      <td>${t.device}</td>
-      <td>${t.region}</td>
-      <td>${t.mmr}</td>
-      <td>${t.pod}</td>
-      <td>${t.station}</td>
-      <td>${Array.isArray(t.capturas) ? t.capturas.join(", ") : ""}</td>
-    </tr>`;
+                  <td>${t.Epam_user || t.testerId}</td>
+                  <td>${t.device}</td>
+                  <td>${t.region}</td>
+                  <td>${t.mmr}</td>
+                  <td>${t.pod}</td>
+                  <td>${t.station}</td>
+                  <td>${Array.isArray(t.capturas) ? t.capturas.join(", ") : ""}</td>
+                  <td>${t.group ? t.group : ""}</td>
+                </tr>`;
             });
             html += "</table>";
             document.getElementById("assigned-list").innerHTML = html;
         }
 
-        // Inicializar
         fetchSessionInfo();
     </script>
 </body>
-
-</html>

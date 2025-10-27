@@ -507,6 +507,8 @@
               loginSection.style.display = "none";
               appContent.style.display = "block";
             }, 800);
+            //Opcional: Redirigir o recargar
+          window.location.href = "pages/Profile.html";
           }
         } else {
           document.getElementById("message").innerText = result.message || "Error al iniciar sesión.";

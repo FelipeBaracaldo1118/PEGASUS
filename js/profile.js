@@ -151,7 +151,8 @@ async function fetchTesterSessions() {
                 <div class="command-section">
                     <label><strong>Línea de comando:</strong></label>
                     <pre id="command-box-${sessionId}" class="command-box">${command}</pre>
-                    <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('command-box-${sessionId}').textContent)">Copiar</button>
+                    
+                    <button class="copy-btn" onclick="copyCommand('${sessionId}')">Copiar</button>
                     ${hasLWM ? `
                         <button class="toggle-br-btn" id="toggle-br-btn-${sessionId}" onclick="toggleBR('${sessionId}')">BR</button>
                     ` : ''}
@@ -212,13 +213,75 @@ function toggleBR(sessionId) {
 
     commandBox.textContent = command;
 }
+function copyCommand(sessionId) {
+    const textElem = document.getElementById(`command-box-${sessionId}`);
+    if (!textElem) {
+        alert("No se encontró el comando a copiar");
+        return;
+    }
+    const text = textElem.textContent;
 
+    if (navigator.clipboard && window.isSecureContext) {
+        // Método moderno (HTTPS o localhost)
+        navigator.clipboard.writeText(text)
+            .then(() => {
+                alert("Comando copiado ✅");
+            })
+            .catch(err => {
+                console.error("Error al copiar:", err);
+                alert("No se pudo copiar");
+            });
+    } else {
+        // Fallback para HTTP o navegadores antiguos
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed"; // Evita que se mueva la página
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        try {
+            const successful = document.execCommand("copy");
+            if (successful) {
+                alert("Comando copiado ✅");
+            } else {
+                alert("No se pudo copiar el comando");
+            }
+        } catch (err) {
+            console.error("Fallback error:", err);
+            alert("No se pudo copiar");
+        }
+        document.body.removeChild(textarea);
+    }
+}
 // Iniciar la carga del perfil cuando se carga la página
 document.addEventListener('DOMContentLoaded', fetchProfile);
 
 // Función para cerrar sesión
+
 function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "/index.html";
+    const token = localStorage.getItem("token");
+
+    if (token) {
+        fetch(`${SERVER_URL}/logout`, {
+            method: "POST",
+            headers: {
+                "Authorization": token,
+                "Content-Type": "application/json"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log(data.message);
+            localStorage.removeItem("token");
+            window.location.href = "/index.html";
+        })
+        .catch(err => {
+            console.error("Error en logout:", err);
+            localStorage.removeItem("token");
+            window.location.href = "/index.html";
+        });
+    } else {
+        window.location.href = "/index.html";
+    }
 }
 

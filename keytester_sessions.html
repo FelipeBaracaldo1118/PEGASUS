@@ -4,84 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Crear Sesión de Juego</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f9;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 40px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-        }
-
-        h2 {
-            text-align: center;
-        }
-
-        form {
-            margin-bottom: 30px;
-        }
-
-        label {
-            font-weight: bold;
-            display: block;
-            margin-top: 10px;
-        }
-
-        input,
-        select,
-        textarea {
-            width: 100%;
-            padding: 8px;
-            margin-top: 4px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-size: 1rem;
-        }
-
-        button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        #message {
-            color: red;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th,
-        td {
-            border: 1px solid #ccc;
-            padding: 6px;
-            text-align: center;
-        }
-
-        th {
-            background: #f0f0f0;
-        }
-    </style>
+    <link rel="stylesheet" href="./css/keyTesterSession.css">
 </head>
 
 <body>
@@ -100,14 +23,33 @@
             <label for="buildString">Build String:</label>
             <input type="text" id="buildString" required placeholder="++Fortnite+Release-38.10-CL-47160256">
 
+            <label for="mode">Modo de Juego:</label>
+            <select id="mode" required>
+                <option value="">Selecciona un modo</option>
+                <option value="100">Battle Royale - 100 jugadores</option>
+                <option value="80">Battle Royale - 80 jugadores</option>
+                <option value="sprout">Sprout</option>
+            </select>
+
             <label for="googleDrive">Google Drive:</label>
             <input type="url" id="googleDrive" required placeholder="https://drive.google.com/drive/folders/...">
 
             <label for="gameModes">Game Modes / Playlists:</label>
             <textarea id="gameModes" required placeholder="BR: Squads / Reload (Dashberry) / Blitz"></textarea>
 
-            <label for="idOverride">ID Override:</label>
-            <input type="text" id="idOverride" required placeholder="42069">
+            <div id="normal-id">
+                <label for="idOverride">ID Override:</label>
+                <input type="text" id="idOverride" required placeholder="42069">
+            </div>
+
+            <div id="sprout-ids" style="display:none;">
+                <label for="idOverrideA">ID Override Grupo 1:</label>
+                <input type="text" id="idOverrideA" placeholder="ID para Grupo 1">
+                <label for="idOverrideB">ID Override Grupo 2:</label>
+                <input type="text" id="idOverrideB" placeholder="ID para Grupo 2">
+            </div>
+
+
 
             <label for="startTime">Start Time:</label>
             <input type="text" id="startTime" required placeholder="1PM">
@@ -122,12 +64,7 @@ ad (4), Fill">
             <label for="testPlan">Test Plan / BTR:</label>
             <input type="url" id="testPlan" required placeholder="https://jira.it.epicgames.com/browse/FNTEST-202139">
 
-            <label for="mode">Modo de Juego:</label>
-            <select id="mode" required>
-                <option value="">Selecciona un modo</option>
-                <option value="100">Battle Royale - 100 jugadores</option>
-                <option value="80">Battle Royale - 80 jugadores</option>
-            </select>
+
 
             <label for="totalPlayers">Cantidad de jugadores:</label>
             <input type="number" id="totalPlayers" min="1" required placeholder="100 o 80">
@@ -250,104 +187,7 @@ ad (4), Fill">
         <div id="message"></div>
     </div>
 
-    <script>
-        const SERVER_URL = "http://10.13.46.195:3000";
-        const token = localStorage.getItem("token");
-
-        document.getElementById("mode").addEventListener("change", function () {
-            const val = this.value;
-            if (val) document.getElementById("totalPlayers").value = val;
-        });
-
-        document.getElementById("sessionForm").addEventListener("submit", async function (e) {
-            e.preventDefault();
-
-            // Construye el objeto de requerimientos de captura
-            const captureRequirements = {
-                CSVProfile: {
-                    PS4: parseInt(document.getElementById("csv_ps4").value) || 0,
-                    "PS4 Dev": parseInt(document.getElementById("csv_ps4dev").value) || 0,
-                    PS5: parseInt(document.getElementById("csv_ps5").value) || 0,
-                    "PS5 Dev": parseInt(document.getElementById("csv_ps5dev").value) || 0,
-                    PC: parseInt(document.getElementById("csv_pc").value) || 0,
-                    Android: parseInt(document.getElementById("csv_android").value) || 0,
-                    iOS: parseInt(document.getElementById("csv_ios").value) || 0,
-                    XSX: parseInt(document.getElementById("csv_xsx").value) || 0,
-                    Switch: parseInt(document.getElementById("csv_switch").value) || 0
-                },
-                LLM: {
-                    "PS4 Dev": parseInt(document.getElementById("llm_ps4dev").value) || 0,
-                    "PS5 Dev": parseInt(document.getElementById("llm_ps5dev").value) || 0,
-                    PC: parseInt(document.getElementById("llm_pc").value) || 0,
-                    Android: parseInt(document.getElementById("llm_android").value) || 0,
-                    XSX: parseInt(document.getElementById("llm_xsx").value) || 0,
-                    Switch: parseInt(document.getElementById("llm_switch").value) || 0 // Nuevo campo
-                },
-                LWM: {
-                    "PS4 Dev": parseInt(document.getElementById("lwm_ps4dev").value) || 0,
-                    "PS5 Dev": parseInt(document.getElementById("lwm_ps5dev").value) || 0,
-                    XSX: parseInt(document.getElementById("lwm_xsx").value) || 0,
-                    Switch: parseInt(document.getElementById("lwm_switch").value) || 0 // Nuevo campo
-                },
-                Trace: {
-                    PC: parseInt(document.getElementById("trace_pc").value) || 0,
-                    Android: parseInt(document.getElementById("trace_android").value) || 0,
-                    iOS: parseInt(document.getElementById("trace_ios").value) || 0,
-                    Switch: parseInt(document.getElementById("trace_switch").value) || 0 // Nuevo campo
-                },
-                Razor: {
-                    "PS4 Dev": parseInt(document.getElementById("razor_ps4dev").value) || 0,
-                    "PS5 Dev": parseInt(document.getElementById("razor_ps5dev").value)
-                        || 0,
-                    XSX: parseInt(document.getElementById("razor_xsx").value) || 0
-                },
-                DX11: {
-                    PC: parseInt(document.getElementById("dx11_pc").value) || 0
-                },
-                DX12: {
-                    PC: parseInt(document.getElementById("dx12_pc").value) || 0
-                },
-                Performance: {
-                    PC: parseInt(document.getElementById("perf_pc").value) || 0
-                }
-            };
-
-            const data = {
-                commsLead: document.getElementById("commsLead").value,
-                commsAssist: document.getElementById("commsAssist").value,
-                backendName: document.getElementById("backendName").value,
-                buildString: document.getElementById("buildString").value,
-                googleDrive: document.getElementById("googleDrive").value,
-                gameModes: document.getElementById("gameModes").value,
-                idOverride: document.getElementById("idOverride").value,
-                startTime: document.getElementById("startTime").value,
-                premadeTeams: document.getElementById("premadeTeams").value,
-
-                teamSize: document.getElementById("teamSize").value,
-                testPlan: document.getElementById("testPlan").value,
-                totalPlayers: parseInt(document.getElementById("totalPlayers").value, 10),
-                captureRequirements // <--- aquí lo agregas
-            };
-
-            const res = await fetch(`${SERVER_URL}/api/sessions`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": token },
-                body: JSON.stringify(data)
-            });
-
-            const result = await res.json();
-            if (res.ok) {
-                document.getElementById("message").style.color = "green";
-                document.getElementById("message").innerText = "Sesión creada con éxito. Redirigiendo...";
-                setTimeout(() => {
-                    window.location.href = `asignar_sesion.html?sessionId=${result._id}`;
-                }, 1200);
-            } else {
-                document.getElementById("message").style.color = "red";
-                document.getElementById("message").innerText = result.message || "Error al crear la sesión";
-            }
-        });
-    </script>
+    <script src="../js/keyTesterSession.js"></script>
 </body>
 
 </html>

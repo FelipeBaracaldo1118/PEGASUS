@@ -50,12 +50,15 @@ const sessionSchema = new mongoose.Schema({
   googleDrive: String,
   gameModes: String,
   idOverride: String,
+  idOverrideA: String,
+  idOverrideB: String,
   startTime: String,
   premadeTeams: String,
   teamSize: String,
   testPlan: String,
   totalPlayers: Number,
   captureRequirements: { type: Object, default: {} },
+  isSprout: { type: Boolean, default: false }, // <-- CAMPO NUEVO en el schema
   assignedTesters: [
     {
       testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -65,8 +68,9 @@ const sessionSchema = new mongoose.Schema({
       mmr: Number,
       pod: String,
       station: String,
+      group: String, // solo tendrá valor si es sprout
       dispositivos: [String],
-      capturas: [String] // Asegúrate de que este campo esté definido
+      capturas: [String]
     }
   ],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -74,7 +78,6 @@ const sessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Session = mongoose.model("Session", sessionSchema);
-
 // --------------------------
 // RUTA: REGISTRO DE USUARIO
 // --------------------------
@@ -134,19 +137,23 @@ app.post("/login", async (req, res) => {
   const { Epam_user, Password } = req.body;
 
   try {
-    // Buscar el usuario en la base de datos
+    // Buscar el usuario
     const user = await User.findOne({ Epam_user });
     if (!user) {
       return res.status(404).json({ success: false, message: "Usuario no encontrado" });
     }
 
-    // Comparar la contraseña encriptada
+    // Comparar contraseñas
     const isMatch = await bcrypt.compare(Password, user.Password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
     }
 
-    // Generar un token JWT
+    // ✅ Actualizar disponibilidad a "Disponible"
+    user.availability = "Disponible";
+    await user.save();
+
+    // Generar token
     const token = jwt.sign({ userId: user._id }, "SECRETO", { expiresIn: "1h" });
 
     res.status(200).json({ success: true, message: "Login exitoso", token });
@@ -154,7 +161,6 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Error al iniciar sesión" });
   }
 });
-
 // --------------------------
 // RUTA: GUARDAR JSON
 // --------------------------
@@ -231,21 +237,26 @@ app.get("/api/all-testers", authMiddleware, async (req, res) => {
 // Crear sesión
 app.post("/api/sessions", authMiddleware, async (req, res) => {
   try {
-    // Verificar que el usuario sea keytester
     const user = await User.findById(req.userId);
     if (!user || (user.userType !== "keytester" && !user.isAdmin)) {
       return res.status(403).json({ message: "No autorizado" });
     }
 
-    const session = new Session({ ...req.body, createdBy: req.userId });
+    const isSprout = !!(req.body.idOverrideA && req.body.idOverrideB);
+
+    const session = new Session({
+      ...req.body,
+      createdBy: req.userId,
+      isSprout, // ahora se guarda en la base
+      idOverrideA: isSprout ? req.body.idOverrideA : undefined,
+      idOverrideB: isSprout ? req.body.idOverrideB : undefined,
+      idOverride: !isSprout ? req.body.idOverride : undefined
+    });
     await session.save();
     res.status(201).json(session);
   } catch (error) {
     console.error('Error al crear sesión:', error);
-    res.status(500).json({ 
-      message: "Error al crear la sesión",
-      error: error.message 
-    });
+    res.status(500).json({ message: "Error al crear la sesión", error: error.message });
   }
 });
 
@@ -258,23 +269,20 @@ app.get("/api/sessions", authMiddleware, async (req, res) => {
     }
 
     let query = {};
-    // Si es keytester, mostrar solo sus sesiones creadas
     if (user.userType === "keytester") {
       query.createdBy = req.userId;
     }
-    // Si es admin, mostrar todas las sesiones
-    // Si es tester, se manejará en el frontend mostrando solo las asignadas
 
     const sessions = await Session.find(query)
       .sort({ createdAt: -1 })
-      .populate('createdBy', 'Epam_user'); // Opcional: poblar información del creador
+      .populate('createdBy', 'Epam_user');
 
     res.json(sessions);
   } catch (error) {
     console.error('Error al listar sesiones:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Error al obtener las sesiones",
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -284,18 +292,16 @@ app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
     const session = await Session.findById(req.params.id)
       .populate('createdBy', 'Epam_user');
-    
+
     if (!session) {
       return res.status(404).json({ message: "Sesión no encontrada" });
     }
 
-    // Verificar acceso
     const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    // Si es tester, verificar que esté asignado a la sesión
     if (user.userType === 'tester' && !user.isAdmin) {
       const isAssigned = session.assignedTesters.some(
         tester => tester.testerId.toString() === req.userId
@@ -308,9 +314,9 @@ app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
     res.json(session);
   } catch (error) {
     console.error('Error al obtener sesión:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: "Error al obtener la sesión",
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -318,7 +324,6 @@ app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
 // Editar sesión
 app.put("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
-    // Verificar que el usuario sea keytester
     const user = await User.findById(req.userId);
     if (!user || (user.userType !== "keytester" && !user.isAdmin)) {
       return res.status(403).json({ message: "No autorizado" });
@@ -329,25 +334,31 @@ app.put("/api/sessions/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Sesión no encontrada" });
     }
 
-    // Verificar que sea el creador de la sesión o admin
     if (!user.isAdmin && session.createdBy.toString() !== req.userId) {
       return res.status(403).json({ message: "No autorizado para editar esta sesión" });
     }
 
-    // Actualizar la sesión
+    // Detectar si es sprout en la edición
+    const isSprout = !!(req.body.idOverrideA && req.body.idOverrideB);
+
     const updatedSession = await Session.findByIdAndUpdate(
-      req.params.id, 
-      req.body, 
+      req.params.id,
+      {
+        ...req.body,
+        isSprout,
+        idOverrideA: isSprout ? req.body.idOverrideA : undefined,
+        idOverrideB: isSprout ? req.body.idOverrideB : undefined,
+        idOverride: !isSprout ? req.body.idOverride : undefined
+      },
       { new: true, runValidators: true }
     );
 
     res.json(updatedSession);
   } catch (error) {
     console.error('Error al actualizar sesión:', error);
-    res.status(500).
-json({ 
+    res.status(500).json({
       message: "Error al actualizar la sesión",
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -355,8 +366,8 @@ json({
 // Borrar sesión
 app.delete("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
-    // Verificar que el usuario sea keytester
-    const user = await User.findById(req.userId);
+    const user = await User.findById
+      (req.userId);
     if (!user || (user.userType !== "keytester" && !user.isAdmin)) {
       return res.status(403).json({ message: "No autorizado" });
     }
@@ -366,171 +377,26 @@ app.delete("/api/sessions/:id", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Sesión no encontrada" });
     }
 
-    // Verificar que sea el creador de la sesión o admin
     if (!user.isAdmin && session.createdBy.toString() !== req.userId) {
       return res.status(403).json({ message: "No autorizado para eliminar esta sesión" });
     }
 
     await Session.findByIdAndDelete(req.params.id);
-    res.json({ 
-      success: true, 
-      message: "Sesión eliminada correctamente" 
+    res.json({
+      success: true,
+      message: "Sesión eliminada correctamente"
     });
   } catch (error) {
     console.error('Error al eliminar sesión:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
       message: "Error al eliminar la sesión",
-      error: error.message 
+      error: error.message
     });
   }
 });
 
-// Endpoint adicional para obtener las sesiones de un tester específico
-app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findById(req.userId);
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-
-    let sessions;
-    if (user.userType === "keytester" || user.isAdmin) {
-      // Para keytesters, obtener las sesiones que han creado
-      sessions = await Session.find({ createdBy: req.userId })
-        .sort({ createdAt: -1 });
-    } else {
-      // Para testers, obtener las sesiones donde están asignados
-      sessions = await Session.find({
-        "assignedTesters.testerId": req.userId
-      }).sort({ createdAt: -1 });
-    }
-
-    res.json(sessions);
-  } catch (error) {
-    console.error('Error al obtener sesiones del usuario:', error);
-    res.status(500).json({ 
-      message: "Error al obtener las sesiones",
-      error: error.message 
-    });
-  }
-});
-//--------------------------------
-//Asignación automatica de tester
-//--------------------------------
-app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
-  const session = await Session.findById(req.params.id);
-  if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
-
-  const CAPTURA_DISPOSITIVO = {
-    CSVProfile: ["PS4", "PS4 Dev", "PS5", "PS5 Dev", "PC", "Android", "iOS", "XSX", "XB1", "Switch", "iPad"],
-    LLM: ["PS4 Dev", "PS5 Dev", "PC", "Android", "XSX", "Switch"],
-    LWM: ["PS4 Dev", "PS5 Dev", "XSX", "Switch"],
-    Trace: ["PC", "Android", "iOS", "Switch"],
-    Razor: ["PS4 Dev", "PS5 Dev", "XSX"],
-    DX11: ["PC"],
-    DX12: ["PC"],
-    Performance: ["PC"]
-  };
-
-  const captureReq = session.captureRequirements || {};
-  const assignedTesters = [];
-  const testersAsignados = new Set();
-
-  // Obtén todos los dispositivos únicos de la tabla
-  const dispositivos = new Set();
-  for (const distros of Object.values(captureReq)) {
-    Object.keys(distros).forEach(d => dispositivos.add(d));
-  }
-
-  for (const device of dispositivos) {
-    // 1. Junta capturas exclusivas y CSVProfile requeridas para este dispositivo
-    let capturasExclusivas = [];
-    let csvCount = 0;
-    for (const [tipoCaptura, distros] of Object.entries(captureReq)) {
-      const cantidad = distros[device] || 0;
-      if (!CAPTURA_DISPOSITIVO[tipoCaptura] || !CAPTURA_DISPOSITIVO[tipoCaptura].includes(device)) continue;
-      if (tipoCaptura === "CSVProfile") {
-        csvCount = cantidad;
-      } else {
-        for (let i = 0; i < cantidad; i++) capturasExclusivas.push(tipoCaptura);
-      }
-    }
-
-    // Para Dev, sihay LLM y LWM, agrúpalos juntos
-    let agruparLLMLWM = false;
-    if ((device.includes("Dev")) && capturasExclusivas.includes("LLM") && capturasExclusivas.includes("LWM")) {
-      agruparLLMLWM = true;
-    }
-
-    const totalTesters = Math.max(
-      agruparLLMLWM ? Math.max(csvCount, 2) : Math.max(capturasExclusivas.length, csvCount),
-      1
-    );
-
-    // 2. Busca testers disponibles
-    let testers = await User.find({
-      Region: "Bogota",
-      "Devices.name": device,
-      userType: "tester",
-      Epam_user: { $nin: Array.from(testersAsignados) }
-    }).sort({ "Devices.priority": 1, Mmr: 1 }).limit(totalTesters);
-
-    // 3. Asigna capturas a testers
-    let llmAsignado = false, lwmAsignado = false;
-    for (let i = 0; i < testers.length; i++) {
-      const tester = testers[i];
-      
-      if (testersAsignados.has(tester.Epam_user)) continue;
-
-      const capturas = [];
-
-      // Asignar CSVProfile si está disponible
-      if (csvCount > 0 && CAPTURA_DISPOSITIVO["CSVProfile"].includes(device)) {
-        capturas.push("CSVProfile");
-        csvCount--;
-      }
-
-      // Asignar capturas exclusivas
-      if (agruparLLMLWM && !llmAsignado) {
-        capturas.push("LLM", "LWM");
-        capturasExclusivas = capturasExclusivas.filter(c => c !== "LLM" && c !== "LWM");
-        llmAsignado = lwmAsignado = true;
-      } else if (capturasExclusivas.length > 0) {
-        const captura = capturasExclusivas.shift();
-        if (captura) capturas.push(captura);
-      }
-
-      // Solo agregar el tester si tiene capturas asignadas
-      if (capturas.length > 0) {
-        testersAsignados.add(tester.Epam_user);
-        assignedTesters.push({
-          testerId: tester._id,
-          Epam_user: tester.Epam_user,
-          device: device,
-          region: tester.Region,
-          mmr: tester.Mmr,
-          pod: tester.Pod,
-          station: tester.Station,
-          dispositivos: [device],
-          capturas: capturas // Asegurarse de que las capturas se guarden aquí
-        });
-      }
-    }
-  }
-
-  // Actualizar la sesión con los testers asignados
-  session.assignedTesters = assignedTesters;
-  await session.save();
-
-  res.json({ assignedTesters });
-});
-
-//-----------------------------
-// obtener sesiones asignadas a un tester en especifico 
-//-----------------------------
-
-// En tu archivo del servidor
+// Obtener sesiones asignadas a un tester
 app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
   try {
     const sessions = await Session.find({
@@ -542,6 +408,12 @@ app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
         tester => tester.testerId.toString() === req.userId
       );
 
+      // Determina el idOverride correcto según el grupo (solo para sprout)
+      let idOverride = session.idOverride;
+      if (session.isSprout && testerAssignment && testerAssignment.group) {
+        idOverride = testerAssignment.group === "A" ? session.idOverrideA : session.idOverrideB;
+      }
+
       return {
         sessionId: session._id,
         backendName: session.backendName,
@@ -549,25 +421,140 @@ app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
         gameModes: session.gameModes,
         startTime: session.startTime,
         createdAt: session.createdAt,
-        assignedTesters: session.assignedTesters, // Incluir todos los testers asignados
+        isSprout: session.isSprout || false,
+        idOverride: idOverride,
+        assignedTesters: session.assignedTesters,
         assignment: {
           device: testerAssignment?.device || null,
           capturas: testerAssignment?.capturas || [],
           pod: testerAssignment?.pod || null,
-          station: testerAssignment?.station || null
+          station: testerAssignment?.station || null,
+          group: testerAssignment?.group || null
         }
       };
     });
 
     res.json(processedSessions);
   } catch (error) {
-    console.error('Error al obtener sesiones del tester:', error);
+    console.error('Error al obtener sesiones del usuario:', error);
     res.status(500).json({
       message: "Error al obtener las sesiones",
       error: error.message
     });
   }
 });
+
+// Asignación automática de testers (con lógica sprout)
+app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
+
+    // Recalcular isSprout por seguridad
+    const isSprout = session.isSprout || (!!session.idOverrideA && !!session.idOverrideB);
+
+    const assignedTesters = [];
+    const testersAsignados = new Set();
+
+    const captureReq = session.captureRequirements || {};
+    const dispositivos = new Set();
+    for (const distros of Object.values(captureReq)) {
+      Object.keys(distros).forEach(d => dispositivos.add(d));
+    }
+
+    const CAPTURA_DISPOSITIVO = {
+      CSVProfile: ["PS4", "PS4 Dev", "PS5", "PS5 Dev", "PC", "Android", "iOS", "XSX", "XB1", "Switch", "iPad"],
+      LLM: ["PS4 Dev", "PS5 Dev", "PC", "Android", "XSX", "Switch"],
+      LWM: ["PS4 Dev", "PS5 Dev", "XSX", "Switch"],
+      Trace: ["PC", "Android", "iOS", "Switch"],
+      Razor: ["PS4 Dev", "PS5 Dev", "XSX"],
+      DX11: ["PC"],
+      DX12: ["PC"],
+      Performance: ["PC"]
+    };
+
+    for (const device of dispositivos) {
+      let capturasExclusivas = [];
+      let csvCount = 0;
+      for (const [tipoCaptura, distros] of Object.entries(captureReq)) {
+        const cantidad = distros[device] || 0;
+        if (!CAPTURA_DISPOSITIVO[tipoCaptura] || !CAPTURA_DISPOSITIVO[tipoCaptura].includes(device)) continue;
+        if (tipoCaptura === "CSVProfile") {
+          csvCount = cantidad;
+        } else {
+          for (let i = 0; i < cantidad; i++) capturasExclusivas.push(tipoCaptura);
+        }
+      }
+
+      let agruparLLMLWM = false;
+      if ((device.includes("Dev")) && capturasExclusivas.includes("LLM") && capturasExclusivas.includes("LWM")) {
+        agruparLLMLWM = true;
+      }
+
+      const totalTesters = Math.max(
+        agruparLLMLWM ? Math.max(csvCount, 2) : Math.max(capturasExclusivas.length, csvCount),
+        1
+      );
+
+      let testers = await User.find({
+        Region: "Bogota",
+        "Devices.name": device,
+        userType: "tester",
+        Epam_user: { $nin: Array.from(testersAsignados) }
+      }).sort({ "Devices.priority": 1, Mmr: 1 }).limit(totalTesters);
+
+      let llmAsignado = false, lwmAsignado = false;
+      for (const tester of testers) {
+        if (testersAsignados.has(tester.Epam_user)) continue;
+        const capturas = [];
+        if (csvCount > 0 && CAPTURA_DISPOSITIVO["CSVProfile"].includes(device)) {
+          capturas.push("CSVProfile");
+          csvCount--;
+        }
+        if (agruparLLMLWM && !llmAsignado) {
+          capturas.push("LLM", "LWM");
+          capturasExclusivas = capturasExclusivas.filter(c => c !== "LLM" && c !== "LWM");
+          llmAsignado = lwmAsignado = true;
+        } else if (capturasExclusivas.length > 0) {
+          const captura = capturasExclusivas.shift();
+          if (captura) capturas.push(captura);
+        }
+
+        if (capturas.length > 0) {
+          testersAsignados.add(tester.Epam_user);
+          assignedTesters.push({
+            testerId: tester._id,
+            Epam_user: tester.Epam_user,
+            device,
+            region: tester.Region,
+            mmr: tester.Mmr,
+            pod: tester.Pod,
+            station: tester.Station,
+            dispositivos: [device],
+            capturas
+          });
+        }
+      }
+    }
+
+    if (isSprout) {
+      const half = Math.ceil(assignedTesters.length / 2);
+      const groupA = assignedTesters.slice(0, half).map(t => ({ ...t, group: "A" }));
+      const groupB = assignedTesters.slice(half).map(t => ({ ...t, group: "B" }));
+      session.assignedTesters = [...groupA, ...groupB];
+    } else {
+      session.assignedTesters = assignedTesters; 
+      // no asignamos "AL" ni otro valor, queda sin grupo si no es sprout
+    }
+
+    await session.save();
+    res.json({ assignedTesters: session.assignedTesters });
+  } catch (error) {
+    console.error('Error en la asignación automática:', error);
+    res.status(500).json({ message: "Error en la asignación automática", error: error.message });
+  }
+});
+
 
 // Obtener detalles completos de una sesión específica para un tester
 app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
@@ -581,10 +568,15 @@ app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
       return res.status(404).json({ message: "Sesión no encontrada" });
     }
 
-    // Encontrar la asignación específica del tester
     const testerAssignment = session.assignedTesters.find(
       tester => tester.testerId.toString() === req.userId
     );
+
+    // Determina el idOverride correcto según el grupo (solo para sprout)
+    let idOverride = session.idOverride;
+    if (session.isSprout && testerAssignment && testerAssignment.group) {
+      idOverride = testerAssignment.group === "A" ? session.idOverrideA : session.idOverrideB;
+    }
 
     const sessionDetails = {
       sessionId: session._id,
@@ -594,19 +586,19 @@ app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
       buildString: session.buildString,
       googleDrive: session.googleDrive,
       gameModes: session.gameModes,
-      idOverride: session.idOverride,
+      idOverride: idOverride,
       startTime: session.startTime,
       premadeTeams: session.premadeTeams,
       teamSize: session.teamSize,
       testPlan: session.testPlan,
       totalPlayers: session.totalPlayers,
       createdAt: session.createdAt,
-      // Información específica de la asignación del tester
       assignment: {
         device: testerAssignment.device,
         capturas: testerAssignment.capturas,
         pod: testerAssignment.pod,
-        station: testerAssignment.station
+        station: testerAssignment.station,
+        group: testerAssignment.group || null
       }
     };
 
@@ -616,6 +608,23 @@ app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error al obtener los detalles de la sesión" });
   }
 });
+// Obtener perfil de un tester específico (solo keytester y admin)
+app.get("/api/user/:id", authMiddleware, async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== "keytester" && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: "No autorizado" });
+        }
+
+        const tester = await User.findById(req.params.id).select("-Password -__v");
+        if (!tester) return res.status(404).json({ message: "Usuario no encontrado" });
+
+        res.json(tester);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener usuario" });
+    }
+});
 
 // Modificar el endpoint existente de /api/user/me para incluir el conteo de sesiones
 app.get("/api/user/me", authMiddleware, async (req, res) => {
@@ -623,12 +632,10 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
     const user = await User.findById(req.userId).select("-Password -__v");
     if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
 
-    // Contar las sesiones asignadas al usuario
     const sessionCount = await Session.countDocuments({
       "assignedTesters.testerId": req.userId
     });
 
-    // Agregar el conteo de sesiones a la respuesta
     const userWithSessionCount = {
       ...user.toObject(),
       totalSessions: sessionCount
@@ -639,6 +646,24 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
     console.error('Error al obtener información del usuario:', error);
     res.status(500).json({ message: "Error al obtener usuario" });
   }
+});
+
+//logout 
+app.post("/logout", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+        }
+
+        // Cambiar disponibilidad a N/A
+        user.availability = "N/A";
+        await user.save();
+
+        res.json({ success: true, message: "Sesión cerrada y disponibilidad actualizada" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error al cerrar sesión" });
+    }
 });
 // --------------------------
 // INICIAR SERVIDOR
