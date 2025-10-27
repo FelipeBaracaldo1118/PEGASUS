@@ -1,15 +1,13 @@
 body {
     font-family: Arial, sans-serif;
-    background: #f4f4f9;
 }
 
 .profile-container {
     max-width: 800px;
-    margin: 40px auto;
-    background: #fff;
+    margin: 0px auto;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 30px;
+    padding: 10px;
 }
 
 .profile-container h2 {
@@ -26,7 +24,7 @@ body {
 
 .logout-btn {
     display: block;
-    margin: 20px auto 0 auto;
+    margin: 20px auto 70px auto;
     padding: 10px 20px;
     background: #007bff;
     color: #fff;
@@ -411,41 +409,57 @@ body {
 .close-table-btn:hover {
     background: #eaf1fb;
 }
+
 .assigned-session-card {
-    background: #f8f9fa;
-    border: 1px solid #fffdfd;
-    border-radius: 8px;
-    padding: 18px 22px;
-    margin-bottom: 18px;
-    max-width: 600px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25); 
+  border-radius: 16px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  max-width: 600px;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.assigned-session-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .assigned-session-title {
-    font-size: 1.15em;
-    font-weight: bold;
-    margin-bottom: 8px;
+  font-size: 1.15em;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #00d9ff;
 }
 
 .assigned-session-details p {
-    margin: 6px 0;
-    font-size: 1em;
+  margin: 6px 0;
+  font-size: 1em;
+  color: #e9eef2;
 }
 
 .assigned-session-row {
-    background: #e9e8e8;
-    border-radius: 4px;
-    padding: 6px 12px;
-    margin: 8px 0;
-    display: flex;
-    gap: 10px;
-    align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .assigned-session-label {
-    color: #2366d1;
-    font-weight: 600;
-    margin-right: 8px;
+  color: #00c3ff;
+  font-weight: 600;
+  margin-right: 8px;
 }
+
 .command-section {
     margin-top: 12px;
 }

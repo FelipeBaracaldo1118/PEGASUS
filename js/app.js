@@ -43,6 +43,23 @@ setTimeout(() => {
 const options = document.querySelectorAll('.option');
 const modals = document.querySelectorAll('.modal');
 const closeButtons = document.querySelectorAll('.close-btn');
+const menuLinks = document.querySelectorAll('#side-menu a[data-modal]');
+
+menuLinks.forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault(); // Evita que recargue la página
+
+    const modalId = link.getAttribute('data-modal');
+    document.getElementById(modalId).style.display = 'flex';
+
+    // Si es Builds o Install, cargar contenido dinámico como en las cards principales
+    if (modalId === "modal-builds") {
+      renderPlataformas();
+    } else if (modalId === "modal-install") {
+      renderInstallPlataformas();
+    }
+  });
+});
 
 options.forEach(option => {
   option.addEventListener('click', () => {
@@ -118,21 +135,21 @@ function renderPlataformas() {
       div.classList.add("plataforma");
 
       // Botón 1
-    const downloadBtn1 = document.createElement("button");
-    if (p.nombre.toLowerCase() === "switch") {
-      downloadBtn1.textContent = "TinyApp.nsp";
-    } else {
-      downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
-    }
-    styleBtn(downloadBtn1);
-    // Botón 2 (si existe url2)
-    const downloadBtn2 = document.createElement("button");
-    if (p.nombre.toLowerCase() === "switch") {
-      downloadBtn2.textContent = "Build";
-    } else {
-      downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
-    }
-    styleBtn(downloadBtn2);
+      const downloadBtn1 = document.createElement("button");
+      if (p.nombre.toLowerCase() === "switch") {
+        downloadBtn1.textContent = "TinyApp.nsp";
+      } else {
+        downloadBtn1.textContent = "Descargar " + p.nombre.toUpperCase();
+      }
+      styleBtn(downloadBtn1);
+      // Botón 2 (si existe url2)
+      const downloadBtn2 = document.createElement("button");
+      if (p.nombre.toLowerCase() === "switch") {
+        downloadBtn2.textContent = "Build";
+      } else {
+        downloadBtn2.textContent = "Descargar " + p.nombre.toUpperCase() + " 2";
+      }
+      styleBtn(downloadBtn2);
       // Claves independientes para bloqueo
       const lastClickKey1 = `download_${version}_${p.nombre}_url1`;
       const lastClickKey2 = `download_${version}_${p.nombre}_url2`;
@@ -283,7 +300,7 @@ async function fetchStatsData() {
   try {
     const res = await fetch("Logs/W3SVC2/static/output_data.json?ts=" + Date.now());
     if (!res.ok) throw new Error("No se pudo obtener el JSON");
-    
+
     const data = await res.json();
 
     // Validar el formato que tenemos ahora (objeto con propiedades)
@@ -380,4 +397,31 @@ document.querySelector('[data-modal="modal-stats"]').addEventListener("click", a
 document.querySelector("#modal-stats .close-btn").addEventListener("click", () => {
   document.getElementById("modal-stats").style.display = "none";
   if (statsInterval) clearInterval(statsInterval);
+});
+
+// logica modales hamburguer menu//
+
+// ✅ Abrir modales desde el menú hamburguesa
+document.querySelectorAll('#side-menu a[data-modal]').forEach(link => {
+  link.addEventListener('click', () => {
+    const modalId = link.getAttribute('data-modal');
+    const modal = document.getElementById(modalId);
+
+    // ✅ Cerrar menú hamburguesa
+    hamburger.classList.remove('active');
+    sideMenu.classList.remove('open');
+    overlay.classList.remove('show');
+
+    // ✅ Mostrar el modal (igual que tus botones principales)
+    if (modal) {
+      modal.style.display = 'flex';
+
+      // ✅ Ejecutar lógica especial si aplica
+      if (modalId === "modal-builds") {
+        renderPlataformas();
+      } else if (modalId === "modal-install") {
+        renderInstallPlataformas();
+      }
+    }
+  });
 });
