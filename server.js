@@ -297,10 +297,9 @@ app.get("/api/sessions", authMiddleware, async (req, res) => {
 // Obtener una sesión
 app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
-    const sessions = await Session.find(query)
-    .select('-commsLead -commsAssist -googleDrive -gameModes -premadeTeams -testPlan')
-    .sort({ createdAt: -1 })
-    .populate('createdBy', 'Epam_user');
+    const session = await Session.findById(req.params.id)
+      .select('-commsLead -commsAssist -googleDrive -gameModes -premadeTeams -testPlan')
+      .populate('createdBy', 'Epam_user');
 
     if (!session) {
       return res.status(404).json({ message: "Sesión no encontrada" });

@@ -6,26 +6,26 @@ const token = localStorage.getItem("token");
 
 // Si no hay token, enviar al login inmediatamente
 if (!token) {
-    window.location.href = "/index.html"; 
+    window.location.href = "/index.html";
 } else {
     // Verificar token con el backend
     fetch(`${SERVER_URL}/protected`, {
         method: "GET",
         headers: { "Authorization": token }
     })
-    .then(async res => {
-        if (!res.ok) {
-            // Token inválido o expirado, limpiar y enviar al login
+        .then(async res => {
+            if (!res.ok) {
+                // Token inválido o expirado, limpiar y enviar al login
+                localStorage.removeItem("token");
+                window.location.href = "/index.html";
+            }
+            // Si es válido, dejamos al usuario donde está
+        })
+        .catch(err => {
+            console.error("Error verificando token:", err);
             localStorage.removeItem("token");
             window.location.href = "/index.html";
-        }
-        // Si es válido, dejamos al usuario donde está
-    })
-    .catch(err => {
-        console.error("Error verificando token:", err);
-        localStorage.removeItem("token");
-        window.location.href = "/index.html";
-    });
+        });
 }
 
 // Función para mostrar errores
@@ -139,9 +139,15 @@ async function fetchTesterSessions() {
                     ) {
                         args = [];
                     } else {
-                        args = myTester.capturas.filter(c => c !== "CSVProfile");
+                        args = myTester.capturas.filter(c => c.toUpperCase() !== "CSVPROFILE");
                     }
                 }
+
+                // Excluye DX12 y DX11 (case-insensitive)
+                args = args.filter(c => {
+                    const val = c.toUpperCase();
+                    return val !== "DX12" && val !== "DX11";
+                });
 
                 // Guarda si tiene LWM
                 const hasLWM = args.includes("LWM_BR");
@@ -154,39 +160,36 @@ async function fetchTesterSessions() {
                     platform: myTester ? myTester.device : 'Other',
                     args
                 };
+
                 const command = window.EpicCommandGenerator.generateCommand(config);
 
                 // Identificador único para los elementos
                 const sessionId = session._id;
 
                 html += `
-        <div class="assigned-session-card">
-            <div class="assigned-session-title">${session.backendName || ''}</div>
-            <div class="assigned-session-details">
-                <p><strong>Build:</strong> ${session.buildString || ''}</p>
-                <div class="assigned-session-row">
-                    <span class="assigned-session-label">Game Modes:</span>
-                    <span>${session.gameModes || ''}</span>
-                </div>
-                <p><strong>ID Override:</strong> ${session.idOverride || ''}</p>
-                <p><strong>Dispositivo Asignado:</strong> ${myTester ? myTester.device : ''}</p>
-                <p><strong>Capturas:</strong> ${myTester && Array.isArray(myTester.capturas)
+    <div class="assigned-session-card">
+        <div class="assigned-session-title">${session.backendName || '-'}</div>
+        <div class="assigned-session-details">
+            <p><strong>Build:</strong> ${session.buildString || '-'}</p>
+            
+            <p><strong>ID Override:</strong> ${session.idOverride || session.idOverrideA || session.idOverrideB || '-'}</p>
+            <p><strong>Dispositivo Asignado:</strong> ${myTester ? myTester.device : '-'}</p>
+            <p><strong>Capturas:</strong> ${myTester && Array.isArray(myTester.capturas)
                         ? myTester.capturas.join(', ')
                         : 'No asignadas'
                     }</p>
-                <p><strong>Fecha:</strong> ${session.createdAt ? new Date(session.createdAt).toLocaleDateString() : ''}</p>
-                <div class="command-section">
-                    <label><strong>Línea de comando:</strong></label>
-                    <pre id="command-box-${sessionId}" class="command-box">${command}</pre>
-                    
-                    <button class="copy-btn" onclick="copyCommand('${sessionId}')">Copiar</button>
-                    ${hasLWM ? `
-                        <button class="toggle-br-btn" id="toggle-br-btn-${sessionId}" onclick="toggleBR('${sessionId}')">BR</button>
-                    ` : ''}
-                </div>
+            <p><strong>Fecha:</strong> ${session.createdAt ? new Date(session.createdAt).toLocaleDateString() : '-'}</p>
+            <div class="command-section">
+                <label><strong>Línea de comando:</strong></label>
+                <pre id="command-box-${sessionId}" class="command-box">${command}</pre>
+                <button class="copy-btn" onclick="copyCommand('${sessionId}')">Copiar</button>
+                ${hasLWM ? `
+                    <button class="toggle-br-btn" id="toggle-br-btn-${sessionId}" onclick="toggleBR('${sessionId}')">BR</button>
+                ` : ''}
             </div>
         </div>
-    `;
+    </div>
+`;
             });
         }
         document.getElementById("tester-sessions").innerHTML = html;
@@ -296,17 +299,17 @@ function logout() {
                 "Content-Type": "application/json"
             }
         })
-        .then(res => res.json())
-        .then(data => {
-            console.log(data.message);
-            localStorage.removeItem("token");
-            window.location.href = "/index.html";
-        })
-        .catch(err => {
-            console.error("Error en logout:", err);
-            localStorage.removeItem("token");
-            window.location.href = "/index.html";
-        });
+            .then(res => res.json())
+            .then(data => {
+                console.log(data.message);
+                localStorage.removeItem("token");
+                window.location.href = "/index.html";
+            })
+            .catch(err => {
+                console.error("Error en logout:", err);
+                localStorage.removeItem("token");
+                window.location.href = "/index.html";
+            });
     } else {
         window.location.href = "/index.html";
     }

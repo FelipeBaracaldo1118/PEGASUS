@@ -10,18 +10,18 @@ if (!token) {
         method: "GET",
         headers: { "Authorization": token }
     })
-    .then(res => {
-        if (!res.ok) {
-            // Token inválido o expirado
+        .then(res => {
+            if (!res.ok) {
+                // Token inválido o expirado
+                localStorage.removeItem("token");
+                window.location.href = "../index.html";
+            }
+        })
+        .catch(err => {
+            console.error("Error verificando token:", err);
             localStorage.removeItem("token");
             window.location.href = "../index.html";
-        }
-    })
-    .catch(err => {
-        console.error("Error verificando token:", err);
-        localStorage.removeItem("token");
-        window.location.href = "../index.html";
-    });
+        });
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -32,21 +32,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const sproutDiv = document.getElementById("sprout-ids");
     const normalDiv = document.getElementById("normal-id");
 
-
-
-    // Función para llenar la tabla
-    function llenarCapturasPorId(preset) {
-        // Limpia todas las casillas
-        document.querySelectorAll("table input[type='number']").forEach(input => input.value = "");
-
-        // Recorre el preset y llena los inputs
-        Object.keys(preset).forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.value = preset[id];
-            }
-        });
-    }
     // Configuración con IDs reales del HTML
     const presetsPorModo = {
         "100": {
@@ -106,9 +91,21 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!modeSelect) { console.error("No se encontró el select #mode"); return; }
     if (!idA) { console.error("No se encontró el input #idOverrideA"); return; }
     if (!idB) { console.error("No se encontró el input #idOverrideB"); return; }
-    if (!idOverride) { console.error("No se encontró el input #idOverride"); return; }
+    if (!
+        idOverride) { console.error("No se encontró el input #idOverride"); return; }
     if (!sproutDiv) { console.error("No se encontró el div #sprout-ids"); return; }
     if (!normalDiv) { console.error("No se encontró el div #normal-id"); return; }
+
+    // Función para llenar los inputs según el preset
+    function llenarCapturasPorId(preset) {
+        // Limpia todos los inputs numéricos
+        document.querySelectorAll("table input[type='number']").forEach(input => input.value = "");
+        // Llena los valores del preset
+        Object.keys(preset).forEach(id => {
+            const input = document.getElementById(id);
+            if (input) input.value = preset[id];
+        });
+    }
 
     modeSelect.addEventListener("change", function () {
         const val = this.value.toLowerCase();
@@ -132,8 +129,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // Llenar automáticamente las capturas si hay preset
-        if (capturePresets[val]) {
-            llenarCapturas(capturePresets[val]);
+        if (presetsPorModo[val]) {
+            llenarCapturasPorId(presetsPorModo[val]);
         }
 
         console.log("Modo seleccionado:", val, "Sprout visible:", sproutDiv.style.display);
@@ -233,4 +230,9 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById("message").innerText = result.message || "Error al crear la sesión";
         }
     });
+
+    // Llenar capturas al cargar la página según el valor inicial del select
+    if (presetsPorModo[modeSelect.value.toLowerCase()]) {
+        llenarCapturasPorId(presetsPorModo[modeSelect.value.toLowerCase()]);
+    }
 });

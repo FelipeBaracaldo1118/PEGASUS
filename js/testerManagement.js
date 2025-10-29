@@ -1,4 +1,4 @@
-const token = localStorage.getItem("token");
+
 
 // Caso 1: no hay token → login
 if (!token) {
@@ -74,7 +74,6 @@ async function fetchKeyTesterSessions() {
             </button>
           </div>
           <div class="session-details">
-            <p><strong>Game Modes:</strong> ${session.gameModes}</p>
             <p class="id-override"><strong>ID Override:</strong> ${session.idOverride}</p>
             <p><strong>Total Players:</strong> ${session.totalPlayers}</p>
             <p><strong>Build:</strong> ${session.buildString}</p>
@@ -328,7 +327,7 @@ async function fetchKeyTesterSessions() {
                     </div>
                 </div>
                 <div class="session-details">
-                    <p><strong>Game Modes:</strong> ${session.gameModes}</p>
+                    
                     <p class="id-override"><strong>ID Override:</strong> ${session.idOverride}</p>
                     <p><strong>Total Players:</strong> ${session.totalPlayers}</p>
                     <p><strong>Build:</strong> ${session.buildString}</p>
