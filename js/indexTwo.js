@@ -130,7 +130,7 @@ registerForm.addEventListener("submit", async (e) => {
       message.style.color = "lime";
       message.innerText = "Registro exitoso. Ahora puedes iniciar sesión.";
       registerForm.reset();
-      localStorage.setItem('token', data.token); // Si el backend devuelve el token
+      
 
       // Redirige después de 1 segundo
       setTimeout(() => {
