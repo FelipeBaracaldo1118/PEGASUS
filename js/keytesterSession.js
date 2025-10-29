@@ -1,7 +1,30 @@
 const SERVER_URL = "http://10.13.46.195:3000";
 const token = localStorage.getItem("token");
 
-document.addEventListener("DOMContentLoaded", function() {
+// Caso 1: no hay token → login
+if (!token) {
+    window.location.href = "../index.html";
+} else {
+    // Caso 2: hay token → verificar con backend
+    fetch(`${SERVER_URL}/protected`, {
+        method: "GET",
+        headers: { "Authorization": token }
+    })
+    .then(res => {
+        if (!res.ok) {
+            // Token inválido o expirado
+            localStorage.removeItem("token");
+            window.location.href = "../index.html";
+        }
+    })
+    .catch(err => {
+        console.error("Error verificando token:", err);
+        localStorage.removeItem("token");
+        window.location.href = "../index.html";
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function () {
     const modeSelect = document.getElementById("mode");
     const idA = document.getElementById("idOverrideA");
     const idB = document.getElementById("idOverrideB");
@@ -9,7 +32,77 @@ document.addEventListener("DOMContentLoaded", function() {
     const sproutDiv = document.getElementById("sprout-ids");
     const normalDiv = document.getElementById("normal-id");
 
-    // Verifica que todos los elementos existen
+
+
+    // Función para llenar la tabla
+    function llenarCapturasPorId(preset) {
+        // Limpia todas las casillas
+        document.querySelectorAll("table input[type='number']").forEach(input => input.value = "");
+
+        // Recorre el preset y llena los inputs
+        Object.keys(preset).forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.value = preset[id];
+            }
+        });
+    }
+    // Configuración con IDs reales del HTML
+    const presetsPorModo = {
+        "100": {
+            csv_ps4: 4,
+            csv_ps4dev: 1,
+            csv_ps5: 2,
+            csv_ps5dev: 1,
+            csv_pc: 3,
+            csv_android: 1,
+            csv_ios: 1,
+            csv_xsx: 1,
+            csv_switch: 1,
+            llm_ps4dev: 1,
+            llm_ps5dev: 1,
+            llm_pc: 1,
+            lwm_ps4dev: 1,
+            trace_pc: 1,
+            trace_android: 1,
+            trace_ios: 1,
+            razor_ps4dev: 1,
+            razor_ps5dev: 1,
+            dx11_pc: 1,
+            dx12_pc: 1,
+            perf_pc: 1
+        },
+        "80": {
+            csv_ps4: 3,
+            csv_ps4dev: 1,
+            csv_ps5: 2,
+            csv_pc: 2,
+            csv_android: 1,
+            csv_ios: 1,
+            csv_xsx: 1,
+            csv_switch: 1,
+            llm_ps4dev: 1,
+            llm_ps5dev: 1,
+            lwm_ps4dev: 1,
+            trace_pc: 1,
+            razor_ps4dev: 1,
+            dx12_pc: 1
+        },
+        "sprout": {
+            csv_ps4: 2,
+            csv_ps4dev: 1,
+            csv_ps5: 2,
+            csv_pc: 2,
+            csv_xsx: 1,
+            csv_switch: 1,
+            llm_pc: 1,
+            lwm_xsx: 1,
+            trace_pc: 1,
+            razor_xsx: 1
+        }
+    };
+
+    // Validaciones básicas
     if (!modeSelect) { console.error("No se encontró el select #mode"); return; }
     if (!idA) { console.error("No se encontró el input #idOverrideA"); return; }
     if (!idB) { console.error("No se encontró el input #idOverrideB"); return; }
@@ -19,6 +112,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     modeSelect.addEventListener("change", function () {
         const val = this.value.toLowerCase();
+
+        // Mostrar/ocultar parte de Sprout
         if (val === "sprout") {
             sproutDiv.style.display = "block";
             normalDiv.style.display = "none";
@@ -35,27 +130,31 @@ document.addEventListener("DOMContentLoaded", function() {
             idOverride.required = true;
             idOverride.disabled = false;
         }
-        // Para depuración
+
+        // Llenar automáticamente las capturas si hay preset
+        if (capturePresets[val]) {
+            llenarCapturas(capturePresets[val]);
+        }
+
         console.log("Modo seleccionado:", val, "Sprout visible:", sproutDiv.style.display);
     });
 
+    // --- Envío del formulario ---
     document.getElementById("sessionForm").addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const mode = modeSelect.value.toLowerCase();
 
-        // Validación para Sprout: ambos campos obligatorios
+        // Validación para Sprout
         if (mode === "sprout") {
-            const idAValue = idA.value.trim();
-            const idBValue = idB.value.trim();
-            if (!idAValue || !idBValue) {
+            if (!idA.value.trim() || !idB.value.trim()) {
                 document.getElementById("message").style.color = "red";
                 document.getElementById("message").innerText = "Debes ingresar ambos ID Override para los grupos Sprout.";
                 return;
             }
         }
 
-        // Construye el objeto de requerimientos de captura
+        // Requerimientos de captura
         const captureRequirements = {
             CSVProfile: {
                 PS4: parseInt(document.getElementById("csv_ps4").value) || 0,
@@ -63,8 +162,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 PS5: parseInt(document.getElementById("csv_ps5").value) || 0,
                 "PS5 Dev": parseInt(document.getElementById("csv_ps5dev").value) || 0,
                 PC: parseInt(document.getElementById("csv_pc").value) || 0,
-               
- Android: parseInt(document.getElementById("csv_android").value) || 0,
+                Android: parseInt(document.getElementById("csv_android").value) || 0,
                 iOS: parseInt(document.getElementById("csv_ios").value) || 0,
                 XSX: parseInt(document.getElementById("csv_xsx").value) || 0,
                 Switch: parseInt(document.getElementById("csv_switch").value) || 0
@@ -94,29 +192,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 "PS5 Dev": parseInt(document.getElementById("razor_ps5dev").value) || 0,
                 XSX: parseInt(document.getElementById("razor_xsx").value) || 0
             },
-            DX11: {
-                PC: parseInt(document.getElementById("dx11_pc").value) || 0
-            },
-            DX12: {
-                PC: parseInt(document.getElementById("dx12_pc").value) || 0
-            },
-            Performance: {
-                PC: parseInt(document.getElementById("perf_pc").value) || 0
-            }
+            DX11: { PC: parseInt(document.getElementById("dx11_pc").value) || 0 },
+            DX12: { PC: parseInt(document.getElementById("dx12_pc").value) || 0 },
+            Performance: { PC: parseInt(document.getElementById("perf_pc").value) || 0 }
         };
 
-        // Construye el objeto de datos
         const data = {
-            commsLead: document.getElementById("commsLead").value,
-            commsAssist: document.getElementById("commsAssist").value,
             backendName: document.getElementById("backendName").value,
             buildString: document.getElementById("buildString").value,
-            googleDrive: document.getElementById("googleDrive").value,
-            gameModes: document.getElementById("gameModes").value,
             startTime: document.getElementById("startTime").value,
-            premadeTeams: document.getElementById("premadeTeams").value,
             teamSize: document.getElementById("teamSize").value,
-            testPlan: document.getElementById("testPlan").value,
             totalPlayers: parseInt(document.getElementById("totalPlayers").value, 10),
             captureRequirements
         };
@@ -127,7 +212,9 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
             data.idOverride = idOverride.value;
         }
+
         console.log("Data enviada:", data);
+
         const res = await fetch(`${SERVER_URL}/api/sessions`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "Authorization": token },

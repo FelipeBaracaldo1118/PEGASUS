@@ -242,21 +242,28 @@ app.post("/api/sessions", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "No autorizado" });
     }
 
+    // Detectar si es sprout
     const isSprout = !!(req.body.idOverrideA && req.body.idOverrideB);
 
+    // Crear sesión con solo los campos nuevos
     const session = new Session({
-      ...req.body,
+      backendName: req.body.backendName,
+      buildString: req.body.buildString,
+      startTime: req.body.startTime,
+      teamSize: req.body.teamSize,
+      totalPlayers: req.body.totalPlayers,
+      captureRequirements: req.body.captureRequirements,
       createdBy: req.userId,
-      isSprout, // ahora se guarda en la base
+      isSprout,
       idOverrideA: isSprout ? req.body.idOverrideA : undefined,
       idOverrideB: isSprout ? req.body.idOverrideB : undefined,
       idOverride: !isSprout ? req.body.idOverride : undefined
     });
+
     await session.save();
     res.status(201).json(session);
   } catch (error) {
-    console.error('Error al crear sesión:', error);
-    res.status(500).json({ message: "Error al crear la sesión", error: error.message });
+    res.status(500).json({ message: "Error al crear sesión", error: error.message });
   }
 });
 
@@ -290,8 +297,10 @@ app.get("/api/sessions", authMiddleware, async (req, res) => {
 // Obtener una sesión
 app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
-    const session = await Session.findById(req.params.id)
-      .populate('createdBy', 'Epam_user');
+    const sessions = await Session.find(query)
+    .select('-commsLead -commsAssist -googleDrive -gameModes -premadeTeams -testPlan')
+    .sort({ createdAt: -1 })
+    .populate('createdBy', 'Epam_user');
 
     if (!session) {
       return res.status(404).json({ message: "Sesión no encontrada" });
@@ -338,18 +347,26 @@ app.put("/api/sessions/:id", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "No autorizado para editar esta sesión" });
     }
 
-    // Detectar si es sprout en la edición
+    // Detectar sprout
     const isSprout = !!(req.body.idOverrideA && req.body.idOverrideB);
+
+    // Solo los campos válidos del formulario nuevo
+    const allowedUpdates = {
+      backendName: req.body.backendName,
+      buildString: req.body.buildString,
+      startTime: req.body.startTime,
+      teamSize: req.body.teamSize,
+      totalPlayers: req.body.totalPlayers,
+      captureRequirements: req.body.captureRequirements,
+      isSprout,
+      idOverrideA: isSprout ? req.body.idOverrideA : undefined,
+      idOverrideB: isSprout ? req.body.idOverrideB : undefined,
+      idOverride: !isSprout ? req.body.idOverride : undefined
+    };
 
     const updatedSession = await Session.findByIdAndUpdate(
       req.params.id,
-      {
-        ...req.body,
-        isSprout,
-        idOverrideA: isSprout ? req.body.idOverrideA : undefined,
-        idOverrideB: isSprout ? req.body.idOverrideB : undefined,
-        idOverride: !isSprout ? req.body.idOverride : undefined
-      },
+      allowedUpdates,
       { new: true, runValidators: true }
     );
 
@@ -543,7 +560,7 @@ app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
       const groupB = assignedTesters.slice(half).map(t => ({ ...t, group: "B" }));
       session.assignedTesters = [...groupA, ...groupB];
     } else {
-      session.assignedTesters = assignedTesters; 
+      session.assignedTesters = assignedTesters;
       // no asignamos "AL" ni otro valor, queda sin grupo si no es sprout
     }
 
@@ -610,20 +627,20 @@ app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
 });
 // Obtener perfil de un tester específico (solo keytester y admin)
 app.get("/api/user/:id", authMiddleware, async (req, res) => {
-    try {
-        const currentUser = await User.findById(req.userId);
-        if (!currentUser || (currentUser.userType !== "keytester" && !currentUser.isAdmin)) {
-            return res.status(403).json({ message: "No autorizado" });
-        }
-
-        const tester = await User.findById(req.params.id).select("-Password -__v");
-        if (!tester) return res.status(404).json({ message: "Usuario no encontrado" });
-
-        res.json(tester);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error al obtener usuario" });
+  try {
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser || (currentUser.userType !== "keytester" && !currentUser.isAdmin)) {
+      return res.status(403).json({ message: "No autorizado" });
     }
+
+    const tester = await User.findById(req.params.id).select("-Password -__v");
+    if (!tester) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json(tester);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error al obtener usuario" });
+  }
 });
 
 // Modificar el endpoint existente de /api/user/me para incluir el conteo de sesiones
@@ -648,22 +665,38 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
   }
 });
 
+//peticion para saber si tiene que volver a iniciar sesion
+app.get("/protected", (req, res) => {
+    const token = req.headers["authorization"];
+
+    if (!token) {
+        return res.status(403).json({ success: false, message: "Token no proporcionado" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, "SECRETO");
+        res.status(200).json({ success: true, message: "Bienvenido a la ruta protegida", userId: decoded.userId });
+    } catch (err) {
+        res.status(401).json({ success: false, message: "Token inválido o expirado" });
+    }
+});
+
 //logout 
 app.post("/logout", authMiddleware, async (req, res) => {
-    try {
-        const user = await User.findById(req.userId);
-        if (!user) {
-            return res.status(404).json({ success: false, message: "Usuario no encontrado" });
-        }
-
-        // Cambiar disponibilidad a N/A
-        user.availability = "N/A";
-        await user.save();
-
-        res.json({ success: true, message: "Sesión cerrada y disponibilidad actualizada" });
-    } catch (error) {
-        res.status(500).json({ success: false, message: "Error al cerrar sesión" });
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
     }
+
+    // Cambiar disponibilidad a N/A
+    user.availability = "N/A";
+    await user.save();
+
+    res.json({ success: true, message: "Sesión cerrada y disponibilidad actualizada" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error al cerrar sesión" });
+  }
 });
 // --------------------------
 // INICIAR SERVIDOR

@@ -1,6 +1,33 @@
 
 const SERVER_URL = "http://10.13.46.195:3000";
 
+
+const token = localStorage.getItem("token");
+
+// Si no hay token, enviar al login inmediatamente
+if (!token) {
+    window.location.href = "/index.html"; 
+} else {
+    // Verificar token con el backend
+    fetch(`${SERVER_URL}/protected`, {
+        method: "GET",
+        headers: { "Authorization": token }
+    })
+    .then(async res => {
+        if (!res.ok) {
+            // Token inválido o expirado, limpiar y enviar al login
+            localStorage.removeItem("token");
+            window.location.href = "/index.html";
+        }
+        // Si es válido, dejamos al usuario donde está
+    })
+    .catch(err => {
+        console.error("Error verificando token:", err);
+        localStorage.removeItem("token");
+        window.location.href = "/index.html";
+    });
+}
+
 // Función para mostrar errores
 function showError(message) {
     const errorDiv = document.getElementById('error');
@@ -13,7 +40,7 @@ function getToken() {
     const token = localStorage.getItem("token");
     if (!token) {
         showError("No has iniciado sesión");
-        window.location.href = "index.html";
+        window.location.href = "/index.html";
         return null;
     }
     return token;

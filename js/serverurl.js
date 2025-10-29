@@ -10,8 +10,8 @@ const buildsData = {
       {
         "nombre": "switch",
         "servidor_archivos": true,
-        "url": "http://10.13.46.195:8080/buildsSharedFolder/Switch/FortniteClient-Switch-Test-External.nsp",
-        "url2": "http://10.13.46.195:8080/buildsSharedFolder/Switch/TinyApp.nsp"
+        "url": "http://10.13.46.195:8080/buildsSharedFolder/Switch/Switch38.10/FortniteClient-Switch-Test-External.nsp",
+        "url2": "http://10.13.46.195:8080/buildsSharedFolder/Switch/Switch38.10/TinyApp.nsp"
       },
       {
         "nombre": "ps4",

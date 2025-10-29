@@ -1,4 +1,27 @@
+const token = localStorage.getItem("token");
 
+// Caso 1: no hay token → login
+if (!token) {
+    window.location.href = "../index.html";
+} else {
+    // Caso 2: hay token → verificar con backend
+    fetch(`${SERVER_URL}/protected`, {
+        method: "GET",
+        headers: { "Authorization": token }
+    })
+    .then(res => {
+        if (!res.ok) {
+            // Token inválido o expirado
+            localStorage.removeItem("token");
+            window.location.href = "../index.html";
+        }
+    })
+    .catch(err => {
+        console.error("Error verificando token:", err);
+        localStorage.removeItem("token");
+        window.location.href = "../index.html";
+    });
+}
 // Configuración de la UI para keytesters
 function setupKeyTesterUI() {
     const actions = document.getElementById("profile-actions");

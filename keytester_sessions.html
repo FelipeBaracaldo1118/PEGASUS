@@ -11,18 +11,16 @@
     <div class="container">
         <h2>Crear Sesión de Juego</h2>
         <form id="sessionForm">
-            <label for="commsLead">Comms Lead:</label>
-            <input type="text" id="commsLead" required placeholder="@Francisco Casademont">
 
-            <label for="commsAssist">Comms Assist:</label>
-            <input type="text" id="commsAssist" required placeholder="@Lucas Battistini">
-
+            <!-- 🔹 Backend Name -->
             <label for="backendName">Backend Name:</label>
             <input type="text" id="backendName" required placeholder="Baseball">
 
+            <!-- 🔹 Build String -->
             <label for="buildString">Build String:</label>
             <input type="text" id="buildString" required placeholder="++Fortnite+Release-38.10-CL-47160256">
 
+            <!-- 🔹 Modo de Juego -->
             <label for="mode">Modo de Juego:</label>
             <select id="mode" required>
                 <option value="">Selecciona un modo</option>
@@ -31,17 +29,11 @@
                 <option value="sprout">Sprout</option>
             </select>
 
-            <label for="googleDrive">Google Drive:</label>
-            <input type="url" id="googleDrive" required placeholder="https://drive.google.com/drive/folders/...">
-
-            <label for="gameModes">Game Modes / Playlists:</label>
-            <textarea id="gameModes" required placeholder="BR: Squads / Reload (Dashberry) / Blitz"></textarea>
-
+            <!-- 🔹 ID Overrides -->
             <div id="normal-id">
                 <label for="idOverride">ID Override:</label>
                 <input type="text" id="idOverride" required placeholder="42069">
             </div>
-
             <div id="sprout-ids" style="display:none;">
                 <label for="idOverrideA">ID Override Grupo 1:</label>
                 <input type="text" id="idOverrideA" placeholder="ID para Grupo 1">
@@ -49,27 +41,19 @@
                 <input type="text" id="idOverrideB" placeholder="ID para Grupo 2">
             </div>
 
-
-
+            <!-- 🔹 Start Time -->
             <label for="startTime">Start Time:</label>
             <input type="text" id="startTime" required placeholder="1PM">
 
-            <label for="premadeTeams">Premade Teams:</label>
-            <input type="text" id="premadeTeams" required placeholder="No">
-
+            <!-- 🔹 Team Size -->
             <label for="teamSize">Team Size:</label>
-            <input type="text" id="teamSize" required placeholder="Squ
-ad (4), Fill">
+            <input type="text" id="teamSize" required placeholder="Squad (4), Fill">
 
-            <label for="testPlan">Test Plan / BTR:</label>
-            <input type="url" id="testPlan" required placeholder="https://jira.it.epicgames.com/browse/FNTEST-202139">
-
-
-
+            <!-- 🔹 Cantidad de jugadores -->
             <label for="totalPlayers">Cantidad de jugadores:</label>
             <input type="number" id="totalPlayers" min="1" required placeholder="100 o 80">
 
-            <!-- NUEVA SECCIÓN: Requerimientos de Captura -->
+            <!-- 🔹 Requerimientos de Captura -->
             <h3>Requerimientos de Captura</h3>
             <table>
                 <tr>
