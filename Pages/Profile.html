@@ -124,15 +124,7 @@
     </div>
 
     <div id="profile-info" class="profile-info">
-      <p><strong>Usuario EPAM:</strong> manuel.nino</p>
-      <p><strong>Accounts:</strong> Fortnite, Rocket League</p>
-      <p><strong>Devices:</strong> PC, Xbox Series X</p>
-      <p><strong>Pod:</strong> Pod-Alpha</p>
-      <p><strong>Región:</strong> EU</p>
-      <p><strong>Estación:</strong> Station-07</p>
-      <p><strong>Disponibilidad:</strong> Disponible</p>
-      <p><strong>IsPlaying:</strong> No</p>
-      <p><strong>Rol:</strong> keytester</p>
+<div id="profile-data" class="profile-data"></div>
     </div>
 
     <div class="profile-menu-footer">
@@ -154,18 +146,12 @@
   </main>
 
   <!-- Scripts -->
+   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
   <script src="../js/profile-test.js"></script>
   <script src="../js/testerManagement.js"></script>
 
   <script>
     // Simula el modo desarrollo (evita login)
-    const DEV_MODE = true;
-
-    if (DEV_MODE) {
-      console.log("🧪 Modo DEV: usando datos dummy");
-    } else {
-      console.log("Modo producción");
-    }
 
     // === Sidebar functionality ===
     const profileToggle = document.getElementById("profile-toggle");

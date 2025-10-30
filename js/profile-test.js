@@ -118,6 +118,7 @@ async function fetchProfile() {
 }
 
 // ====================== SESIONES DE TESTER ======================
+const validArgs = ["Trace", "LLM", "LWM_BR", "LWM_NoBR", "Razor", "NoTimeout"];
 async function fetchTesterSessions() {
     const token = getToken();
     if (!token) return;
@@ -143,7 +144,7 @@ async function fetchTesterSessions() {
 
                 let args = [];
                 if (myTester && Array.isArray(myTester.capturas)) {
-                    args = myTester.capturas.filter(c => !["CSVProfile", "DX12", "DX11"].includes(c.toUpperCase()));
+                    args = myTester.capturas.filter(c => validArgs.includes(c));
                 }
 
                 const hasLWM = args.includes("LWM_BR");
@@ -158,23 +159,23 @@ async function fetchTesterSessions() {
                 const sessionId = session._id;
 
                 html += `
-                    <div class="assigned-session-card">
-                        <div class="assigned-session-title">${session.backendName || '-'}</div>
-                        <div class="assigned-session-details">
-                            <p><strong>Build:</strong> ${session.buildString || '-'}</p>
-                            <p><strong>ID Override:</strong> ${session.idOverride || '-'}</p>
-                            <p><strong>Dispositivo Asignado:</strong> ${myTester ? myTester.device : '-'}</p>
-                            <p><strong>Capturas:</strong> ${myTester?.capturas?.join(', ') || 'No asignadas'}</p>
-                            <p><strong>Fecha:</strong> ${session.createdAt ? new Date(session.createdAt).toLocaleDateString() : '-'}</p>
-                            <div class="command-section">
-                                <label><strong>Línea de comando:</strong></label>
-                                <pre id="command-box-${sessionId}" class="command-box">${command}</pre>
-                                <button class="copy-btn" onclick="copyCommand('${sessionId}')">Copiar</button>
-                                ${hasLWM ? `<button class="toggle-br-btn" id="toggle-br-btn-${sessionId}" onclick="toggleBR('${sessionId}')">BR</button>` : ""}
-                            </div>
-                        </div>
-                    </div>
-                `;
+    <div class="assigned-session-card">
+        <div class="assigned-session-title">${session.backendName || '-'}</div>
+        <div class="assigned-session-details">
+            <p><strong>Build:</strong> ${session.buildString || '-'}</p>
+            <p><strong>ID Override:</strong> ${session.idOverride || '-'}</p>
+            <p><strong>Dispositivo Asignado:</strong> ${myTester ? myTester.device : '-'}</p>
+            <p><strong>Capturas:</strong> ${myTester?.capturas?.join(', ') || 'No asignadas'}</p>
+            <p><strong>Fecha:</strong> ${session.createdAt ? new Date(session.createdAt).toLocaleDateString() : '-'}</p>
+            <div class="command-section">
+                <label><strong>Línea de comando:</strong></label>
+                <pre id="command-box-${sessionId}" class="command-box" style="color:#111;background:#fff;">${command}</pre>
+                <button class="copy-btn" onclick="copyCommand('${sessionId}')">Copiar</button>
+                ${hasLWM ? `<button class="toggle-br-btn" id="toggle-br-btn-${sessionId}" onclick="toggleBR('${sessionId}')">BR</button>` : ""}
+            </div>
+        </div>
+    </div>
+`;
             });
         }
         document.getElementById("tester-sessions").innerHTML = html;
