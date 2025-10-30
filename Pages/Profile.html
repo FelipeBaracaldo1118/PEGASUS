@@ -7,106 +7,7 @@
   <link rel="stylesheet" href="../css/profile.css">
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    /* ===== Menú lateral (hamburguesa de perfil) ===== */
-    .profile-toggle {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background: #2366d1;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 1100;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .profile-menu {
-      position: fixed;
-      top: 0;
-      right: -280px;
-      width: 260px;
-      height: 100%;
-      background: #fff;
-      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
-      transition: right 0.3s ease-in-out;
-      z-index: 1500;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .profile-menu.open {
-      right: 0;
-    }
-
-    .profile-menu-header {
-      padding: 18px 14px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .close-profile {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #444;
-    }
-
-    .profile-info {
-      padding: 16px;
-      color: #222;
-      flex-grow: 1;
-      overflow-y: auto;
-    }
-
-    .profile-info p {
-      margin: 6px 0;
-      font-size: 14px;
-    }
-
-    .profile-menu-footer {
-      padding: 16px;
-      border-top: 1px solid #eee;
-    }
-
-    .logout-btn {
-      width: 100%;
-      background: #ff4b4b;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .logout-btn:hover {
-      background: #d63636;
-    }
-
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.3);
-      display: none;
-      z-index: 1400;
-    }
-
-    .overlay.active {
-      display: block;
-    }
-  </style>
+  
 </head>
 
 <body>
@@ -144,6 +45,13 @@
     <div id="sessions-container" class="sessions-container"></div>
     <div id="message"></div>
   </main>
+
+  <!--busqueda de usuarios-->
+  <div class="search-users-section">
+  <input type="text" id="search-users-input" placeholder="Buscar usuario o estación...">
+  <button onclick="searchUsers()">Buscar</button>
+</div>
+<div id="search-users-results"></div>
 
   <!-- Scripts -->
    <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>

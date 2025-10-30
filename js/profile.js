@@ -218,11 +218,78 @@ function toggleBR(sessionId) {
 function copyCommand(sessionId) {
     const textElem = document.getElementById(`command-box-${sessionId}`);
     if (!textElem) return alert("No se encontró el comando a copiar");
-    navigator.clipboard.writeText(textElem.textContent)
-        .then(() => alert("Comando copiado ✅"))
-        .catch(() => alert("No se pudo copiar"));
+    const text = textElem.textContent;
+    // Fallback para HTTP
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = "absolute";
+    textarea.style.left = "-9999px";
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+        alert("Comando copiado");
+    } catch (err) {
+        alert("No se pudo copiar");
+    }
+    document.body.removeChild(textarea);
 }
+// Búsqueda en tiempo real al escribir
+document.getElementById('search-users-input').addEventListener('input', function() {
+  if (this.value.trim().length > 2) { // Busca a partir de 3 caracteres
+    searchUsers();
+  } else {
+    document.getElementById('search-users-results').innerHTML = "";
+  }
+});
 
+// Función para buscar usuarios por nombre o estación
+function searchUsers() {
+  const query = document.getElementById('search-users-input').value.trim();
+  if (!query) {
+    document.getElementById('search-users-results').innerHTML = "<i>Ingresa un nombre o estación para buscar.</i>";
+    return;
+  }
+  fetch(`${SERVER_URL}/api/users/search?q=${encodeURIComponent(query)}`, {
+    headers: { "Authorization": token }
+  })
+    .then(res => res.json())
+    .then(users => {
+      if (!users.length) {
+        document.getElementById('search-users-results').innerHTML = "<i>No se encontraron usuarios.</i>";
+        return;
+      }
+      let html = `<table class="styled-table">
+        <thead>
+          <tr>
+            <th>Usuario EPAM</th>
+            <th>Pod</th>
+            <th>Estación</th>
+            <th>Región</th>
+            <th>Dispositivos</th>
+            <th>Rol</th>
+          </tr>
+        </thead>
+        <tbody>`;
+      users.forEach(u => {
+        html += `<tr>
+          <td>${u.Epam_user}</td>
+          <td>${u.Pod || ''}</td>
+          <td>${u.Station || ''}</td>
+          <td>${u.Region || ''}</td>
+          <td>${Array.isArray(u.Devices) ? u.Devices.map(d => d.name).join(", ") : ''}</td>
+          <td>${u.userType || ''}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+      document.getElementById('search-users-results').innerHTML = html;
+    })
+    .catch(err => {
+      document.getElementById('search-users-results').innerHTML = "<i>Error al buscar usuarios.</i>";
+      console.error(err);
+    });
+}
 // ====================== CERRAR SESIÓN ======================
 function logout() {
     const token = localStorage.getItem("token");

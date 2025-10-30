@@ -727,7 +727,30 @@ app.get("/protected", (req, res) => {
         res.status(401).json({ success: false, message: "Token inválido o expirado" });
     }
 });
+// Endpoint: Buscar usuarios por nombre y pod
+app.get('/api/users/search', authMiddleware, async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const pod = req.query.pod;
 
+    // Búsqueda por Epam_user o Station (ambos insensibles a mayúsculas/minúsculas)
+    const search = {
+      $or: [
+        { Epam_user: { $regex: query, $options: 'i' } },
+        { Station: { $regex: query, $options: 'i' } }
+      ]
+    };
+    if (pod) search.Pod = pod;
+
+    const users = await User.find(search)
+      .select('Epam_user Pod Station Region Devices userType IsPlaying availability');
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error al buscar usuarios:', error);
+    res.status(500).json({ message: 'Error al buscar usuarios', error: error.message });
+  }
+});
 //logout 
 app.post("/logout", authMiddleware, async (req, res) => {
   try {
