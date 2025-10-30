@@ -192,6 +192,10 @@ document.addEventListener("DOMContentLoaded", function () {
             DX12: { PC: +document.getElementById("dx12_pc").value || 0 },
             Performance: { PC: +document.getElementById("perf_pc").value || 0 }
         };
+        let sessionType = "normal";
+        if (["sprout", "juno", "sparks"].includes(mode)) {
+            sessionType = mode;
+        }
 
         const data = {
             backendName: document.getElementById("backendName").value,
@@ -200,7 +204,7 @@ document.addEventListener("DOMContentLoaded", function () {
             teamSize: document.getElementById("teamSize").value,
             totalPlayers: +document.getElementById("totalPlayers").value,
             captureRequirements,
-            sessionType: mode // 🔹 nuevo campo que manda “sprout”, “juno”, “sparks” o “normal”
+            sessionType // 🔹 ahora solo puede ser "normal", "sprout", "juno" o "sparks"
         };
 
         if (usaSproutLayout) {
