@@ -11,7 +11,8 @@ body {
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    padding: 30px;
+    padding: 30px; 
+    color: #000;
 }
 
 .profile-container h2 {
@@ -27,19 +28,19 @@ body {
 }
 
 .logout-btn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: #007bff;
-    color: #fff;
-    border: none;
-    padding: 8px 18px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    z-index: 10;
-    transition: background 0.2s;
+  align-self: center;
+  margin-bottom: 20px;
+  background: #ff0000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-size: 14px;
+  transition: background 0.2s;
 }
+
 .logout-btn:hover {
     background: #0056b3;
 }
@@ -433,6 +434,7 @@ body {
 .assigned-session-details p {
     margin: 6px 0;
     font-size: 1em;
+    color: #000;
 }
 
 .assigned-session-row {
@@ -592,3 +594,134 @@ body {
     background: #007bff;
     color: white;
 }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .session-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .session-details strong {
+        min-width: 120px;
+    }
+
+    .action-btn {
+        width: 100%;
+        margin: 5px 0;
+    }
+}
+
+/* === BOTÓN HAMBURGUESA PERFIL === */
+.profile-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #2366d1;
+  color: #fff;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  z-index: 3000;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-toggle:hover {
+  background: #174a96;
+}
+
+/* === MENÚ LATERAL (OFFCANVAS) === */
+.profile-menu {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 300px;
+  height: 100vh; /* asegura que tenga toda la altura */
+  background: #fff;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.2);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  z-index: 2900;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* deja espacio para el botón abajo */
+}
+
+.profile-menu.open {
+  transform: translateX(0);
+}
+
+/* === CABECERA DEL MENÚ === */
+.profile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #000;
+}
+
+.close-profile {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+}
+
+/* === INFO PERFIL === */
+.profile-info {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.profile-info p {
+  margin: 8px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #000;
+}
+
+/* === PIE DEL MENÚ === */
+.profile-menu-footer {
+  border-top: 1px solid #ddd;
+  padding-top: 15px;
+  text-align: center;
+}
+
+/* === OVERLAY OSCURO === */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px); /* ✨ efecto moderno */
+  z-index: 2800;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* === ANIMACIÓN SUAVE === */
+@keyframes slideIn {
+  from { right: -350px; }
+  to { right: 0; }
+}
+
+.profile-menu.open {
+  animation: slideIn 0.3s ease forwards;
+}
+
+.profile-toggle.hidden {
+  display: none;
+}
+

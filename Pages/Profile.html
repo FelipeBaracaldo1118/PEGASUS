@@ -2,26 +2,197 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Perfil de Usuario</title>
-    <link rel="stylesheet" href="../css/profile.css">
+  <meta charset="UTF-8">
+  <title>Perfil de Usuario</title>
+  <link rel="stylesheet" href="../css/profile.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* ===== Menú lateral (hamburguesa de perfil) ===== */
+    .profile-toggle {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: #2366d1;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .profile-menu {
+      position: fixed;
+      top: 0;
+      right: -280px;
+      width: 260px;
+      height: 100%;
+      background: #fff;
+      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
+      transition: right 0.3s ease-in-out;
+      z-index: 1500;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .profile-menu.open {
+      right: 0;
+    }
+
+    .profile-menu-header {
+      padding: 18px 14px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .close-profile {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #444;
+    }
+
+    .profile-info {
+      padding: 16px;
+      color: #222;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .profile-info p {
+      margin: 6px 0;
+      font-size: 14px;
+    }
+
+    .profile-menu-footer {
+      padding: 16px;
+      border-top: 1px solid #eee;
+    }
+
+    .logout-btn {
+      width: 100%;
+      background: #ff4b4b;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .logout-btn:hover {
+      background: #d63636;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      display: none;
+      z-index: 1400;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+  </style>
 </head>
 
 <body>
-    <div class="profile-sidebar">
-        <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
-        <div class="profile-container">
-            <h2>Perfil de Usuario</h2>
-            <div id="profile-data" class="profile-data"></div>
-            <div id="tester-sessions"></div>
-            <div id="profile-actions"></div>
-            <div id="sessions-container" class="sessions-container"></div>
-            <div id="message"></div>
-        </div>
-    </div>
-    <script src="../js/profile.js"></script>
-    <script src="../js/testerManagement.js"></script>
-    <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
-</body>
 
+  <!-- Botón Hamburguesa -->
+  <button id="profile-toggle" class="profile-toggle">
+    <i class="fas fa-user"></i> Perfil
+  </button>
+
+  <!-- Menú lateral del perfil -->
+  <aside id="profile-menu" class="profile-menu">
+    <div class="profile-menu-header">
+      <h3>Perfil de Usuario</h3>
+      <button id="close-profile" class="close-profile">&times;</button>
+    </div>
+
+    <div id="profile-info" class="profile-info">
+      <p><strong>Usuario EPAM:</strong> manuel.nino</p>
+      <p><strong>Accounts:</strong> Fortnite, Rocket League</p>
+      <p><strong>Devices:</strong> PC, Xbox Series X</p>
+      <p><strong>Pod:</strong> Pod-Alpha</p>
+      <p><strong>Región:</strong> EU</p>
+      <p><strong>Estación:</strong> Station-07</p>
+      <p><strong>Disponibilidad:</strong> Disponible</p>
+      <p><strong>IsPlaying:</strong> No</p>
+      <p><strong>Rol:</strong> keytester</p>
+    </div>
+
+    <div class="profile-menu-footer">
+      <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+    </div>
+  </aside>
+
+  <!-- Capa de fondo -->
+  <div id="overlay" class="overlay"></div>
+
+  <!-- Contenido principal del perfil -->
+  <main class="profile-container">
+    <h2>Perfil de Usuario</h2>
+    <div id="profile-data" class="profile-data"></div>
+    <div id="tester-sessions"></div>
+    <div id="profile-actions"></div>
+    <div id="sessions-container" class="sessions-container"></div>
+    <div id="message"></div>
+  </main>
+
+  <!-- Scripts -->
+  <script src="../js/profile-test.js"></script>
+  <script src="../js/testerManagement.js"></script>
+
+  <script>
+    // Simula el modo desarrollo (evita login)
+    const DEV_MODE = true;
+
+    if (DEV_MODE) {
+      console.log("🧪 Modo DEV: usando datos dummy");
+    } else {
+      console.log("Modo producción");
+    }
+
+    // === Sidebar functionality ===
+    const profileToggle = document.getElementById("profile-toggle");
+    const profileMenu = document.getElementById("profile-menu");
+    const closeProfile = document.getElementById("close-profile");
+    const overlay = document.getElementById("overlay");
+
+    profileToggle.addEventListener("click", () => {
+      profileMenu.classList.add("open");
+      overlay.classList.add("active");
+    });
+
+    closeProfile.addEventListener("click", () => {
+      profileMenu.classList.remove("open");
+      overlay.classList.remove("active");
+    });
+
+    overlay.addEventListener("click", () => {
+      profileMenu.classList.remove("open");
+      overlay.classList.remove("active");
+    });
+
+    // Cerrar sesión
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "../index.html";
+    }
+  </script>
+</body>
 </html>

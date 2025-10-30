@@ -42,6 +42,9 @@ const User = mongoose.model("User", userSchema);
 //------------------------------------
 //esquema playtest
 //------------------------------------
+//------------------------------------
+//esquema playtest
+//------------------------------------
 const sessionSchema = new mongoose.Schema({
   commsLead: String,
   commsAssist: String,
@@ -58,7 +61,12 @@ const sessionSchema = new mongoose.Schema({
   testPlan: String,
   totalPlayers: Number,
   captureRequirements: { type: Object, default: {} },
-  isSprout: { type: Boolean, default: false }, // <-- CAMPO NUEVO en el schema
+  isSprout: { type: Boolean, default: false }, 
+  sessionType: { 
+    type: String, 
+    enum: ['normal', 'sprout', 'juno', 'sparks'], 
+    default: 'normal' 
+  }, // ⬅️ NUEVO
   assignedTesters: [
     {
       testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -68,7 +76,8 @@ const sessionSchema = new mongoose.Schema({
       mmr: Number,
       pod: String,
       station: String,
-      group: String, // solo tendrá valor si es sprout
+      group: String,
+      team: String, // ⬅️ NUEVO campo opcional
       dispositivos: [String],
       capturas: [String]
     }
@@ -78,6 +87,7 @@ const sessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Session = mongoose.model("Session", sessionSchema);
+
 // --------------------------
 // RUTA: REGISTRO DE USUARIO
 // --------------------------
@@ -242,10 +252,10 @@ app.post("/api/sessions", authMiddleware, async (req, res) => {
       return res.status(403).json({ message: "No autorizado" });
     }
 
-    // Detectar si es sprout
-    const isSprout = !!(req.body.idOverrideA && req.body.idOverrideB);
+    const { idOverrideA, idOverrideB, idOverride, sessionType } = req.body;
 
-    // Crear sesión con solo los campos nuevos
+    const isSprout = ['sprout', 'juno', 'sparks'].includes(sessionType);
+
     const session = new Session({
       backendName: req.body.backendName,
       buildString: req.body.buildString,
@@ -254,10 +264,11 @@ app.post("/api/sessions", authMiddleware, async (req, res) => {
       totalPlayers: req.body.totalPlayers,
       captureRequirements: req.body.captureRequirements,
       createdBy: req.userId,
+      sessionType: sessionType || 'normal',
       isSprout,
-      idOverrideA: isSprout ? req.body.idOverrideA : undefined,
-      idOverrideB: isSprout ? req.body.idOverrideB : undefined,
-      idOverride: !isSprout ? req.body.idOverride : undefined
+      idOverrideA: isSprout ? idOverrideA : undefined,
+      idOverrideB: isSprout ? idOverrideB : undefined,
+      idOverride: !isSprout ? idOverride : undefined
     });
 
     await session.save();
@@ -266,6 +277,7 @@ app.post("/api/sessions", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error al crear sesión", error: error.message });
   }
 });
+
 
 // Listar sesiones
 app.get("/api/sessions", authMiddleware, async (req, res) => {
@@ -460,14 +472,11 @@ app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
   }
 });
 
-// Asignación automática de testers (con lógica sprout)
+// Asignación automática de testers (con soporte para Sprout, Juno, Sparks)
 app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
   try {
     const session = await Session.findById(req.params.id);
     if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
-
-    // Recalcular isSprout por seguridad
-    const isSprout = session.isSprout || (!!session.idOverrideA && !!session.idOverrideB);
 
     const assignedTesters = [];
     const testersAsignados = new Set();
@@ -489,6 +498,7 @@ app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
       Performance: ["PC"]
     };
 
+    // Repartición de testers según requerimientos
     for (const device of dispositivos) {
       let capturasExclusivas = [];
       let csvCount = 0;
@@ -553,14 +563,52 @@ app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
       }
     }
 
-    if (isSprout) {
+    // 🔹 Aplicar lógica según tipo de sesión
+    const { sessionType } = session;
+
+    if (sessionType === "sprout") {
       const half = Math.ceil(assignedTesters.length / 2);
       const groupA = assignedTesters.slice(0, half).map(t => ({ ...t, group: "A" }));
       const groupB = assignedTesters.slice(half).map(t => ({ ...t, group: "B" }));
       session.assignedTesters = [...groupA, ...groupB];
+
+    } else if (sessionType === "juno") {
+      const teamSize = 4;
+      const totalTeams = 10;
+      const totalNeeded = totalTeams * teamSize;
+      const selected = assignedTesters.slice(0, totalNeeded);
+
+      const teams = [];
+      for (let i = 0; i < totalTeams; i++) {
+        const buildGroup = i < 5 ? "A" : "B";
+        const members = selected.slice(i * teamSize, (i + 1) * teamSize).map(t => ({
+          ...t,
+          group: buildGroup,
+          team: `Team ${i + 1}`
+        }));
+        teams.push(...members);
+      }
+      session.assignedTesters = teams;
+
+    } else if (sessionType === "sparks") {
+      const teamSize = 4;
+      const totalTeams = 5;
+      const selected = assignedTesters.slice(0, totalTeams * teamSize);
+
+      const teams = [];
+      for (let i = 0; i < totalTeams; i++) {
+        const buildGroup = i < Math.ceil(totalTeams / 2) ? "A" : "B";
+        const members = selected.slice(i * teamSize, (i + 1) * teamSize).map(t => ({
+          ...t,
+          group: buildGroup,
+          team: `Team ${i + 1}`
+        }));
+        teams.push(...members);
+      }
+      session.assignedTesters = teams;
+
     } else {
       session.assignedTesters = assignedTesters;
-      // no asignamos "AL" ni otro valor, queda sin grupo si no es sprout
     }
 
     await session.save();
