@@ -4,7 +4,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
+// Al inicio de tu archivo principal de Node.js (por ejemplo, server.js)
+//const { spawn } = require('child_process');
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -30,12 +31,13 @@ const userSchema = new mongoose.Schema({
   Mmr: { type: Number },
   Password: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
-  userType: { type: String, enum: ['tester', 'keytester'], default: 'tester' }, // <--- NUEVO
+  userType: { type: String, enum: ['tester', 'keytester'], default: 'tester' },
   Date_Time: { type: Date, default: Date.now },
   Pod: { type: String },
   Region: { type: String },
   Station: { type: String },
-  IsPlaying: { type: Boolean, default: false }
+  IsPlaying: { type: Boolean, default: false },
+  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado','instalado'], default: 'no instalado' } // <--- NUEVO CAMPO
 });
 const User = mongoose.model("User", userSchema);
 
@@ -727,6 +729,23 @@ app.get("/protected", (req, res) => {
         res.status(401).json({ success: false, message: "Token inválido o expirado" });
     }
 });
+// Endpoint para actualizar estado
+app.post('/actualizar-estado', async (req, res) => {
+  const { station, nuevoEstado } = req.body;
+  try {
+    const user = await User.findOneAndUpdate(
+      { Station: station },
+      { StateOfInstalling: nuevoEstado },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).send('Usuario no encontrado por Station');
+    }
+    res.status(200).send(`Estado actualizado para Station: ${user.Station}`);
+  } catch (error) {
+    res.status(500).send('Error al actualizar el estado');
+  }
+});
 
 //logout 
 app.post("/logout", authMiddleware, async (req, res) => {
@@ -745,9 +764,12 @@ app.post("/logout", authMiddleware, async (req, res) => {
     res.status(500).json({ success: false, message: "Error al cerrar sesión" });
   }
 });
+/*const pythonProcess = spawn('python', ['C:\\filesServer\\python\\actualizar_estado.py'], {
+  stdio: 'inherit' // Esto muestra la salida del script Python en la consola de Node.js
+});*/
 // --------------------------
 // INICIAR SERVIDOR
 // --------------------------
 app.listen(3000, "0.0.0.0", () => {
-  console.log("Servidor Node corriendo en http://10.13.46.195:3000/");
+  console.log("Servidor Node corriendo en http://10.13.46.195:8080/");
 });
