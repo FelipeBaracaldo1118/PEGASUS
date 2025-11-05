@@ -1,292 +1,281 @@
-// ====================== CONFIGURACIÓN BASE ======================
-const SERVER_URL = "http://10.13.46.195:3000";
-
-// Verificación inicial del token
+// ===============================
+// CONFIGURACIÓN INICIAL
+// ===============================
+const SERVER_URL = "http://10.13.46.195:8080";
 const token = localStorage.getItem("token");
-if (!token) {
-  window.location.href = "/index.html";
-} else {
-  fetch(`${SERVER_URL}/protected`, {
-    method: "GET",
-    headers: { Authorization: token },
-  })
-    .then(async (res) => {
-      if (!res.ok) {
-        localStorage.removeItem("token");
-        window.location.href = "/index.html";
-      }
-    })
-    .catch((err) => {
-      console.error("Error verificando token:", err);
-      localStorage.removeItem("token");
-      window.location.href = "/index.html";
-    });
-}
+if (!token) window.location.href = "../index.html";
 
-// ====================== UTILIDADES ======================
-function showError(message) {
-  const errorDiv = document.getElementById("message");
-  if (errorDiv) {
-    errorDiv.textContent = message;
-    errorDiv.style.color = "red";
-  }
-}
-
-function getToken() {
-  const token = localStorage.getItem("token");
-  if (!token) {
-    showError("No has iniciado sesión");
-    window.location.href = "/index.html";
-    return null;
-  }
-  return token;
-}
-
-let currentUser = null;
-
-// ====================== PERFIL PRINCIPAL ======================
-async function fetchProfile() {
-  const token = getToken();
-  if (!token) return;
-
+// ===============================
+// OBTENER USUARIO ACTUAL
+// ===============================
+async function fetchUser() {
   try {
-    const response = await fetch(`${SERVER_URL}/api/user/me`, {
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    const user = await response.json();
-    currentUser = user;
-
-    // Render principal
-    const profileData = document.getElementById("profile-data");
-    profileData.innerHTML = `
-      <div><label>Usuario EPAM:</label> ${user.Epam_user || "N/A"}</div>
-      <div><label>Accounts:</label> ${Array.isArray(user.Accounts) ? user.Accounts.join(", ") : "N/A"}</div>
-      <div><label>Devices:</label> ${Array.isArray(user.Devices) ? user.Devices.map(d => d.name).join(", ") : "N/A"}</div>
-      <div><label>Pod:</label> ${user.Pod || "N/A"}</div>
-      <div><label>Región:</label> ${user.Region || "N/A"}</div>
-      <div><label>Estación:</label> ${user.Station || "N/A"}</div>
-      <div><label>Disponibilidad:</label> ${user.availability || "N/A"}</div>
-      <div><label>IsPlaying:</label> ${user.IsPlaying ? "Sí" : "No"}</div>
-      <div><label>Rol:</label> ${user.userType || (user.isAdmin ? "keytester" : "tester")}</div>
-    `;
-
-    // Mostrar también en el menú lateral
-    const sidebar = document.getElementById("profile-info");
-    if (sidebar) {
-      sidebar.innerHTML = `
-        <p><strong>Usuario EPAM:</strong> ${user.Epam_user}</p>
-        <p><strong>Accounts:</strong> ${user.Accounts?.join(", ") || "N/A"}</p>
-        <p><strong>Devices:</strong> ${user.Devices?.map(d => d.name).join(", ") || "N/A"}</p>
-        <p><strong>Pod:</strong> ${user.Pod}</p>
-        <p><strong>Región:</strong> ${user.Region}</p>
-        <p><strong>Estación:</strong> ${user.Station}</p>
-        <p><strong>Disponibilidad:</strong> ${user.availability}</p>
-        <p><strong>IsPlaying:</strong> ${user.IsPlaying ? "Sí" : "No"}</p>
-        <p><strong>Rol:</strong> ${user.userType}</p>
-      `;
-    }
-
-    // Mostrar acciones según rol
-    const actionsDiv = document.getElementById("profile-actions");
-    if (user.userType === "keytester" || user.isAdmin) {
-      actionsDiv.innerHTML = `
-        <div class="keytester-actions">
-          <button class="action-btn create-btn" onclick="window.location.href='/keytester_sessions.html'">
-            Crear sesión de juego
-          </button>
-          <button class="action-btn view-btn" onclick="showPodTesters()">Ver testers de mi pod</button>
-          <button class="action-btn view-btn" onclick="showAllTesters()">Ver todos los testers</button>
-        </div>
-        <div id="testers-container" class="testers-container"></div>
-        <div id="sessions-list"></div>
-      `;
-      await fetchKeyTesterSessions();
-    } else {
-      await fetchTesterSessions();
-    }
-  } catch (error) {
-    showError("Error al cargar el perfil: " + error.message);
-  }
-}
-
-// ====================== SESIONES DE TESTER ======================
-const validArgs = ["Trace", "LLM", "LWM_BR", "LWM_NoBR", "Razor", "NoTimeout"];
-
-async function fetchTesterSessions() {
-  const token = getToken();
-  if (!token) return;
-
-  try {
-    const response = await fetch(`${SERVER_URL}/api/user/my-sessions`, {
+    const res = await fetch(`${SERVER_URL}/api/user/me`, {
       headers: { Authorization: token },
     });
+    if (!res.ok) throw new Error("Error al obtener usuario");
 
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-    const sessions = await response.json();
-    window.lastSessions = sessions;
+    const user = await res.json();
 
-    const testerSessions = document.getElementById("tester-sessions");
-    if (!sessions || sessions.length === 0) {
-      testerSessions.innerHTML = "<p>No tienes ninguna playtest asignada.</p>";
+    document.getElementById("user-name").textContent = user.Epam_user;
+    document.getElementById("user-role").textContent =
+      user.userType === "keytester" ? "Keytester" : "Tester";
+
+    renderProfileData(user);
+    renderActions(user);
+
+    // Si es tester → cargar automáticamente su panel
+    if (user.userType === "tester") {
+      loadTesterPanel(user);
+    }
+  } catch (err) {
+    console.error(err);
+    window.location.href = "../index.html";
+  }
+}
+
+// ===============================
+// RENDER PERFIL
+// ===============================
+function renderProfileData(user) {
+  const container = document.getElementById("profile-data");
+  container.innerHTML = `
+    <div><label>Usuario:</label><span>${user.Epam_user}</span></div>
+    <div><label>Rol:</label><span>${user.userType}</span></div>
+    <div><label>Pod:</label><span>${user.Pod || "N/A"}</span></div>
+    <div><label>Región:</label><span>${user.Region || "N/A"}</span></div>
+    <div><label>Estación:</label><span>${user.Station || "N/A"}</span></div>
+    <div><label>Disponibilidad:</label><span>${user.availability}</span></div>
+  `;
+}
+
+// ===============================
+// BOTONES Y ACCIONES (KEYTESTER)
+// ===============================
+function renderActions(user) {
+  const createBtn = document.getElementById("create-session-btn");
+  const viewSessionsBtn = document.getElementById("view-sessions-btn");
+  const viewTestersBtn = document.getElementById("view-testers-btn");
+
+  if (user.userType === "tester") {
+    createBtn.style.display = "none";
+    viewTestersBtn.style.display = "none";
+  }
+
+  createBtn.addEventListener("click", () => {
+    window.location.href = "../html/SessionCreator.html";
+  });
+  viewSessionsBtn.addEventListener("click", showSessions);
+  viewTestersBtn.addEventListener("click", showAllTesters);
+}
+
+// ===============================
+// PANEL DINÁMICO
+// ===============================
+function openPanel(title) {
+  const panel = document.getElementById("dynamic-panel");
+  const titleEl = document.getElementById("panel-title");
+  const content = document.getElementById("dynamic-content");
+  titleEl.textContent = title;
+  panel.classList.remove("hidden");
+  content.innerHTML = "";
+  return content;
+}
+
+document.getElementById("close-panel").addEventListener("click", () => {
+  document.getElementById("dynamic-panel").classList.add("hidden");
+});
+
+// ===============================
+// PANEL AUTOMÁTICO PARA TESTER
+// ===============================
+async function loadTesterPanel(user) {
+  const content = openPanel("Sesión actual");
+  content.innerHTML = "<p>Cargando datos...</p>";
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/user/my-sessions`, {
+      headers: { Authorization: token },
+    });
+    if (!res.ok) throw new Error("Error al cargar sesiones del tester");
+
+    const sessions = await res.json();
+    if (!sessions.length) {
+      content.innerHTML = `<p>No tienes sesiones asignadas actualmente.</p>`;
       return;
     }
 
-    let html = "<h3>Sesiones Asignadas</h3>";
-    sessions.forEach((session) => {
-      const myTester = session.assignedTesters.find(
-        (t) => t.Epam_user === currentUser.Epam_user
-      );
+    const current = sessions[0];
+    const captures = current.assignment?.capturas || [];
+    const platform = current.assignment?.device || "PC";
+    const backend = current.backendName || "Cry";
+    const region = user.Region || "NAE";
+    const build = current.buildString || "❓";
 
-      let args = [];
-      if (myTester && Array.isArray(myTester.capturas)) {
-        args = myTester.capturas.filter((c) => validArgs.includes(c));
-      }
-
-      const hasLWM = args.includes("LWM_BR");
-      const config = {
-        buildIDOverride: session.idOverride,
-        backend: session.backendName,
-        region: session.region || "EU",
-        platform: myTester ? myTester.device : "Other",
-        args,
-      };
-
-      const command = window.EpicCommandGenerator.generateCommand(config);
-      const sessionId = session._id;
-
-      html += `
-        <div class="assigned-session-card">
-          <div class="assigned-session-title">${session.backendName || "-"}</div>
-          <p><strong>Build:</strong> ${session.buildString || "-"}</p>
-          <p><strong>ID Override:</strong> ${session.idOverride || "-"}</p>
-          <p><strong>Dispositivo:</strong> ${myTester ? myTester.device : "-"}</p>
-          <p><strong>Capturas:</strong> ${
-            myTester?.capturas?.join(", ") || "No asignadas"
-          }</p>
-          <p><strong>Fecha:</strong> ${
-            session.createdAt
-              ? new Date(session.createdAt).toLocaleDateString()
-              : "-"
-          }</p>
-          <div class="command-section">
-            <label><strong>Línea de comando:</strong></label>
-            <pre id="command-box-${sessionId}" class="command-box">${command}</pre>
-            <button class="copy-btn" onclick="copyCommand('${sessionId}')">Copiar</button>
-            ${
-              hasLWM
-                ? `<button class="toggle-br-btn" id="toggle-br-btn-${sessionId}" onclick="toggleBR('${sessionId}')">BR</button>`
-                : ""
-            }
-          </div>
-        </div>
-      `;
+    // Generar comando con EpicCommandGenerator
+    const command = EpicCommandGenerator.generateCommand({
+      buildIDOverride: build,
+      backend,
+      region,
+      platform,
+      args: captures,
     });
 
-    testerSessions.innerHTML = html;
-  } catch (error) {
-    showError("Error al cargar la playtest: " + error.message);
+    // Render
+    content.innerHTML = `
+      <div class="dynamic-card">
+        <h4>Comando generado:</h4>
+        <code id="command-code">${command}</code>
+        <button id="copy-command" class="action-btn create-btn" style="margin-top:10px;">
+          📋 Copiar comando
+        </button>
+      </div>
+      <div class="dynamic-card">
+        <p><strong>Tipo de archivo capturado:</strong> ${captures.join(", ") || "N/A"}</p>
+        <p><strong>Tipo de juego:</strong> ${current.sessionType || "N/A"}</p>
+      </div>
+      <button class="action-btn view-btn" id="view-history-btn">
+        🕓 Ver histórico de sesiones
+      </button>
+    `;
+
+    // Copiar comando al portapapeles
+    document.getElementById("copy-command").addEventListener("click", () => {
+      navigator.clipboard.writeText(command).then(() => {
+        const btn = document.getElementById("copy-command");
+        btn.textContent = "✅ Copiado";
+        setTimeout(() => (btn.textContent = "📋 Copiar comando"), 2000);
+      });
+    });
+
+    // Botón histórico
+    document
+      .getElementById("view-history-btn")
+      .addEventListener("click", () => showTesterHistory(sessions));
+  } catch (err) {
+    console.error(err);
+    content.innerHTML = `<p>Error al cargar datos del tester.</p>`;
   }
 }
 
-// ====================== SESIONES DE KEYTESTER ======================
-async function fetchKeyTesterSessions() {
-  const token = getToken();
-  if (!token) return;
+// ===============================
+// HISTÓRICO DE SESIONES TESTER
+// ===============================
+function showTesterHistory(sessions) {
+  const content = openPanel("Histórico de sesiones");
+  if (!sessions.length) {
+    content.innerHTML = "<p>No hay sesiones previas.</p>";
+    return;
+  }
+
+  content.innerHTML = sessions
+    .map(
+      (s) => `
+      <div class="dynamic-card">
+        <h4>${s.backendName || "Sesión sin nombre"}</h4>
+        <p><strong>Build:</strong> ${s.buildString || "N/A"}</p>
+        <p><strong>Tipo:</strong> ${s.sessionType}</p>
+        <p><strong>Fecha:</strong> ${new Date(s.createdAt).toLocaleString()}</p>
+        <p><strong>Capturas:</strong> ${s.assignment?.capturas?.join(", ") || "N/A"}</p>
+      </div>`
+    )
+    .join("");
+}
+
+// ===============================
+// SESIONES (KEYTESTER)
+// ===============================
+async function showSessions() {
+  const panel = openPanel("Sesiones activas");
+  panel.innerHTML = "<p>Cargando sesiones...</p>";
 
   try {
     const res = await fetch(`${SERVER_URL}/api/sessions`, {
       headers: { Authorization: token },
     });
-
-    if (!res.ok) throw new Error("Error obteniendo sesiones del keytester");
+    if (!res.ok) throw new Error("Error al obtener sesiones");
 
     const sessions = await res.json();
-    let html = "<h3>Sesiones Creadas</h3>";
-    sessions.forEach((s) => {
-      html += `
-        <div class="assigned-session-card">
-          <div class="assigned-session-title">${s.backendName}</div>
-          <p><strong>Build:</strong> ${s.buildString}</p>
-          <p><strong>ID Override:</strong> ${s.idOverride}</p>
-          <p><strong>Región:</strong> ${s.region}</p>
-          <p><strong>Fecha:</strong> ${
-            s.createdAt ? new Date(s.createdAt).toLocaleDateString() : "-"
-          }</p>
-        </div>`;
+    if (!sessions.length) {
+      panel.innerHTML = "<p>No hay sesiones activas.</p>";
+      return;
+    }
+
+    panel.innerHTML = sessions
+      .map(
+        (s) => `
+      <div class="dynamic-card">
+        <h4>${s.backendName || "Sin nombre"} (${s.sessionType})</h4>
+        <p><strong>Build:</strong> ${s.buildString || "N/A"}</p>
+        <p><strong>Jugadores:</strong> ${s.totalPlayers || 0}</p>
+      </div>`
+      )
+      .join("");
+  } catch (err) {
+    panel.innerHTML = "<p>Error al cargar sesiones.</p>";
+  }
+}
+
+// ===============================
+// TESTERS (KEYTESTER)
+// ===============================
+async function showAllTesters() {
+  const panel = openPanel("Testers registrados");
+  panel.innerHTML = "<p>Cargando testers...</p>";
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/all-testers`, {
+      headers: { Authorization: token },
     });
+    if (!res.ok) throw new Error("Error al cargar testers");
 
-    document.getElementById("tester-sessions").innerHTML = html;
-  } catch (error) {
-    showError("Error al cargar las sesiones del keytester: " + error.message);
+    const testers = await res.json();
+    panel.innerHTML = testers
+      .map(
+        (t) => `
+      <div class="dynamic-card">
+        <h4>${t.Epam_user}</h4>
+        <p><strong>Pod:</strong> ${t.Pod}</p>
+        <p><strong>Estación:</strong> ${t.Station}</p>
+        <p><strong>Disponibilidad:</strong> ${t.availability}</p>
+      </div>`
+      )
+      .join("");
+  } catch (err) {
+    panel.innerHTML = "<p>Error al mostrar testers.</p>";
   }
 }
 
-// ====================== UTILIDADES DE COMANDOS ======================
-function toggleBR(sessionId) {
-  const commandBox = document.getElementById(`command-box-${sessionId}`);
-  const toggleBtn = document.getElementById(`toggle-br-btn-${sessionId}`);
-  const session = window.lastSessions.find((s) => s._id === sessionId);
-  const myTester = session.assignedTesters.find(
-    (t) => t.Epam_user === currentUser.Epam_user
-  );
-
-  let args = [...myTester.capturas];
-  const isBR = toggleBtn.classList.contains("active");
-
-  args = args.map((a) => {
-    if (isBR && a === "LWM_BR") return "LWM";
-    if (!isBR && a === "LWM") return "LWM_BR";
-    return a;
+// ===============================
+// BÚSQUEDA
+// ===============================
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  const term = e.target.value.toLowerCase();
+  document.querySelectorAll(".dynamic-card").forEach((c) => {
+    c.style.display = c.textContent.toLowerCase().includes(term)
+      ? "block"
+      : "none";
   });
+});
 
-  toggleBtn.classList.toggle("active");
-
-  const config = {
-    buildIDOverride: session.idOverride,
-    backend: session.backendName,
-    region: session.region || "EU",
-    platform: myTester.device,
-    args,
-  };
-
-  commandBox.textContent = window.EpicCommandGenerator.generateCommand(config);
-}
-
-function copyCommand(sessionId) {
-  const textElem = document.getElementById(`command-box-${sessionId}`);
-  if (!textElem) return alert("No se encontró el comando a copiar");
-  navigator.clipboard
-    .writeText(textElem.textContent)
-    .then(() => alert("Comando copiado ✅"))
-    .catch(() => alert("No se pudo copiar"));
-}
-
-// ====================== LOGOUT ======================
-function logout() {
-  const token = localStorage.getItem("token");
-  if (token) {
-    fetch(`${SERVER_URL}/logout`, {
+// ===============================
+// LOGOUT
+// ===============================
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  try {
+    await fetch(`${SERVER_URL}/logout`, {
       method: "POST",
-      headers: { Authorization: token, "Content-Type": "application/json" },
-    })
-      .then(() => {
-        localStorage.removeItem("token");
-        window.location.href = "/index.html";
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
-        window.location.href = "/index.html";
-      });
-  } else {
-    window.location.href = "/index.html";
+      headers: { Authorization: token },
+    });
+  } catch (err) {
+    console.warn("Error cerrando sesión:", err);
+  } finally {
+    localStorage.removeItem("token");
+    window.location.href = "../index.html";
   }
-}
+});
 
-// ====================== INICIALIZACIÓN ======================
-document.addEventListener("DOMContentLoaded", fetchProfile);
+// ===============================
+// INICIO
+// ===============================
+fetchUser();

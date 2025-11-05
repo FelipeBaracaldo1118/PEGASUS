@@ -1,184 +1,78 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-  <meta charset="UTF-8">
-  <title>Perfil de Usuario</title>
-  <link rel="stylesheet" href="../css/profile.css">
-  <link rel="stylesheet" href="../css/styles.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    /* ===== Menú lateral (hamburguesa de perfil) ===== */
-    .profile-toggle {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      background: #2366d1;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 1100;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .profile-menu {
-      position: fixed;
-      top: 0;
-      right: -280px;
-      width: 260px;
-      height: 100%;
-      background: #fff;
-      box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
-      transition: right 0.3s ease-in-out;
-      z-index: 1500;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .profile-menu.open {
-      right: 0;
-    }
-
-    .profile-menu-header {
-      padding: 18px 14px;
-      border-bottom: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .close-profile {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #444;
-    }
-
-    .profile-info {
-      padding: 16px;
-      color: #222;
-      flex-grow: 1;
-      overflow-y: auto;
-    }
-
-    .profile-info p {
-      margin: 6px 0;
-      font-size: 14px;
-    }
-
-    .profile-menu-footer {
-      padding: 16px;
-      border-top: 1px solid #eee;
-    }
-
-    .logout-btn {
-      width: 100%;
-      background: #ff4b4b;
-      color: white;
-      border: none;
-      padding: 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .logout-btn:hover {
-      background: #d63636;
-    }
-
-    .overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.3);
-      display: none;
-      z-index: 1400;
-    }
-
-    .overlay.active {
-      display: block;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Usuario</title>
+  <link rel="stylesheet" href="/css/profile.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 
 <body>
-
-  <!-- Botón Hamburguesa -->
-  <button id="profile-toggle" class="profile-toggle">
-    <i class="fas fa-user"></i> Perfil
-  </button>
-
-  <!-- Menú lateral del perfil -->
-  <aside id="profile-menu" class="profile-menu">
-    <div class="profile-menu-header">
-      <h3>Perfil de Usuario</h3>
-      <button id="close-profile" class="close-profile">&times;</button>
+  <!-- HEADER -->
+  <header class="main-header">
+    <div class="header-left">
+      <h1>Panel de Usuario</h1>
     </div>
 
-    <div id="profile-info" class="profile-info">
-<div id="profile-data" class="profile-data"></div>
+    <div class="header-center">
+      <input
+        type="text"
+        id="searchInput"
+        class="search-bar"
+        placeholder="Buscar testers o sesiones..."
+      />
     </div>
 
-    <div class="profile-menu-footer">
-      <button class="logout-btn" onclick="logout()">Cerrar Sesión</button>
+    <div class="header-right">
+      <div class="user-info">
+        <span id="user-name" class="user-name">Cargando...</span>
+        <span id="user-role" class="user-role">---</span>
+      </div>
+      <button id="logoutBtn" class="logout-btn">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
     </div>
-  </aside>
+  </header>
 
-  <!-- Capa de fondo -->
-  <div id="overlay" class="overlay"></div>
+  <!-- MAIN -->
+  <main class="main-content">
+    <!-- CONTENEDOR PRINCIPAL -->
+    <section class="dashboard">
+      <div class="profile-container">
+        <h2>Mi Perfil</h2>
 
-  <!-- Contenido principal del perfil -->
-  <main class="profile-container">
-    <h2>Perfil de Usuario</h2>
-    <div id="profile-data" class="profile-data"></div>
-    <div id="tester-sessions"></div>
-    <div id="profile-actions"></div>
-    <div id="sessions-container" class="sessions-container"></div>
-    <div id="message"></div>
+        <div id="profile-data" class="profile-data"></div>
+
+        <div id="profile-actions" class="profile-actions">
+          <button id="create-session-btn" class="action-btn create-btn">
+            <i class="fas fa-plus-circle"></i> Crear Sesión
+          </button>
+          <button id="view-sessions-btn" class="action-btn view-btn">
+            <i class="fas fa-list"></i> Ver Sesiones
+          </button>
+          <button id="view-testers-btn" class="action-btn view-btn">
+            <i class="fas fa-users"></i> Ver Testers
+          </button>
+        </div>
+
+        <div id="tester-sessions"></div>
+      </div>
+
+      <!-- PANEL DERECHO DINÁMICO -->
+      <aside id="dynamic-panel" class="side-panel hidden">
+        <div class="panel-header">
+          <h3 id="panel-title">Detalles</h3>
+          <button id="close-panel" class="close-panel"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="dynamic-content" class="dynamic-content"></div>
+      </aside>
+    </section>
   </main>
 
-  <!-- Scripts -->
-   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
-  <script src="../js/profile.js"></script>
+  <!-- JS -->
+  <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
+  <script src="/js/profile.js"></script>
   <script src="../js/testerManagement.js"></script>
-
-  <script>
-    // Simula el modo desarrollo (evita login)
-
-    // === Sidebar functionality ===
-    const profileToggle = document.getElementById("profile-toggle");
-    const profileMenu = document.getElementById("profile-menu");
-    const closeProfile = document.getElementById("close-profile");
-    const overlay = document.getElementById("overlay");
-
-    profileToggle.addEventListener("click", () => {
-      profileMenu.classList.add("open");
-      overlay.classList.add("active");
-    });
-
-    closeProfile.addEventListener("click", () => {
-      profileMenu.classList.remove("open");
-      overlay.classList.remove("active");
-    });
-
-    overlay.addEventListener("click", () => {
-      profileMenu.classList.remove("open");
-      overlay.classList.remove("active");
-    });
-
-    // Cerrar sesión
-    function logout() {
-      localStorage.removeItem("token");
-      window.location.href = "../index.html";
-    }
-  </script>
 </body>
 </html>
