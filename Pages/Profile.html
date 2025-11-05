@@ -29,7 +29,7 @@
         <span id="user-name" class="user-name">Cargando...</span>
         <span id="user-role" class="user-role">---</span>
       </div>
-      <button id="logoutBtn" class="logout-btn">
+      <button onclick="logout()" class="logout-btn">
         <i class="fas fa-sign-out-alt"></i>
       </button>
     </div>
@@ -37,25 +37,23 @@
 
   <!-- MAIN -->
   <main class="main-content">
-    <!-- CONTENEDOR PRINCIPAL -->
     <section class="dashboard">
       <div class="profile-container">
         <h2>Mi Perfil</h2>
 
-        <div id="profile-data" class="profile-data"></div>
-
-        <div id="profile-actions" class="profile-actions">
-          <button id="create-session-btn" class="action-btn create-btn">
-            <i class="fas fa-plus-circle"></i> Crear Sesión
-          </button>
-          <button id="view-sessions-btn" class="action-btn view-btn">
-            <i class="fas fa-list"></i> Ver Sesiones
-          </button>
-          <button id="view-testers-btn" class="action-btn view-btn">
-            <i class="fas fa-users"></i> Ver Testers
-          </button>
+        <!-- Información del perfil -->
+        <div id="profile-data" class="profile-data">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Cargando perfil...
+          </div>
         </div>
 
+        <!-- ✅ CONTENEDOR VACÍO - Los botones se agregan dinámicamente según el rol -->
+        <div id="profile-actions" class="profile-actions">
+          <!-- Los botones se cargarán aquí según el rol del usuario -->
+        </div>
+
+        <!-- Sesiones del tester (si aplica) -->
         <div id="tester-sessions"></div>
       </div>
 
@@ -63,16 +61,26 @@
       <aside id="dynamic-panel" class="side-panel hidden">
         <div class="panel-header">
           <h3 id="panel-title">Detalles</h3>
-          <button id="close-panel" class="close-panel"><i class="fas fa-times"></i></button>
+          <button id="close-panel" class="close-panel">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
         <div id="dynamic-content" class="dynamic-content"></div>
       </aside>
     </section>
   </main>
 
-  <!-- JS -->
+  <!-- JS - ORDEN IMPORTANTE -->
   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
   <script src="../js/profile.js"></script>
-  <script src="../js/testerManagement.js"></script>
+  
+  <!-- Solo cargar si existe -->
+  <script>
+    // Cargar testerManagement.js solo si existe
+    const script = document.createElement('script');
+    script.src = '../js/testerManagement.js';
+    script.onerror = () => console.warn('⚠️ testerManagement.js no encontrado (opcional)');
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>

@@ -6,14 +6,14 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 
-// Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
-app.use(express.static(path.join(__dirname)));
+
 // Al inicio de tu archivo principal de Node.js (por ejemplo, server.js)
 //const { spawn } = require('child_process');
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+// Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
+app.use(express.static(path.join(__dirname)));
 // --------------------------
 // CONEXIÓN A MONGODB
 // --------------------------
