@@ -4,6 +4,10 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const path = require("path");
+
+// Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
+app.use(express.static(path.join(__dirname)));
 // Al inicio de tu archivo principal de Node.js (por ejemplo, server.js)
 //const { spawn } = require('child_process');
 const app = express();

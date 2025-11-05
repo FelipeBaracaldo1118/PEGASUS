@@ -382,10 +382,3 @@ document.querySelector("#modal-stats .close-btn").addEventListener("click", () =
   if (statsInterval) clearInterval(statsInterval);
 });
 
-const DEV_MODE = true; // ponlo en false cuando uses el servidor real
-
-if (DEV_MODE) {
-  console.warn("⚠️ MODO DESARROLLO ACTIVADO - Saltando login y verificación de token.");
-  loginSection.style.display = "none";
-  appContent.style.display = "block";
-}
