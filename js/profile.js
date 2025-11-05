@@ -1,342 +1,284 @@
-// ===============================
-// CONFIGURACIÓN INICIAL
-// ===============================
+// ====================== CONFIGURACIÓN ======================
 const SERVER_URL = "http://10.13.46.195:8080";
-const token = localStorage.getItem("token");
 
-// Si no hay token → login
-if (!token) {
-  console.warn("No hay token almacenado, redirigiendo al login...");
-  window.location.href = "../index.html";
-}
+// ====================== INICIO DE PERFIL ======================
+document.addEventListener("DOMContentLoaded", async () => {
+  await fetchUserData();
+});
 
-// ===============================
-// OBTENER USUARIO ACTUAL (con BEARER)
-// ===============================
-async function fetchUser() {
+// ====================== AUTENTICACIÓN Y PERFIL ======================
+async function fetchUserData() {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    console.warn("Token no encontrado. Redirigiendo...");
+    return (window.location.href = "../index.html");
+  }
+
   try {
     const res = await fetch(`${SERVER_URL}/api/user/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    // Si no está autorizado, volver al login
     if (res.status === 401 || res.status === 403) {
-      console.warn("Token inválido o expirado, redirigiendo...");
+      console.warn("Token inválido o expirado. Redirigiendo...");
       localStorage.removeItem("token");
-      window.location.href = "../index.html";
-      return;
+      return (window.location.href = "../index.html");
     }
-
-    if (!res.ok) throw new Error("Error al obtener usuario");
 
     const user = await res.json();
-
-    document.getElementById("user-name").textContent = user.Epam_user;
-    document.getElementById("user-role").textContent =
-      user.userType === "keytester" ? "Keytester" : "Tester";
-
-    renderProfileData(user);
-    renderActions(user);
-
-    if (user.userType === "tester") {
-      // Esperar a que el generador esté cargado en window
-      if (typeof window.EpicCommandGenerator === "undefined") {
-        console.warn("Esperando a que EpicCommandGenerator esté listo...");
-        const checkGen = setInterval(() => {
-          if (typeof window.EpicCommandGenerator !== "undefined") {
-            clearInterval(checkGen);
-            loadTesterPanel(user);
-          }
-        }, 300);
-      } else {
-        loadTesterPanel(user);
-      }
-    }
-  } catch (err) {
-    console.error("Error en fetchUser:", err);
-    // Solo redirige si el error es realmente de auth
-    if (
-      err.message.includes("401") ||
-      err.message.includes("403") ||
-      err.message.includes("auth")
-    ) {
-      localStorage.removeItem("token");
-      window.location.href = "../index.html";
-    }
-  }
-}
-
-// ===============================
-// OBTENER USUARIO ACTUAL
-// ===============================
-async function fetchUser() {
-  try {
-    const res = await fetch(`${SERVER_URL}/api/user/me`, {
-      headers: { Authorization: token },
-    });
-    if (!res.ok) throw new Error("Error al obtener usuario");
-
-    const user = await res.json();
-
-    document.getElementById("user-name").textContent = user.Epam_user;
-    document.getElementById("user-role").textContent =
-      user.userType === "keytester" ? "Keytester" : "Tester";
-
-    renderProfileData(user);
-    renderActions(user);
-
-    // Si es tester → cargar automáticamente su panel
-    if (user.userType === "tester") {
-      loadTesterPanel(user);
-    }
-  } catch (err) {
-    console.error(err);
-    window.location.href = "../index.html";
-  }
-}
-
-// ===============================
-// RENDER PERFIL
-// ===============================
-function renderProfileData(user) {
-  const container = document.getElementById("profile-data");
-  container.innerHTML = `
-    <div><label>Usuario:</label><span>${user.Epam_user}</span></div>
-    <div><label>Rol:</label><span>${user.userType}</span></div>
-    <div><label>Pod:</label><span>${user.Pod || "N/A"}</span></div>
-    <div><label>Región:</label><span>${user.Region || "N/A"}</span></div>
-    <div><label>Estación:</label><span>${user.Station || "N/A"}</span></div>
-    <div><label>Disponibilidad:</label><span>${user.availability}</span></div>
-  `;
-}
-
-// ===============================
-// BOTONES Y ACCIONES (KEYTESTER)
-// ===============================
-function renderActions(user) {
-  const createBtn = document.getElementById("create-session-btn");
-  const viewSessionsBtn = document.getElementById("view-sessions-btn");
-  const viewTestersBtn = document.getElementById("view-testers-btn");
-
-  if (user.userType === "tester") {
-    createBtn.style.display = "none";
-    viewTestersBtn.style.display = "none";
-  }
-
-  createBtn.addEventListener("click", () => {
-    window.location.href = "../html/SessionCreator.html";
-  });
-  viewSessionsBtn.addEventListener("click", showSessions);
-  viewTestersBtn.addEventListener("click", showAllTesters);
-}
-
-// ===============================
-// PANEL DINÁMICO
-// ===============================
-function openPanel(title) {
-  const panel = document.getElementById("dynamic-panel");
-  const titleEl = document.getElementById("panel-title");
-  const content = document.getElementById("dynamic-content");
-  titleEl.textContent = title;
-  panel.classList.remove("hidden");
-  content.innerHTML = "";
-  return content;
-}
-
-document.getElementById("close-panel").addEventListener("click", () => {
-  document.getElementById("dynamic-panel").classList.add("hidden");
-});
-
-// ===============================
-// PANEL AUTOMÁTICO PARA TESTER
-// ===============================
-async function loadTesterPanel(user) {
-  const content = openPanel("Sesión actual");
-  content.innerHTML = "<p>Cargando datos...</p>";
-
-  try {
-    const res = await fetch(`${SERVER_URL}/api/user/my-sessions`, {
-      headers: { Authorization: token },
-    });
-    if (!res.ok) throw new Error("Error al cargar sesiones del tester");
-
-    const sessions = await res.json();
-    if (!sessions.length) {
-      content.innerHTML = `<p>No tienes sesiones asignadas actualmente.</p>`;
-      return;
-    }
-
-    const current = sessions[0];
-    const captures = current.assignment?.capturas || [];
-    const platform = current.assignment?.device || "PC";
-    const backend = current.backendName || "Cry";
-    const region = user.Region || "NAE";
-    const build = current.buildString || "❓";
-
-    // Generar comando con EpicCommandGenerator
-    const command = EpicCommandGenerator.generateCommand({
-      buildIDOverride: build,
-      backend,
-      region,
-      platform,
-      args: captures,
-    });
-
-    // Render
-    content.innerHTML = `
-      <div class="dynamic-card">
-        <h4>Comando generado:</h4>
-        <code id="command-code">${command}</code>
-        <button id="copy-command" class="action-btn create-btn" style="margin-top:10px;">
-          📋 Copiar comando
-        </button>
-      </div>
-      <div class="dynamic-card">
-        <p><strong>Tipo de archivo capturado:</strong> ${captures.join(", ") || "N/A"}</p>
-        <p><strong>Tipo de juego:</strong> ${current.sessionType || "N/A"}</p>
-      </div>
-      <button class="action-btn view-btn" id="view-history-btn">
-        🕓 Ver histórico de sesiones
-      </button>
-    `;
-
-    // Copiar comando al portapapeles
-    document.getElementById("copy-command").addEventListener("click", () => {
-      navigator.clipboard.writeText(command).then(() => {
-        const btn = document.getElementById("copy-command");
-        btn.textContent = "✅ Copiado";
-        setTimeout(() => (btn.textContent = "📋 Copiar comando"), 2000);
-      });
-    });
-
-    // Botón histórico
-    document
-      .getElementById("view-history-btn")
-      .addEventListener("click", () => showTesterHistory(sessions));
-  } catch (err) {
-    console.error(err);
-    content.innerHTML = `<p>Error al cargar datos del tester.</p>`;
-  }
-}
-
-// ===============================
-// HISTÓRICO DE SESIONES TESTER
-// ===============================
-function showTesterHistory(sessions) {
-  const content = openPanel("Histórico de sesiones");
-  if (!sessions.length) {
-    content.innerHTML = "<p>No hay sesiones previas.</p>";
-    return;
-  }
-
-  content.innerHTML = sessions
-    .map(
-      (s) => `
-      <div class="dynamic-card">
-        <h4>${s.backendName || "Sesión sin nombre"}</h4>
-        <p><strong>Build:</strong> ${s.buildString || "N/A"}</p>
-        <p><strong>Tipo:</strong> ${s.sessionType}</p>
-        <p><strong>Fecha:</strong> ${new Date(s.createdAt).toLocaleString()}</p>
-        <p><strong>Capturas:</strong> ${s.assignment?.capturas?.join(", ") || "N/A"}</p>
-      </div>`
-    )
-    .join("");
-}
-
-// ===============================
-// SESIONES (KEYTESTER)
-// ===============================
-async function showSessions() {
-  const panel = openPanel("Sesiones activas");
-  panel.innerHTML = "<p>Cargando sesiones...</p>";
-
-  try {
-    const res = await fetch(`${SERVER_URL}/api/sessions`, {
-      headers: { Authorization: token },
-    });
-    if (!res.ok) throw new Error("Error al obtener sesiones");
-
-    const sessions = await res.json();
-    if (!sessions.length) {
-      panel.innerHTML = "<p>No hay sesiones activas.</p>";
-      return;
-    }
-
-    panel.innerHTML = sessions
-      .map(
-        (s) => `
-      <div class="dynamic-card">
-        <h4>${s.backendName || "Sin nombre"} (${s.sessionType})</h4>
-        <p><strong>Build:</strong> ${s.buildString || "N/A"}</p>
-        <p><strong>Jugadores:</strong> ${s.totalPlayers || 0}</p>
-      </div>`
-      )
-      .join("");
-  } catch (err) {
-    panel.innerHTML = "<p>Error al cargar sesiones.</p>";
-  }
-}
-
-// ===============================
-// TESTERS (KEYTESTER)
-// ===============================
-async function showAllTesters() {
-  const panel = openPanel("Testers registrados");
-  panel.innerHTML = "<p>Cargando testers...</p>";
-
-  try {
-    const res = await fetch(`${SERVER_URL}/api/all-testers`, {
-      headers: { Authorization: token },
-    });
-    if (!res.ok) throw new Error("Error al cargar testers");
-
-    const testers = await res.json();
-    panel.innerHTML = testers
-      .map(
-        (t) => `
-      <div class="dynamic-card">
-        <h4>${t.Epam_user}</h4>
-        <p><strong>Pod:</strong> ${t.Pod}</p>
-        <p><strong>Estación:</strong> ${t.Station}</p>
-        <p><strong>Disponibilidad:</strong> ${t.availability}</p>
-      </div>`
-      )
-      .join("");
-  } catch (err) {
-    panel.innerHTML = "<p>Error al mostrar testers.</p>";
-  }
-}
-
-// ===============================
-// BÚSQUEDA
-// ===============================
-document.getElementById("searchInput").addEventListener("input", (e) => {
-  const term = e.target.value.toLowerCase();
-  document.querySelectorAll(".dynamic-card").forEach((c) => {
-    c.style.display = c.textContent.toLowerCase().includes(term)
-      ? "block"
-      : "none";
-  });
-});
-
-// ===============================
-// LOGOUT
-// ===============================
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  try {
-    await fetch(`${SERVER_URL}/logout`, {
-      method: "POST",
-      headers: { Authorization: token },
-    });
-  } catch (err) {
-    console.warn("Error cerrando sesión:", err);
-  } finally {
+    renderProfile(user);
+  } catch (error) {
+    console.error("Error al obtener el perfil:", error);
+    alert("Error al autenticar. Inicia sesión nuevamente.");
     localStorage.removeItem("token");
     window.location.href = "../index.html";
   }
-});
+}
 
-// ===============================
-// INICIO
-// ===============================
-fetchUser();
+// ====================== RENDER PERFIL ======================
+function renderProfile(user) {
+  const profileData = document.getElementById("profile-data");
+  const actions = document.getElementById("profile-actions");
+  const dynamicArea = document.getElementById("dynamic-area");
+
+  // Datos principales
+  profileData.innerHTML = `
+    <div><label>Usuario EPAM:</label> ${user.Epam_user}</div>
+    <div><label>Rol:</label> ${user.userType}</div>
+    <div><label>Región:</label> ${user.Region}</div>
+    <div><label>Pod:</label> ${user.Pod}</div>
+    <div><label>Estación:</label> ${user.Station}</div>
+    <div><label>Disponibilidad:</label> ${user.availability}</div>
+  `;
+
+  actions.innerHTML = "";
+
+  // Si es KeyTester (Administrador)
+  if (user.userType === "keytester") {
+    actions.innerHTML = `
+      <button class="action-btn create-btn" id="createSessionBtn">Crear nueva sesión</button>
+      <button class="action-btn view-btn" id="viewSessionsBtn">Ver sesiones activas</button>
+      <button class="action-btn view-btn" id="viewTestersBtn">Ver testers</button>
+    `;
+
+    document
+      .getElementById("createSessionBtn")
+      .addEventListener("click", () => (window.location.href = "../keytester_sessions.html"));
+    document
+      .getElementById("viewSessionsBtn")
+      .addEventListener("click", showSessions);
+    document
+      .getElementById("viewTestersBtn")
+      .addEventListener("click", showAllTesters);
+  }
+
+  // Si es Tester
+  if (user.userType === "tester") {
+    actions.innerHTML = `
+      <button class="action-btn view-btn" id="viewMySessionsBtn">Mis sesiones</button>
+      <button class="action-btn view-btn" id="viewHistoryBtn">Ver histórico</button>
+    `;
+
+    document
+      .getElementById("viewMySessionsBtn")
+      .addEventListener("click", () => showTesterSessions(user));
+    document
+      .getElementById("viewHistoryBtn")
+      .addEventListener("click", () => showSessionHistory(user));
+  }
+
+  dynamicArea.innerHTML = `<p>Selecciona una opción para continuar.</p>`;
+}
+
+// ====================== KEYTESTER: SESIONES ======================
+async function showSessions() {
+  const token = localStorage.getItem("token");
+  const dynamicArea = document.getElementById("dynamic-area");
+  dynamicArea.innerHTML = `<p>Cargando sesiones...</p>`;
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/sessions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error("Error al obtener sesiones");
+    const sessions = await res.json();
+
+    if (sessions.length === 0) {
+      dynamicArea.innerHTML = `<p>No hay sesiones registradas.</p>`;
+      return;
+    }
+
+    dynamicArea.innerHTML = `
+      <h3>Sesiones creadas</h3>
+      ${sessions
+        .map(
+          (s) => `
+        <div class="assigned-session-card">
+          <div class="assigned-session-title">${s.backendName}</div>
+          <p><b>Build:</b> ${s.buildString || "N/A"}</p>
+          <p><b>Región:</b> ${s.Region || "N/A"}</p>
+          <p><b>Fecha:</b> ${new Date(s.createdAt).toLocaleString()}</p>
+        </div>
+      `
+        )
+        .join("")}
+    `;
+  } catch (error) {
+    console.error("Error al listar sesiones:", error);
+    dynamicArea.innerHTML = `<p style="color:red">Error al cargar sesiones.</p>`;
+  }
+}
+
+// ====================== KEYTESTER: TESTERS ======================
+async function showAllTesters() {
+  const token = localStorage.getItem("token");
+  const dynamicArea = document.getElementById("dynamic-area");
+  dynamicArea.innerHTML = `<p>Cargando testers...</p>`;
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/all-testers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error("Error al obtener testers");
+    const testers = await res.json();
+
+    dynamicArea.innerHTML = `
+      <h3>Testers registrados</h3>
+      ${testers
+        .map(
+          (t) => `
+        <div class="assigned-session-card">
+          <p><b>${t.Epam_user}</b></p>
+          <p><b>Región:</b> ${t.Region}</p>
+          <p><b>Pod:</b> ${t.Pod}</p>
+          <p><b>Disponibilidad:</b> ${t.availability}</p>
+          <button class="action-btn view-btn" onclick="toggleAvailability('${t._id}', '${t.availability}')">
+            ${t.availability === "Disponible" ? "Marcar como Ocupado" : "Marcar como Disponible"}
+          </button>
+        </div>
+      `
+        )
+        .join("")}
+    `;
+  } catch (error) {
+    console.error("Error al listar testers:", error);
+    dynamicArea.innerHTML = `<p style="color:red">Error al cargar testers.</p>`;
+  }
+}
+
+// ====================== CAMBIAR DISPONIBILIDAD ======================
+async function toggleAvailability(testerId, currentStatus) {
+  const token = localStorage.getItem("token");
+  const newStatus = currentStatus === "Disponible" ? "Ocupado" : "Disponible";
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/users/${testerId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ availability: newStatus }),
+    });
+
+    if (!res.ok) throw new Error("Error al cambiar disponibilidad");
+    showAllTesters(); // refrescar lista
+  } catch (error) {
+    console.error("Error:", error);
+    alert("No se pudo cambiar la disponibilidad");
+  }
+}
+
+// ====================== TESTER: SESIONES ASIGNADAS ======================
+async function showTesterSessions(user) {
+  const token = localStorage.getItem("token");
+  const dynamicArea = document.getElementById("dynamic-area");
+  dynamicArea.innerHTML = `<p>Cargando tus sesiones...</p>`;
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/user/my-sessions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error("Error al obtener tus sesiones");
+    const sessions = await res.json();
+
+    if (sessions.length === 0) {
+      dynamicArea.innerHTML = `<p>No tienes sesiones asignadas actualmente.</p>`;
+      return;
+    }
+
+    dynamicArea.innerHTML = `
+      <h3>Sesiones asignadas</h3>
+      ${sessions
+        .map((s) => {
+          const cmd = window.EpicCommandGenerator.generateCommand({
+            buildIDOverride: s.idOverride || "",
+            backend: s.backendName || "Cry",
+            region: s.assignment?.pod || "LATAM",
+            platform: s.assignment?.device || "Other",
+            args: s.assignment?.capturas || [],
+          });
+
+          return `
+          <div class="assigned-session-card">
+            <div class="assigned-session-title">${s.backendName}</div>
+            <p><b>Build:</b> ${s.buildString}</p>
+            <p><b>Dispositivo:</b> ${s.assignment?.device || "N/A"}</p>
+            <p><b>Capturas:</b> ${s.assignment?.capturas?.join(", ") || "N/A"}</p>
+            <p><b>Comando generado:</b></p>
+            <div class="cmd-box">${cmd}</div>
+            <button class="action-btn view-btn" onclick="copyCommand('${cmd}')">Copiar comando</button>
+          </div>
+        `;
+        })
+        .join("")}
+    `;
+  } catch (error) {
+    console.error("Error al cargar sesiones del tester:", error);
+    dynamicArea.innerHTML = `<p style="color:red">Error al cargar tus sesiones.</p>`;
+  }
+}
+
+// ====================== HISTÓRICO DEL TESTER ======================
+async function showSessionHistory(user) {
+  const token = localStorage.getItem("token");
+  const dynamicArea = document.getElementById("dynamic-area");
+  dynamicArea.innerHTML = `<p>Cargando histórico...</p>`;
+
+  try {
+    const res = await fetch(`${SERVER_URL}/api/user/my-sessions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error("Error al obtener histórico");
+    const sessions = await res.json();
+
+    dynamicArea.innerHTML = `
+      <h3>Histórico de sesiones</h3>
+      ${sessions
+        .map(
+          (s) => `
+        <div class="assigned-session-card">
+          <p><b>${s.backendName}</b> - ${new Date(s.startTime).toLocaleString()}</p>
+          <p><b>Dispositivo:</b> ${s.assignment?.device || "N/A"}</p>
+          <p><b>Capturas:</b> ${s.assignment?.capturas?.join(", ") || "N/A"}</p>
+        </div>
+      `
+        )
+        .join("")}
+    `;
+  } catch (error) {
+    console.error("Error al cargar histórico:", error);
+    dynamicArea.innerHTML = `<p style="color:red">Error al cargar histórico.</p>`;
+  }
+}
+
+// ====================== UTILIDAD: COPIAR COMANDO ======================
+function copyCommand(cmd) {
+  navigator.clipboard.writeText(cmd);
+  alert("Comando copiado al portapapeles ✅");
+}
