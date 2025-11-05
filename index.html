@@ -1,6 +1,5 @@
 <!doctype html>
 <html lang="es">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./css/styles.css">
   <link rel="stylesheet" href="./css/index.css">
-
 </head>
 
 <body>
@@ -26,114 +24,108 @@
 
     <div class="form-container">
       <!-- LOGIN -->
-    <form id="loginForm">
-      <h2>Iniciar Sesión</h2>
-      <input type="text" id="login-username" placeholder="Usuario" required>
-      <input type="password" id="login-password" placeholder="Contraseña" required>
-      <button type="submit">Entrar</button>
-    </form>
-
+      <form id="loginForm">
+        <h2>Iniciar Sesión</h2>
+        <input type="text" id="login-username" placeholder="Usuario" required>
+        <input type="password" id="login-password" placeholder="Contraseña" required>
+        <button type="submit">Entrar</button>
+      </form>
 
       <!-- REGISTER -->
       <form id="registerForm" style="display:none;">
         <h2>Registrarse</h2>
 
-       <input type="text" id="epam-user" placeholder="EPAM-JohnDoe"
-       maxlength="16" minlength="4" required
-       pattern="^EPAM-.{1,}$"
-       title="El usuario debe comenzar con 'EPAM-'">
+        <input type="text" id="epam-user" placeholder="EPAM-JohnDoe"
+          maxlength="16" minlength="4" required pattern="^EPAM-.{1,}$"
+          title="El usuario debe comenzar con 'EPAM-'">
 
-           <label for="register-password">Contraseña:</label>
-      <div class="epam-input-wrapper">
-        <input type="password" id="register-password" placeholder="Crea una contraseña" maxlength="32" minlength="6" required>
-      </div>
+        <label for="register-password">Contraseña:</label>
+        <div class="epam-input-wrapper">
+          <input type="password" id="register-password" placeholder="Crea una contraseña" maxlength="32" minlength="6" required>
+        </div>
 
-          <!-- ✅ Cuentas disponibles mejorado con TAGS -->
-          <!-- Cuentas disponibles -->
-          <label for="register-accounts" class="block font-semibold mb-2">Cuentas disponibles:</label>
-          <div class="flex flex-col gap-2">
-            <div class="flex gap-2">
-              <select id="register-accounts-select"
-                class="border border-gray-600 bg-gray-800 text-white rounded-lg p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Seleccionar cuenta</option>
-                <option value="PS4">PS4</option>
-                <option value="PS5">PS5</option>
-                <option value="Switch">Switch</option>
-                <option value="XSX">XSX</option>
-                <option value="PC">PC</option>
-              </select>
-            </div>
-            <!-- Contenedor de chips -->
-            <div id="selected-accounts" class="flex flex-wrap gap-2 mt-2"></div>
+        <!-- Cuentas disponibles -->
+        <label for="register-accounts" class="block font-semibold mb-2">Cuentas disponibles:</label>
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-2">
+            <select id="register-accounts-select"
+              class="border border-gray-600 bg-gray-800 text-white rounded-lg p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Seleccionar cuenta</option>
+              <option value="PS4">PS4</option>
+              <option value="PS5">PS5</option>
+              <option value="Switch">Switch</option>
+              <option value="XSX">XSX</option>
+              <option value="PC">PC</option>
+            </select>
           </div>
+          <div id="selected-accounts" class="flex flex-wrap gap-2 mt-2"></div>
+        </div>
 
-          <!-- ✅ Dispositivo Principal -->
-          <label for="register-device1">Dispositivo Principal:</label>
-          <select id="register-device1" class="glass-select">
-            <option value="">Selecciona una opción</option>
-            <option>PS4</option>
-            <option>PS4 Dev</option>
-            <option>PS5</option>
-            <option>PS5 Dev</option>
-            <option>Switch</option>
-            <option>XSX</option>
-            <option>PC</option>
-          </select>
+        <!-- Dispositivo principal -->
+        <label for="register-device1">Dispositivo Principal:</label>
+        <select id="register-device1" class="glass-select">
+          <option value="">Selecciona una opción</option>
+          <option>PS4</option>
+          <option>PS4 Dev</option>
+          <option>PS5</option>
+          <option>PS5 Dev</option>
+          <option>Switch</option>
+          <option>XSX</option>
+          <option>PC</option>
+        </select>
 
-          <!-- ✅ Dispositivo Secundario -->
-          <label for="register-device2">Dispositivo Secundario:</label>
-          <select id="register-device2" class="glass-select">
-            <option value="">(Opcional)</option>
-            <option>PS4</option>
-            <option>PS4 Dev</option>
-            <option>PS5</option>
-            <option>PS5 Dev</option>
-            <option>Switch</option>
-            <option>XSX</option>
-            <option>PC</option>
-          </select>
+        <!-- Dispositivo secundario -->
+        <label for="register-device2">Dispositivo Secundario:</label>
+        <select id="register-device2" class="glass-select">
+          <option value="">(Opcional)</option>
+          <option>PS4</option>
+          <option>PS4 Dev</option>
+          <option>PS5</option>
+          <option>PS5 Dev</option>
+          <option>Switch</option>
+          <option>XSX</option>
+          <option>PC</option>
+        </select>
 
-          <!-- ✅ Pod -->
-          <label for="register-pod">Pod:</label>
-          <select id="register-pod" class="glass-select">
-            <option value="">Selecciona Pod</option>
-            <option>Tango</option>
-            <option>Whiskey</option>
-            <option>Zulu</option>
-          </select>
+        <!-- Pod -->
+        <label for="register-pod">Pod:</label>
+        <select id="register-pod" class="glass-select">
+          <option value="">Selecciona Pod</option>
+          <option>Tango</option>
+          <option>Whiskey</option>
+          <option>Zulu</option>
+        </select>
 
-          <!-- ✅ Región -->
-          <label for="register-region">Región:</label>
-          <select id="register-region" class="glass-select">
-            <option>Bogota</option>
-          </select>
+        <!-- Región -->
+        <label for="register-region">Región:</label>
+        <select id="register-region" class="glass-select">
+          <option>Bogota</option>
+        </select>
 
-          <!-- ✅ Estación -->
-          <label for="register-station">Estación:</label>
-          <select id="register-station" class="glass-select">
-            <option value="">Selecciona Estación</option>
-            <script>
-              for (let i = 1; i <= 50; i++) {
-                const opt = document.createElement("option");
-                const val = `BO${String(i).padStart(2, '0')}`;
-                opt.value = val;
-                opt.textContent = val;
-                document.currentScript.parentElement.appendChild(opt);
-              }
-            </script>
-          </select>
-          <div class="epam-input-wrapper">
-        <button type="submit">Registrarse</button>
-      </div>
-    </form>
+        <!-- Estación -->
+        <label for="register-station">Estación:</label>
+        <select id="register-station" class="glass-select">
+          <option value="">Selecciona Estación</option>
+          <script>
+            for (let i = 1; i <= 50; i++) {
+              const opt = document.createElement("option");
+              const val = `BO${String(i).padStart(2, '0')}`;
+              opt.value = val;
+              opt.textContent = val;
+              document.currentScript.parentElement.appendChild(opt);
+            }
+          </script>
+        </select>
 
+        <div class="epam-input-wrapper">
+          <button type="submit">Registrarse</button>
+        </div>
+      </form>
 
-       <!-- Toggle SIEMPRE visible -->
-    <p id="toggleForm" class="toggle">¿No tienes cuenta? Regístrate</p>
-  </div>
-
-  <p id="message"></p>
-</section>
+      <p id="toggleForm" class="toggle">¿No tienes cuenta? Regístrate</p>
+    </div>
+    <p id="message"></p>
+  </section>
 
   <!-- CONTENIDO PRINCIPAL -->
   <div id="app-content">
@@ -152,15 +144,11 @@
       </h1>
 
       <div class="options">
-        <div class="option" data-modal="modal-builds">
-          <h2>Builds</h2>
-        </div>
-        <div class="option" data-modal="modal-install">
-          <h2>How to install</h2>
-        </div>
-        <div class="option" data-modal="modal-commands">
-          <h2>Command creator</h2>
-        </div>
+        <div class="option" data-modal="modal-builds"><h2>Builds</h2></div>
+        <div class="option" data-modal="modal-install"><h2>How to install</h2></div>
+        <div class="option" data-modal="modal-commands"><h2>Command creator</h2></div>
+        <!-- ✅ NUEVO BOTÓN -->
+        <div class="option" data-modal="modal-stats"><h2>📊 Estadísticas</h2></div>
       </div>
     </main>
 
@@ -169,6 +157,8 @@
       Ahora quien mejor que yo? no hay ni uno. Arcangel
     </footer>
   </div>
+
+  <!-- MODALS -->
   <div class="modal" id="modal-builds">
     <div class="modal-content">
       <span class="close-btn">&times;</span>
@@ -190,31 +180,28 @@
   <div class="modal" id="modal-commands">
     <div class="modal-content">
       <span class="close-btn">&times;</span>
-      <h2>Command creator </h2>
+      <h2>Command creator</h2>
       <p>Here you can select the parameters that you need to capture in every session</p>
       <div id="commnads-container" class="plataformas"></div>
     </div>
   </div>
 
+  <!-- ✅ NUEVO MODAL PARA ESTADÍSTICAS -->
+  <div class="modal" id="modal-stats">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h2>Estadísticas</h2>
+      <canvas id="statsChart" width="400" height="300"></canvas>
+    </div>
+  </div>
 
   <div id="nested-modals"></div>
 
+  <!-- ✅ SCRIPTS -->
   <script src="./js/serverurl.js"></script>
   <script src="./js/app.js"></script>
   <script src="./js/commands.js"></script>
   <script src="./js/indexTwo.js"></script>
-  <script src="./js/index.js"></script>
- 
-  <script>
-    const DEV_MODE = true; // ponlo en false cuando uses el servidor real
-
-if (DEV_MODE) {
-  console.warn("⚠️ MODO DESARROLLO ACTIVADO - Saltando login y verificación de token.");
-  loginSection.style.display = "none";
-  appContent.style.display = "block";
-}
-  </script>
-
+  <!-- ❌ Eliminado ./js/index.js que no existe -->
 </body>
-
 </html>
