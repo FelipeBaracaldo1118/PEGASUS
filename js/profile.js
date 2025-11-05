@@ -3,7 +3,68 @@
 // ===============================
 const SERVER_URL = "http://10.13.46.195:8080";
 const token = localStorage.getItem("token");
-if (!token) window.location.href = "../index.html";
+
+// Si no hay token → login
+if (!token) {
+  console.warn("No hay token almacenado, redirigiendo al login...");
+  window.location.href = "../index.html";
+}
+
+// ===============================
+// OBTENER USUARIO ACTUAL (con BEARER)
+// ===============================
+async function fetchUser() {
+  try {
+    const res = await fetch(`${SERVER_URL}/api/user/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Si no está autorizado, volver al login
+    if (res.status === 401 || res.status === 403) {
+      console.warn("Token inválido o expirado, redirigiendo...");
+      localStorage.removeItem("token");
+      window.location.href = "../index.html";
+      return;
+    }
+
+    if (!res.ok) throw new Error("Error al obtener usuario");
+
+    const user = await res.json();
+
+    document.getElementById("user-name").textContent = user.Epam_user;
+    document.getElementById("user-role").textContent =
+      user.userType === "keytester" ? "Keytester" : "Tester";
+
+    renderProfileData(user);
+    renderActions(user);
+
+    if (user.userType === "tester") {
+      // Esperar a que el generador esté cargado en window
+      if (typeof window.EpicCommandGenerator === "undefined") {
+        console.warn("Esperando a que EpicCommandGenerator esté listo...");
+        const checkGen = setInterval(() => {
+          if (typeof window.EpicCommandGenerator !== "undefined") {
+            clearInterval(checkGen);
+            loadTesterPanel(user);
+          }
+        }, 300);
+      } else {
+        loadTesterPanel(user);
+      }
+    }
+  } catch (err) {
+    console.error("Error en fetchUser:", err);
+    // Solo redirige si el error es realmente de auth
+    if (
+      err.message.includes("401") ||
+      err.message.includes("403") ||
+      err.message.includes("auth")
+    ) {
+      localStorage.removeItem("token");
+      window.location.href = "../index.html";
+    }
+  }
+}
 
 // ===============================
 // OBTENER USUARIO ACTUAL
