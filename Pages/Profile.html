@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <!-- HEADER -->
+<!-- HEADER -->
   <header class="main-header">
     <div class="header-left">
       <h1>Panel de Usuario</h1>
@@ -35,29 +35,25 @@
     </div>
   </header>
 
-  <!-- MAIN -->
+  <!-- MAIN CONTENT -->
   <main class="main-content">
-    <section class="dashboard">
-      <div class="profile-container">
+    <div class="dashboard">
+      <!-- LEFT PANEL (PROFILE INFO) -->
+      <section class="profile-container">
         <h2>Mi Perfil</h2>
 
-        <!-- Información del perfil -->
+        <!-- Profile Data -->
         <div id="profile-data" class="profile-data">
           <div class="loading">
             <i class="fas fa-spinner fa-spin"></i> Cargando perfil...
           </div>
         </div>
 
-        <!-- ✅ CONTENEDOR VACÍO - Los botones se agregan dinámicamente según el rol -->
-        <div id="profile-actions" class="profile-actions">
-          <!-- Los botones se cargarán aquí según el rol del usuario -->
-        </div>
+        <!-- Profile Actions -->
+        <div id="profile-actions" class="profile-actions"></div>
+      </section>
 
-        <!-- Sesiones del tester (si aplica) -->
-        <div id="tester-sessions"></div>
-      </div>
-
-      <!-- PANEL DERECHO DINÁMICO -->
+      <!-- RIGHT PANEL (DYNAMIC CONTENT) -->
       <aside id="dynamic-panel" class="side-panel hidden">
         <div class="panel-header">
           <h3 id="panel-title">Detalles</h3>
@@ -65,10 +61,14 @@
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <div id="dynamic-content" class="dynamic-content"></div>
+        <div id="dynamic-content" class="dynamic-content">
+          <p>Selecciona una opción para ver más información.</p>
+        </div>
       </aside>
-    </section>
+    </div>
   </main>
+
+
 
   <!-- JS - ORDEN IMPORTANTE -->
   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
