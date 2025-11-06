@@ -1,4 +1,4 @@
-/* ===== COLORS & VARIABLES ===== */
+/* ===== BASE DESIGN SYSTEM (your original code) ===== */
 :root {
   --primary: #2563eb;
   --primary-hover: #1e40af;
@@ -76,34 +76,6 @@ body {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-}
-
-.user-info {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
-.user-name {
-  font-weight: 500;
-}
-
-.user-role {
-  font-size: 0.8rem;
-  color: var(--text-light);
-}
-
-.logout-btn {
-  background: none;
-  border: none;
-  color: var(--text-light);
-  font-size: 1.2rem;
-  cursor: pointer;
-  transition: color var(--transition);
-}
-
-.logout-btn:hover {
-  color: var(--primary);
 }
 
 /* ===== DASHBOARD ===== */
@@ -194,17 +166,6 @@ body {
   background: var(--primary-hover);
 }
 
-/* ===== TESTER SESSIONS ===== */
-#tester-sessions {
-  margin-top: var(--space-4);
-}
-
-#tester-sessions h3 {
-  margin-bottom: var(--space-3);
-  font-size: 1rem;
-  color: var(--primary);
-}
-
 /* ===== RIGHT CARD (SIDE PANEL) ===== */
 .side-panel {
   background: var(--card);
@@ -215,10 +176,6 @@ body {
   flex-direction: column;
   gap: var(--space-4);
   min-height: 500px;
-}
-
-.side-panel.hidden {
-  display: flex !important;
 }
 
 .panel-header {
@@ -254,6 +211,65 @@ body {
   padding-top: var(--space-3);
 }
 
+/* ===== TESTER SESSIONS ===== */
+#tester-sessions {
+  margin-top: var(--space-4);
+}
+
+#tester-sessions h3 {
+  margin-bottom: var(--space-3);
+  font-size: 1rem;
+  color: var(--primary);
+}
+
+.session-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: all var(--transition);
+}
+
+.session-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 10px var(--shadow);
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.session-title {
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.session-details p {
+  font-size: 0.9rem;
+  color: var(--text-light);
+  margin: 2px 0;
+}
+
+.edit-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.edit-btn:hover {
+  background: var(--primary-hover);
+}
+
 /* ===== TABLES / DYNAMIC DATA ===== */
 .table-container {
   overflow-x: auto;
@@ -284,6 +300,80 @@ body {
   background: #f1f5ff;
 }
 
+.view-btn {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.view-btn:hover {
+  background-color: var(--primary-hover);
+}
+
+/* ===== MODAL OVERLAY (View Tester Profile) ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(17, 24, 39, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-box {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+  width: 420px;
+  box-shadow: 0 4px 20px var(--shadow);
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-box h3 {
+  color: var(--primary);
+  margin-bottom: var(--space-3);
+}
+
+.modal-box p {
+  margin: 4px 0;
+  font-size: 0.9rem;
+}
+
+.close-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.close-btn:hover {
+  background: var(--primary-hover);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1024px) {
   .dashboard {
@@ -311,5 +401,9 @@ body {
 
   .dashboard {
     gap: var(--space-4);
+  }
+
+  .modal-box {
+    width: 90%;
   }
 }
