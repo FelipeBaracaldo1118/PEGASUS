@@ -1,4 +1,4 @@
-/* ===== BASE DESIGN SYSTEM (your original code) ===== */
+/* ===== BASE DESIGN SYSTEM ===== */
 :root {
   --primary: #2563eb;
   --primary-hover: #1e40af;
@@ -270,49 +270,143 @@ body {
   background: var(--primary-hover);
 }
 
-/* ===== TABLES / DYNAMIC DATA ===== */
+/* ===== TABLES / DYNAMIC DATA (ENHANCED) ===== */
 .table-container {
   overflow-x: auto;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: 0 2px 6px var(--shadow);
+  padding: var(--space-4);
 }
 
 .table-container table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
+  color: var(--text-dark);
 }
 
-.table-container th,
-.table-container td {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
+.table-container thead {
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .table-container th {
-  background: var(--bg);
-  color: var(--text-dark);
+  padding: 12px 16px;
+  text-align: left;
+  color: var(--primary);
   font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  background: var(--bg);
+}
+
+.table-container th:first-child {
+  border-top-left-radius: var(--radius);
+}
+
+.table-container th:last-child {
+  border-top-right-radius: var(--radius);
+}
+
+.table-container td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text-light);
+}
+
+.table-container tr:nth-child(even) td {
+  background: #f9fafb;
 }
 
 .table-container tr:hover td {
-  background: #f1f5ff;
+  background: #eef4ff;
+  color: var(--text-dark);
+  transition: background var(--transition);
 }
 
+/* ===== TABLE HEADER TITLE ===== */
+.table-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: var(--space-3);
+}
+
+/* ===== ACTION BUTTON ===== */
 .view-btn {
   background-color: var(--primary);
   color: #fff;
   border: none;
   border-radius: var(--radius);
-  padding: 6px 10px;
-  font-size: 0.8rem;
+  padding: 6px 12px;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: background var(--transition);
+  transition: all var(--transition);
+  white-space: nowrap;
 }
 
 .view-btn:hover {
   background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+/* ===== CLOSE BUTTON (Secondary Style) ===== */
+.close-panel {
+  background: var(--border);
+  color: var(--text-dark);
+  border: none;
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--transition);
+}
+
+.close-panel:hover {
+  background: var(--primary);
+  color: #fff;
+}
+
+/* ===== RESPONSIVE TABLE ===== */
+@media (max-width: 768px) {
+  .table-container table,
+  .table-container thead,
+  .table-container tbody,
+  .table-container th,
+  .table-container td,
+  .table-container tr {
+    display: block;
+  }
+
+  .table-container thead {
+    display: none;
+  }
+
+  .table-container tr {
+    margin-bottom: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: var(--space-3);
+  }
+
+  .table-container td {
+    border: none;
+    padding: 6px 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+  }
+
+  .table-container td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--primary);
+  }
 }
 
 /* ===== MODAL OVERLAY (View Tester Profile) ===== */
@@ -374,7 +468,7 @@ body {
   }
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== RESPONSIVE LAYOUT ===== */
 @media (max-width: 1024px) {
   .dashboard {
     grid-template-columns: 1fr;

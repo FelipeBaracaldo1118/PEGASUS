@@ -62,8 +62,7 @@ async function fetchProfile() {
     // PROFILE INFO
     let html = `
       <div><label>Usuario EPAM:</label> ${user.Epam_user || "N/A"}</div>
-      <div><label>Accounts:</label> ${Array.isArray(user.Accounts) ? user.Accounts.join(", ") : "N/A"}</div>
-      <div><label>Devices:</label> ${Array.isArray(user.Devices) ? user.Devices.map((d) => d.name).join(", ") : "N/A"}</div>
+      <div><label>Accounts:</label> ${Array.isArray(user.Accounts) ? user.Accounts.join(", ") : "N/A"}</d
       <div><label>Pod:</label> ${user.Pod || "N/A"}</div>
       <div><label>Región:</label> ${user.Region || "N/A"}</div>
       <div><label>Estación:</label> ${user.Station || "N/A"}</div>
@@ -72,9 +71,21 @@ async function fetchProfile() {
       <div><label>Rol:</label> ${user.userType || (user.isAdmin ? "keytester" : "tester")}</div>
     `;
     document.getElementById("profile-data").innerHTML = html;
+   
+    //profile search info
+     let userInfo = `
+      <span>${user.Epam_user}</span>
+    `;
+    document.getElementById("user-info").innerHTML = userInfo;
+
 
     // ACTIONS
     if (user.userType === "keytester" || user.isAdmin) {
+      let html=  `
+      <div><label>Usuario EPAM:</label> ${user.Epam_user || "N/A"}</div>
+      <div><label>Rol:</label> ${user.userType || (user.isAdmin ? "keytester" : "tester")}</div>
+    `;
+    
       const actionsHtml = `
         <div class="keytester-actions">
           <button class="action-btn create-btn" onclick="window.location.href='/keytester_sessions.html'">
@@ -89,6 +100,7 @@ async function fetchProfile() {
         </div>
       `;
       document.getElementById("profile-actions").innerHTML = actionsHtml;
+      document.getElementById("profile-data").innerHTML = html;
 
       // ✅ Always load created sessions below
       await fetchKeyTesterSessions();
