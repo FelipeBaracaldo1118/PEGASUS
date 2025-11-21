@@ -9,7 +9,7 @@
 </head>
 
 <body>
-<!-- HEADER -->
+  <!-- HEADER -->
   <header class="main-header">
     <div class="header-left">
       <h1>Panel de Usuario</h1>
@@ -50,6 +50,9 @@
 
         <!-- Profile Actions -->
         <div id="profile-actions" class="profile-actions"></div>
+
+        <!-- 🔹 NUEVO: Contenedor de sesiones -->
+        <div id="tester-sessions"></div>
       </section>
 
       <!-- RIGHT PANEL (DYNAMIC CONTENT) -->
@@ -67,8 +70,6 @@
     </div>
   </main>
 
-
-
   <!-- JS - ORDEN IMPORTANTE -->
   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
   <script src="../js/profile.js"></script>
@@ -77,7 +78,7 @@
   <script>
     // Cargar testerManagement.js solo si existe
     const script = document.createElement('script');
-    script.src = '../js/testerManagement.js';
+    script.src = '../js/profile.js';
     script.onerror = () => console.warn('⚠️ testerManagement.js no encontrado (opcional)');
     document.body.appendChild(script);
   </script>

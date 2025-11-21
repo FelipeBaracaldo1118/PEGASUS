@@ -1,1 +1,20 @@
-*.log
+# Ignora la carpeta de dependencias de Node.js
+node_modules/
+
+# Ignora logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Ignora archivos de entorno
+.env
+.env.local
+.env.*.local
+
+# Ignora directorios de producción
+dist/
+build/
+
+# Ignora archivos de sistema
+.DS_Store
+Thumbs.db

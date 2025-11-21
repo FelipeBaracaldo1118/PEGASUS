@@ -9,7 +9,17 @@
 
 <body>
     <div class="container">
-        <h2>Crear Sesión de Juego</h2>
+         <h2>Crear Sesión de Juego</h2>
+        <div class="header-section">
+            <button type="button" id="backButton" class="back-button">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+    </svg>
+    Volver Atrás
+</button>
+           
+        </div>
+        
         <form id="sessionForm">
 
             <!-- 🔹 Backend Name -->
@@ -43,13 +53,36 @@
                 <input type="text" id="idOverrideB" placeholder="ID para Grupo 2">
             </div>
 
+            <!-- 🔹 Split Screen (nuevo campo) -->
+            <div id="splitscreen-section" style="display:none;">
+                <label for="splitScreenCount">Cantidad de Split Screen:</label>
+                <input type="number" id="splitScreenCount" min="1" max="4" placeholder="1, 2, 3 o 4">
+                <small style="display:block; color:#666; margin-top:5px;">
+                    Número de pantallas divididas por estación
+                </small>
+            </div>
+
+            <!-- 🔹 Configuración de Equipos (Juno/Sparks) -->
+            <div id="team-config" style="display:none;">
+                <h3>Configuración de Equipos</h3>
+                
+                <label for="teamSize">Tamaño del Equipo:</label>
+                <input type="number" id="teamSize" min="1" max="10" placeholder="4">
+                
+                <label for="totalTeams">Total de Equipos:</label>
+                <input type="number" id="totalTeams" min="1" max="20" placeholder="10">
+                
+            </div>
+
             <!-- 🔹 Start Time -->
             <label for="startTime">Start Time:</label>
             <input type="text" id="startTime" required placeholder="1PM">
 
-            <!-- 🔹 Team Size -->
-            <label for="teamSize">Team Size:</label>
-            <input type="text" id="teamSize" required placeholder="Squad (4), Fill">
+            <!-- 🔹 Team Size (para modos normales) -->
+            <div id="normal-teamsize">
+                <label for="teamSizeNormal">Team Size:</label>
+                <input type="text" id="teamSizeNormal" required placeholder="Squad (4), Fill">
+            </div>
 
             <!-- 🔹 Cantidad de jugadores -->
             <label for="totalPlayers">Cantidad de jugadores:</label>
@@ -92,7 +125,7 @@
                     <td><input type="number" min="0" id="llm_android"></td>
                     <td></td>
                     <td><input type="number" min="0" id="llm_xsx"></td>
-                    <td><input type="number" min="0" id="llm_switch"></td> <!-- Nueva celda -->
+                    <td><input type="number" min="0" id="llm_switch"></td>
                 </tr>
                 <tr>
                     <td>LWM</td>
@@ -104,7 +137,7 @@
                     <td></td>
                     <td></td>
                     <td><input type="number" min="0" id="lwm_xsx"></td>
-                    <td><input type="number" min="0" id="lwm_switch"></td> <!-- Nueva celda -->
+                    <td><input type="number" min="0" id="lwm_switch"></td>
                 </tr>
                 <tr>
                     <td>Trace</td>
@@ -116,7 +149,7 @@
                     <td><input type="number" min="0" id="trace_android"></td>
                     <td><input type="number" min="0" id="trace_ios"></td>
                     <td></td>
-                    <td><input type="number" min="0" id="trace_switch"></td> <!-- Nueva celda -->
+                    <td><input type="number" min="0" id="trace_switch"></td>
                 </tr>
                 <tr>
                     <td>Razor</td>

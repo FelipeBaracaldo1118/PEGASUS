@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 
+const { swaggerUi, specs } = require('./swagger');
 
 // Al inicio de tu archivo principal de Node.js (por ejemplo, server.js)
 //const { spawn } = require('child_process');
@@ -14,6 +15,16 @@ app.use(cors());
 app.use(express.json());
 // Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
 app.use(express.static(path.join(__dirname)));
+
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(specs));
+// ============ SWAGGER UI ============
+
+// Endpoint para obtener el JSON de Swagger
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
 // --------------------------
 // CONEXIÓN A MONGODB
 // --------------------------
@@ -21,7 +32,10 @@ mongoose.connect("mongodb://localhost:27017/loginApp", {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
-  .then(() => console.log("🚀 Conexión exitosa a MongoDB"))
+  .then(() => {
+    console.log("🚀 Conexión exitosa a MongoDB");
+    console.log("📚 Documentación Swagger disponible en: http://localhost:3000/api-docs");
+  })
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err));
 
 // --------------------------
@@ -41,13 +55,11 @@ const userSchema = new mongoose.Schema({
   Region: { type: String },
   Station: { type: String },
   IsPlaying: { type: Boolean, default: false },
-  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado','instalado'], default: 'no instalado' } // <--- NUEVO CAMPO
+  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado', 'instalado'], default: 'no instalado' } // <--- NUEVO CAMPO
 });
 const User = mongoose.model("User", userSchema);
 
-//------------------------------------
-//esquema playtest
-//------------------------------------
+
 //------------------------------------
 //esquema playtest
 //------------------------------------
@@ -67,12 +79,12 @@ const sessionSchema = new mongoose.Schema({
   testPlan: String,
   totalPlayers: Number,
   captureRequirements: { type: Object, default: {} },
-  isSprout: { type: Boolean, default: false }, 
-  sessionType: { 
-    type: String, 
-    enum: ['normal', 'sprout', 'juno', 'sparks'], 
-    default: 'normal' 
-  }, // ⬅️ NUEVO
+  isSprout: { type: Boolean, default: false },
+  sessionType: {
+    type: String,
+    enum: ['normal', 'sprout', 'juno', 'sparks'],
+    default: 'normal'
+  },
   assignedTesters: [
     {
       testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -83,7 +95,7 @@ const sessionSchema = new mongoose.Schema({
       pod: String,
       station: String,
       group: String,
-      team: String, // ⬅️ NUEVO campo opcional
+      team: String,
       dispositivos: [String],
       capturas: [String]
     }
@@ -93,7 +105,89 @@ const sessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Session = mongoose.model("Session", sessionSchema);
-
+/**
+ * @swagger
+ * /register:
+ *   post:
+ *     summary: Registrar nuevo usuario
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - Epam_user
+ *               - Password
+ *             properties:
+ *               Epam_user:
+ *                 type: string
+ *                 example: EPAM-NewUser
+ *               Accounts:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ['account1', 'account2']
+ *               Devices:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       example: PC
+ *                     priority:
+ *                       type: number
+ *                       example: 1
+ *               availability:
+ *                 type: string
+ *                 example: Disponible
+ *               Mmr:
+ *                 type: number
+ *                 example: 1500
+ *               Password:
+ *                 type: string
+ *                 example: password123
+ *               isAdmin:
+ *                 type: boolean
+ *                 example: false
+ *               userType:
+ *                 type: string
+ *                 enum: [tester, keytester]
+ *                 example: tester
+ *               Pod:
+ *                 type: string
+ *                 example: POD-A
+ *               Region:
+ *                 type: string
+ *                 example: Bogota
+ *               Station:
+ *                 type: string
+ *                 example: Station-01
+ *     responses:
+ *       201:
+ *         description: Usuario registrado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Usuario registrado con éxito
+ *       400:
+ *         description: El usuario ya existe
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Error del servidor
+ */
 // --------------------------
 // RUTA: REGISTRO DE USUARIO
 // --------------------------
@@ -145,7 +239,65 @@ app.post("/register", async (req, res) => {
     }
   }
 });
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Iniciar sesión
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - Epam_user
+ *               - Password
+ *             properties:
+ *               Epam_user:
+ *                 type: string
+ *                 example: EPAM-HaruyoshieE
+ *               Password:
+ *                 type: string
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Login exitoso
+ *                 token:
+ *                   type: string
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *       404:
+ *         description: Usuario no encontrado
+ *       401:
+ *         description: Contraseña incorrecta
+ */
 
+/**
+ * @swagger
+ * /logout:
+ *   post:
+ *     summary: Cerrar sesión
+ *     tags: [Autenticación]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Sesión cerrada exitosamente
+ *       404:
+ *         description: Usuario no encontrado
+ */
 // --------------------------
 // RUTA: LOGIN DE USUARIO
 // --------------------------
@@ -177,6 +329,24 @@ app.post("/login", async (req, res) => {
     res.status(500).json({ success: false, message: "Error al iniciar sesión" });
   }
 });
+/**
+ * @swagger
+ * /save-json:
+ *   post:
+ *     summary: Guardar configuración en archivo JSON
+ *     tags: [Utilidades]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Archivo actualizado
+ *       500:
+ *         description: Error al guardar
+ */
 // --------------------------
 // RUTA: GUARDAR JSON
 // --------------------------
@@ -194,7 +364,22 @@ app.post("/save-json", (req, res) => {
     res.json({ success: true, message: "Archivo actualizado" });
   });
 });
-
+/**
+ * @swagger
+ * /protected:
+ *   get:
+ *     summary: Verificar validez del token
+ *     tags: [Autenticación]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token válido
+ *       401:
+ *         description: Token inválido o expirado
+ *       403:
+ *         description: Token no proporcionado
+ */
 // --------------------------
 // RUTA PROTEGIDA (EJEMPLO)
 // --------------------------
@@ -212,18 +397,61 @@ app.get("/protected", (req, res) => {
     res.status(401).json({ success: false, message: "Token inválido o expirado" });
   }
 });
-// Middleware para verificar el token JWT
-function authMiddleware(req, res, next) {
-  const token = req.headers["authorization"];
-  if (!token) return res.status(401).json({ message: "Token requerido" });
+// Middleware de autenticación
+const authMiddleware = (req, res, next) => {
   try {
+    // Obtener el token del header
+    const token = req.headers["authorization"];
+
+    console.log("Token recibido:", token); // Para debugging
+
+    if (!token) {
+      return res.status(401).json({ message: "No se proporcionó token" });
+    }
+
+    // Verificar el token
     const decoded = jwt.verify(token, "SECRETO");
+
+    console.log("Token decodificado:", decoded); // Para debugging
+
+    // Asignar el userId al request
     req.userId = decoded.userId;
+
+    console.log("Usuario ID:", req.userId); // Para debugging
+
     next();
-  } catch {
-    return res.status(401).json({ message: "Token inválido" });
+  } catch (error) {
+    console.error("Error en autenticación:", error);
+    return res.status(403).json({
+      message: "Token inválido o expirado",
+      error: error.message
+    });
   }
-}
+};
+/**
+ * @swagger
+ * /api/user/me:
+ *   get:
+ *     summary: Obtener información del usuario actual
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Información del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/User'
+ *                 - type: object
+ *                   properties:
+ *                     totalSessions:
+ *                       type: number
+ *                       example: 5
+ *       404:
+ *         description: Usuario no encontrado
+ */
 // Endpoint para obtener el usuario actual
 app.get("/api/user/me", authMiddleware, async (req, res) => {
   try {
@@ -234,6 +462,26 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error al obtener usuario" });
   }
 });
+/**
+ * @swagger
+ * /api/testers-in-pod:
+ *   get:
+ *     summary: Obtener testers en el mismo POD
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de testers en el POD
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       403:
+ *         description: No autorizado (solo keytester)
+ */
 // Testers en el mismo pod
 app.get("/api/testers-in-pod", authMiddleware, async (req, res) => {
   const user = await User.findById(req.userId);
@@ -241,7 +489,26 @@ app.get("/api/testers-in-pod", authMiddleware, async (req, res) => {
   const testers = await User.find({ Pod: user.Pod, userType: "tester" }).select("-Password -__v");
   res.json(testers);
 });
-
+/**
+ * @swagger
+ * /api/all-testers:
+ *   get:
+ *     summary: Obtener todos los testers registrados
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de todos los testers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       403:
+ *         description: No autorizado (solo keytester)
+ */
 // Todos los testers registrados
 app.get("/api/all-testers", authMiddleware, async (req, res) => {
   const user = await User.findById(req.userId);
@@ -249,42 +516,185 @@ app.get("/api/all-testers", authMiddleware, async (req, res) => {
   const testers = await User.find({ userType: "tester" }).select("-Password -__v");
   res.json(testers);
 });
-
-// Crear sesión
+/**
+ * @swagger
+ * /api/sessions:
+ *   post:
+ *     summary: Crear nueva sesión de testing
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - backendName
+ *               - buildString
+ *               - startTime
+ *             properties:
+ *               commsLead:
+ *                 type: string
+ *                 example: John Doe
+ *               commsAssist:
+ *                 type: string
+ *                 example: Jane Smith
+ *               backendName:
+ *                 type: string
+ *                 example: baseball
+ *               buildString:
+ *                 type: string
+ *                 example: ++Fortnite+Release-38.10-CL-47160256
+ *               googleDrive:
+ *                 type: string
+ *                 example: https://drive.google.com/...
+ *               gameModes:
+ *                 type: string
+ *                 example: Battle Royale
+ *               idOverride:
+ *                 type: string
+ *                 example: '42069'
+ *               idOverrideA:
+ *                 type: string
+ *                 example: '42070'
+ *               idOverrideB:
+ *                 type: string
+ *                 example: '42071'
+ *               startTime:
+ *                 type: string
+ *                 format: date-time
+ *                 example: 2024-01-15T13:00:00Z
+ *               premadeTeams:
+ *                 type: string
+ *                 example: 'Yes'
+ *               teamSize:
+ *                 type: string
+ *                 example: '4'
+ *               testPlan:
+ *                 type: string
+ *                 example: Test Plan Document
+ *               totalPlayers:
+ *                 type: number
+ *                 example: 20
+ *               captureRequirements:
+ *                 type: object
+ *                 example: { CSVProfile: { PC: 2, PS5: 1 }, LLM: { PS5: 1 } }
+ *               sessionType:
+ *                 type: string
+ *                 enum: [normal, sprout, juno, sparks]
+ *                 example: normal
+ *               pod:
+ *                 type: string
+ *                 example: POD-A
+ *     responses:
+ *       201:
+ *         description: Sesión creada exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Sesión creada exitosamente
+ *                 session:
+ *                   $ref: '#/components/schemas/Session'
+ *       403:
+ *         description: No autorizado (solo keytester y admin)
+ */
+// Crear nueva sesión
 app.post("/api/sessions", authMiddleware, async (req, res) => {
   try {
+    // Verificar autorización
     const user = await User.findById(req.userId);
     if (!user || (user.userType !== "keytester" && !user.isAdmin)) {
       return res.status(403).json({ message: "No autorizado" });
     }
 
-    const { idOverrideA, idOverrideB, idOverride, sessionType } = req.body;
+    const {
+      commsLead,
+      commsAssist,
+      backendName,
+      buildString,
+      googleDrive,
+      gameModes,
+      idOverride,
+      idOverrideA,
+      idOverrideB,
+      startTime,
+      premadeTeams,
+      teamSize,
+      testPlan,
+      totalPlayers,
+      captureRequirements,
+      sessionType,
+      pod
+    } = req.body;
 
-    const isSprout = ['sprout', 'juno', 'sparks'].includes(sessionType);
-
-    const session = new Session({
-      backendName: req.body.backendName,
-      buildString: req.body.buildString,
-      startTime: req.body.startTime,
-      teamSize: req.body.teamSize,
-      totalPlayers: req.body.totalPlayers,
-      captureRequirements: req.body.captureRequirements,
-      createdBy: req.userId,
+    // Crear nueva sesión
+    const newSession = new Session({
+      commsLead,
+      commsAssist,
+      backendName,
+      buildString,
+      googleDrive,
+      gameModes,
+      idOverride,
+      idOverrideA,
+      idOverrideB,
+      startTime,
+      premadeTeams,
+      teamSize,
+      testPlan,
+      totalPlayers: parseInt(totalPlayers) || 0,
+      captureRequirements,
       sessionType: sessionType || 'normal',
-      isSprout,
-      idOverrideA: isSprout ? idOverrideA : undefined,
-      idOverrideB: isSprout ? idOverrideB : undefined,
-      idOverride: !isSprout ? idOverride : undefined
+      createdBy: req.userId,
+      pod
     });
 
-    await session.save();
-    res.status(201).json(session);
+    // Guardar la sesión
+    const savedSession = await newSession.save();
+
+    // Enviar respuesta
+    res.status(201).json({
+      success: true,
+      message: "Sesión creada exitosamente",
+      session: savedSession
+    });
+
   } catch (error) {
-    res.status(500).json({ message: "Error al crear sesión", error: error.message });
+    console.error('Error al crear sesión:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error al crear sesión",
+      error: error.message
+    });
   }
 });
-
-
+/**
+ * @swagger
+ * /api/sessions:
+ *   get:
+ *     summary: Listar todas las sesiones
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de sesiones
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Session'
+ */
 // Listar sesiones
 app.get("/api/sessions", authMiddleware, async (req, res) => {
   try {
@@ -312,6 +722,104 @@ app.get("/api/sessions", authMiddleware, async (req, res) => {
   }
 });
 
+// 🔹 ENDPOINT: Obtener sesiones creadas por el KeyTester actual
+app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
+  try {
+    console.log("Buscando sesiones para usuario:", req.userId);
+
+    // Verificar que el usuario existe
+    const user = await User.findById(req.userId);
+    if (!user) {
+      console.log("Usuario no encontrado");
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    console.log("Usuario encontrado:", user.Epam_user);
+
+    // Buscar sesiones
+    const sessions = await Session.find({
+      "assignedTesters.testerId": req.userId
+    }).sort({ createdAt: -1 });
+
+    console.log(`Encontradas ${sessions.length} sesiones`);
+
+    const processedSessions = sessions.map(session => {
+      const testerAssignment = session.assignedTesters.find(
+        tester => tester.testerId && tester.testerId.toString() === req.userId
+      );
+
+      let idOverride = session.idOverride;
+      if (session.isSprout && testerAssignment && testerAssignment.group) {
+        idOverride = testerAssignment.group === "A" ? session.idOverrideA : session.idOverrideB;
+      }
+
+      return {
+        sessionId: session._id,
+        backendName: session.backendName,
+        buildString: session.buildString,
+        gameModes: session.gameModes,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        createdAt: session.createdAt,
+        sessionType: session.sessionType || 'normal',
+        isSprout: session.isSprout || false,
+        idOverride: idOverride,
+        pod: session.pod,
+        totalPlayers: session.totalPlayers,
+        // ✅ CORRECCIÓN: Incluir todos los testers asignados
+        assignedTesters: session.assignedTesters,
+        // ✅ CORRECCIÓN: Datos específicos de MI asignación
+        assignment: {
+          device: testerAssignment?.device || null,
+          capturas: testerAssignment?.capturas || [],
+          dispositivos: testerAssignment?.dispositivos || [],
+          pod: testerAssignment?.pod || null,
+          station: testerAssignment?.station || null,
+          group: testerAssignment?.group || null,
+          team: testerAssignment?.team || null,
+          region: testerAssignment?.region || null,
+          mmr: testerAssignment?.mmr || null
+        }
+      };
+    });
+
+    res.json(processedSessions);
+
+  } catch (error) {
+    console.error('Error al obtener sesiones:', error);
+    res.status(500).json({
+      message: "Error al obtener las sesiones",
+      error: error.message
+    });
+  }
+});
+/**
+ * @swagger
+ * /api/sessions/{id}:
+ *   get:
+ *     summary: Obtener detalles de una sesión específica
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la sesión
+ *     responses:
+ *       200:
+ *         description: Detalles de la sesión
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Session'
+ *       404:
+ *         description: Sesión no encontrada
+ *       403:
+ *         description: No tienes acceso a esta sesión
+ */
 // Obtener una sesión
 app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
@@ -346,7 +854,35 @@ app.get("/api/sessions/:id", authMiddleware, async (req, res) => {
     });
   }
 });
-
+/**
+ * @swagger
+ * /api/sessions/{id}:
+ *   put:
+ *     summary: Actualizar una sesión existente
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la sesión
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Session'
+ *     responses:
+ *       200:
+ *         description: Sesión actualizada
+ *       403:
+ *         description: No autorizado
+ *       404:
+ *         description: Sesión no encontrada
+ */
 // Editar sesión
 app.put("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
@@ -396,7 +932,29 @@ app.put("/api/sessions/:id", authMiddleware, async (req, res) => {
     });
   }
 });
-
+/**
+ * @swagger
+ * /api/sessions/{id}:
+ *   delete:
+ *     summary: Eliminar una sesión
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la sesión
+ *     responses:
+ *       200:
+ *         description: Sesión eliminada correctamente
+ *       403:
+ *         description: No autorizado
+ *       404:
+ *         description: Sesión no encontrada
+ */
 // Borrar sesión
 app.delete("/api/sessions/:id", authMiddleware, async (req, res) => {
   try {
@@ -429,7 +987,37 @@ app.delete("/api/sessions/:id", authMiddleware, async (req, res) => {
     });
   }
 });
-
+/**
+ * @swagger
+ * /api/user/my-sessions:
+ *   get:
+ *     summary: Obtener sesiones asignadas al usuario actual
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de sesiones asignadas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   sessionId:
+ *                     type: string
+ *                   backendName:
+ *                     type: string
+ *                   buildString:
+ *                     type: string
+ *                   startTime:
+ *                     type: string
+ *                   sessionType:
+ *                     type: string
+ *                   assignment:
+ *                     $ref: '#/components/schemas/Assignment'
+ */
 // Obtener sesiones asignadas a un tester
 app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
   try {
@@ -477,7 +1065,41 @@ app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
     });
   }
 });
-
+/**
+ * @swagger
+ * /api/sessions/{id}/assign:
+ *   post:
+ *     summary: Asignación automática de testers a una sesión
+ *     tags: [Asignaciones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la sesión
+ *     description: |
+ *       Asigna automáticamente testers según los requerimientos de captura y dispositivos.
+ *       Soporta diferentes tipos de sesión: normal, sprout, juno, sparks.
+ *     responses:
+ *       200:
+ *         description: Testers asignados exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 assignedTesters:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Assignment'
+ *       404:
+ *         description: Sesión no encontrada
+ *       500:
+ *         description: Error en la asignación automática
+ */
 // Asignación automática de testers (con soporte para Sprout, Juno, Sparks)
 app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
   try {
@@ -557,19 +1179,19 @@ app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
           assignedTesters.push({
             testerId: tester._id,
             Epam_user: tester.Epam_user,
-            device,
+            device,  // ✅ Dispositivo principal
             region: tester.Region,
             mmr: tester.Mmr,
             pod: tester.Pod,
             station: tester.Station,
-            dispositivos: [device],
-            capturas
+            dispositivos: [device],  // ✅ Array de dispositivos
+            capturas  // ✅ Array de capturas asignadas
           });
         }
       }
     }
 
-    // 🔹 Aplicar lógica según tipo de sesión
+    // Aplicar lógica según tipo de sesión
     const { sessionType } = session;
 
     if (sessionType === "sprout") {
@@ -625,10 +1247,34 @@ app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/user/sessions/{sessionId}:
+ *   get:
+ *     summary: Obtener detalles completos de una sesión asignada
+ *     tags: [Sesiones]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la sesión
+ *     responses:
+ *       200:
+ *         description: Detalles completos de la sesión
+ *       404:
+ *         description: Sesión no encontrada
+ */
 
 // Obtener detalles completos de una sesión específica para un tester
 app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
   try {
+    console.log('Buscando sesión:', req.params.sessionId);
+    console.log('Usuario:', req.userId);
+
     const session = await Session.findOne({
       _id: req.params.sessionId,
       "assignedTesters.testerId": req.userId
@@ -639,45 +1285,89 @@ app.get("/api/user/sessions/:sessionId", authMiddleware, async (req, res) => {
     }
 
     const testerAssignment = session.assignedTesters.find(
-      tester => tester.testerId.toString() === req.userId
+      tester => tester.testerId && tester.testerId.toString() === req.userId
     );
 
-    // Determina el idOverride correcto según el grupo (solo para sprout)
+    // Determina el idOverride correcto según el grupo
     let idOverride = session.idOverride;
-    if (session.isSprout && testerAssignment && testerAssignment.group) {
+    if (session.sessionType === "sprout" && testerAssignment.group) {
+      idOverride = testerAssignment.group === "A" ? session.idOverrideA : session.idOverrideB;
+    } else if (session.sessionType === "juno" && testerAssignment.group) {
+      idOverride = testerAssignment.group === "A" ? session.idOverrideA : session.idOverrideB;
+    } else if (session.sessionType === "sparks" && testerAssignment.group) {
       idOverride = testerAssignment.group === "A" ? session.idOverrideA : session.idOverrideB;
     }
 
     const sessionDetails = {
       sessionId: session._id,
-      commsLead: session.commsLead,
-      commsAssist: session.commsAssist,
       backendName: session.backendName,
       buildString: session.buildString,
-      googleDrive: session.googleDrive,
       gameModes: session.gameModes,
       idOverride: idOverride,
       startTime: session.startTime,
+      endTime: session.endTime,
       premadeTeams: session.premadeTeams,
       teamSize: session.teamSize,
       testPlan: session.testPlan,
       totalPlayers: session.totalPlayers,
       createdAt: session.createdAt,
+      sessionType: session.sessionType || 'normal',
+      isSprout: session.isSprout || false,
+      pod: session.pod,
+      captureRequirements: session.captureRequirements,
+      // ✅ CORRECCIÓN: Incluir TODOS los datos de la asignación
       assignment: {
-        device: testerAssignment.device,
-        capturas: testerAssignment.capturas,
-        pod: testerAssignment.pod,
-        station: testerAssignment.station,
-        group: testerAssignment.group || null
+        device: testerAssignment.device || null,
+        capturas: testerAssignment.capturas || [],
+        dispositivos: testerAssignment.dispositivos || [],
+        pod: testerAssignment.pod || null,
+        station: testerAssignment.station || null,
+        group: testerAssignment.group || null,
+        team: testerAssignment.team || null,
+        region: testerAssignment.region || null,
+        mmr: testerAssignment.mmr || null,
+        Epam_user: testerAssignment.Epam_user || null
       }
     };
 
+    console.log('Enviando detalles de sesión:', sessionDetails);
     res.json(sessionDetails);
+
   } catch (error) {
     console.error('Error al obtener detalles de la sesión:', error);
-    res.status(500).json({ message: "Error al obtener los detalles de la sesión" });
+    res.status(500).json({
+      message: "Error al obtener los detalles de la sesión",
+      error: error.message
+    });
   }
 });
+/**
+ * @swagger
+ * /api/user/{id}:
+ *   get:
+ *     summary: Obtener perfil de un tester específico
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: Perfil del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       403:
+ *         description: No autorizado (solo keytester y admin)
+ *       404:
+ *         description: Usuario no encontrado
+ */
 // Obtener perfil de un tester específico (solo keytester y admin)
 app.get("/api/user/:id", authMiddleware, async (req, res) => {
   try {
@@ -720,19 +1410,48 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
 
 //peticion para saber si tiene que volver a iniciar sesion
 app.get("/protected", (req, res) => {
-    const token = req.headers["authorization"];
+  const token = req.headers["authorization"];
 
-    if (!token) {
-        return res.status(403).json({ success: false, message: "Token no proporcionado" });
-    }
+  if (!token) {
+    return res.status(403).json({ success: false, message: "Token no proporcionado" });
+  }
 
-    try {
-        const decoded = jwt.verify(token, "SECRETO");
-        res.status(200).json({ success: true, message: "Bienvenido a la ruta protegida", userId: decoded.userId });
-    } catch (err) {
-        res.status(401).json({ success: false, message: "Token inválido o expirado" });
-    }
+  try {
+    const decoded = jwt.verify(token, "SECRETO");
+    res.status(200).json({ success: true, message: "Bienvenido a la ruta protegida", userId: decoded.userId });
+  } catch (err) {
+    res.status(401).json({ success: false, message: "Token inválido o expirado" });
+  }
 });
+/**
+ * @swagger
+ * /actualizar-estado:
+ *   post:
+ *     summary: Actualizar estado de instalación de un usuario
+ *     tags: [Utilidades]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - station
+ *               - nuevoEstado
+ *             properties:
+ *               station:
+ *                 type: string
+ *                 example: Station-01
+ *               nuevoEstado:
+ *                 type: string
+ *                 enum: [instalando, no instalado, instalado]
+ *                 example: instalado
+ *     responses:
+ *       200:
+ *         description: Estado actualizado
+ *       404:
+ *         description: Usuario no encontrado
+ */
 // Endpoint para actualizar estado
 app.post('/actualizar-estado', async (req, res) => {
   const { station, nuevoEstado } = req.body;
@@ -748,6 +1467,61 @@ app.post('/actualizar-estado', async (req, res) => {
     res.status(200).send(`Estado actualizado para Station: ${user.Station}`);
   } catch (error) {
     res.status(500).send('Error al actualizar el estado');
+  }
+});
+/**
+ * @swagger
+ * /api/users/search:
+ *   get:
+ *     summary: Buscar usuarios por nombre o estación
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Término de búsqueda (nombre o estación)
+ *         example: EPAM
+ *       - in: query
+ *         name: pod
+ *         schema:
+ *           type: string
+ *         description: Filtrar por POD
+ *         example: POD-A
+ *     responses:
+ *       200:
+ *         description: Lista de usuarios encontrados
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */
+// Endpoint: Buscar usuarios por nombre y pod
+app.get('/api/users/search', authMiddleware, async (req, res) => {
+  try {
+    const query = req.query.q || '';
+    const pod = req.query.pod;
+
+    // Búsqueda por Epam_user o Station (ambos insensibles a mayúsculas/minúsculas)
+    const search = {
+      $or: [
+        { Epam_user: { $regex: query, $options: 'i' } },
+        { Station: { $regex: query, $options: 'i' } }
+      ]
+    };
+    if (pod) search.Pod = pod;
+
+    const users = await User.find(search)
+      .select('Epam_user Pod Station Region Devices userType IsPlaying availability');
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error al buscar usuarios:', error);
+    res.status(500).json({ message: 'Error al buscar usuarios', error: error.message });
   }
 });
 

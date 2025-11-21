@@ -106,10 +106,10 @@
                 document.getElementById("session-info").innerText = session.message || "No se pudo cargar la sesión";
                 return;
             }
-            let html = `<b>Comms Lead:</b> ${session.commsLead}<br>`;
-            html += `<b>Game Modes:</b> ${session.gameModes}<br>`;
+            let html = `<b>Backend:</b> ${session.backendName}<br>`;
+            html += `<b>IdOverride:</b> ${session.idOverride}<br>`;
             html += `<b>Cantidad de jugadores:</b> ${session.totalPlayers}<br>`;
-            html += `<b>Start Time:</b> ${session.startTime}<br>`;
+            html += `<b>CL:</b> ${session.buildString}<br>`;
             document.getElementById("session-info").innerHTML = html;
 
             sessionCaptureRequirements = session.captureRequirements || {};

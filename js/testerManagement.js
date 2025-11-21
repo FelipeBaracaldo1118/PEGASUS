@@ -66,7 +66,7 @@ function setupKeyTesterUI() {
 }
 
 // Keytester sessions
-async function fetchKeyTesterSessions() {
+async function fetchTesterSessions() {
   const token = getToken();
   if (!token) return;
 
