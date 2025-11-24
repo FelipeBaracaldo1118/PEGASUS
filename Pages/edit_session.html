@@ -1,125 +1,287 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editar Sesión de Juego</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet" href="../css/editSessions.css">
 </head>
+
 <body>
   <div class="container">
-    <h2>Editar Sesión de Juego</h2>
+    <header class="form-header">
+      <h2><i class="fas fa-edit"></i> Editar Sesión de Juego</h2>
+    </header>
+
     <form id="editSessionForm">
-      <!-- Los mismos campos que el formulario de creación -->
-      <label for="commsLead">Comms Lead:</label>
-      <input type="text" id="commsLead" required>
+      <div class="form-grid">
+        <!-- Sección de Información Principal -->
+        <div class="form-section">
+          <h3><i class="fas fa-info-circle"></i> Información Principal</h3>
+          <div class="form-group">
+            <label for="commsLead">
+              <i class="fas fa-user-tie"></i> Comms Lead
+            </label>
+            <input type="text" id="commsLead" required>
+          </div>
 
-      <label for="commsAssist">Comms Assist:</label>
-      <input type="text" id="commsAssist" required>
+          <div class="form-group">
+            <label for="commsAssist">
+              <i class="fas fa-user"></i> Comms Assist
+            </label>
+            <input type="text" id="commsAssist" required>
+          </div>
 
-      <label for="backendName">Backend Name:</label>
-      <input type="text" id="backendName" required>
+          <div class="form-group">
+            <label for="backendName">
+              <i class="fas fa-server"></i> Backend Name
+            </label>
+            <input type="text" id="backendName" required>
+          </div>
 
-      <label for="buildString">Build String:</label>
-      <input type="text" id="buildString" required>
+          <div class="form-group">
+            <label for="buildString">
+              <i class="fas fa-code-branch"></i> Build String
+            </label>
+            <input type="text" id="buildString" required>
+          </div>
+        </div>
 
-      <label for="googleDrive">Google Drive:</label>
-      <input type="url" id="googleDrive" required>
+        <!-- Sección de Configuración -->
+        <div class="form-section">
+          <h3><i class="fas fa-cogs"></i> Configuración</h3>
+          <div class="form-group">
+            <label for="googleDrive">
+              <i class="fab fa-google-drive"></i> Google Drive
+            </label>
+            <input type="url" id="googleDrive" required>
+          </div>
 
-            <label for="gameModes">Game Modes / Playlists:</label>
-      <textarea id="gameModes" required></textarea>
+          <div class="form-group">
+            <label for="gameModes">
+              <i class="fas fa-gamepad"></i> Game Modes / Playlists
+            </label>
+            <textarea id="gameModes" required></textarea>
+          </div>
 
-      <label for="idOverride">ID Override:</label>
-      <input type="text" id="idOverride" required>
+          <div class="form-group">
+            <label for="idOverride">
+              <i class="fas fa-id-card"></i> ID Override
+            </label>
+            <input type="text" id="idOverride" required>
+          </div>
+        </div>
 
-      <label for="startTime">Start Time:</label>
-      <input type="text" id="startTime" required>
+        <!-- Sección de Programación -->
+        <div class="form-section">
+          <h3><i class="fas fa-clock"></i> Programación</h3>
+          <div class="form-group">
+            <label for="startTime">
+              <i class="fas fa-hourglass-start"></i> Start Time
+            </label>
+            <input type="text" id="startTime" required>
+          </div>
 
-      <label for="premadeTeams">Premade Teams:</label>
-      <input type="text" id="premadeTeams" required>
+          <div class="form-group">
+            <label for="premadeTeams">
+              <i class="fas fa-users"></i> Premade Teams
+            </label>
+            <input type="text" id="premadeTeams" required>
+          </div>
 
-      <label for="teamSize">Team Size:</label>
-      <input type="text" id="teamSize" required>
+          <div class="form-group">
+            <label for="teamSize">
+              <i class="fas fa-user-friends"></i> Team Size
+            </label>
+            <input type="text" id="teamSize" required>
+          </div>
+        </div>
 
-      <label for="testPlan">Test Plan / BTR:</label>
-      <input type="url" id="testPlan" required>
+        <!-- Sección de Plan de Pruebas -->
+        <div class="form-section">
+          <h3><i class="fas fa-clipboard-check"></i> Plan de Pruebas</h3>
+          <div class="form-group">
+            <label for="testPlan">
+              <i class="fas fa-tasks"></i> Test Plan / BTR
+            </label>
+            <input type="url" id="testPlan" required>
+          </div>
 
-      <label for="totalPlayers">Cantidad de jugadores:</label>
-      <input type="number" id="totalPlayers" min="1" required>
+          <div class="form-group">
+            <label for="totalPlayers">
+              <i class="fas fa-users"></i> Cantidad de jugadores
+            </label>
+            <input type="number" id="totalPlayers" min="1" required>
+          </div>
+        </div>
+      </div>
+      <!-- Sección de Modo de Juego y Split Screen -->
+      <div class="form-section">
+        <h3><i class="fas fa-gamepad"></i> Modo de Juego</h3>
+        <div class="form-group">
+          <label for="mode">
+            <i class="fas fa-dice"></i> Modo de Juego
+          </label>
+          <select id="mode" required>
+            <option value="">Selecciona un modo</option>
+            <option value="100">Battle Royale - 100 jugadores</option>
+            <option value="80">Battle Royale - 80 jugadores</option>
+            <option value="sprout">Sprout</option>
+            <option value="juno">Juno</option>
+            <option value="sparks">Sparks</option>
+          </select>
+        </div>
 
-      <!-- Tabla de requerimientos de captura -->
-      <h3>Requerimientos de Captura</h3>
-      <table>
-        <tr>
-          <th>Tipo de Captura</th>
-          <th>PS4</th>
-          <th>PS4 Dev</th>
-          <th>PS5</th>
-          <th>PS5 Dev</th>
-          <th>PC</th>
-          <th>Android</th>
-          <th>iOS</th>
-          <th>XSX</th>
-          <th>Switch</th>
-        </tr>
-        <tr>
-          <td>CSVProfile</td>
-          <td><input type="number" min="0" id="csv_ps4"></td>
-          <td><input type="number" min="0" id="csv_ps4dev"></td>
-          <td><input type="number" min="0" id="csv_ps5"></td>
-          <td><input type="number" min="0" id="csv_ps5dev"></td>
-          <td><input type="number" min="0" id="csv_pc"></td>
-          <td><input type="number" min="0" id="csv_android"></td>
-          <td><input type="number" min="0" id="csv_ios"></td>
-          <td><input type="number" min="0" id="csv_xsx"></td>
-          <td><input type="number" min="0" id="csv_switch"></td>
-        </tr>
-        <tr>
-          <td>LLM</td>
-          <td></td>
-          <td><input type="number" min="0" id="llm_ps4dev"></td>
-          <td></td>
-          <td><input type="number" min="0" id="llm_ps5dev"></td>
-          <td><input type="number" min="0" id="llm_pc"></td>
-          <td><input type="number" min="0" id="llm_android"></td>
-          <td></td>
-          <td><input type="number" min="0" id="llm_xsx"></td>
-          <td><input type="number" min="0" id="llm_switch"></td>
-        </tr>
-        <tr>
-          <td>LWM</td>
-          <td></td>
-          <td><input type="number" min="0" id="lwm_ps4dev"></td>
-          <td></td>
-          <td><input type="number" min="0" id="lwm_ps5dev"></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td><input type="number" min="0" id="lwm_xsx"></td>
-          <td><input type="number" min="0" id="lwm_switch"></td>
-        </tr>
-        <tr>
-          <td>Trace</td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td><input type="number" min="0" id="trace_pc"></td>
-          <td><input type="number" min="0" id="trace_android"></td>
-          <td><input type="number" min="0" id="trace_ios"></td>
-          <td></td>
-          <td><input type="number" min="0" id="trace_switch"></td>
-        </tr>
-      </table>
+        <!-- ID Overrides -->
+        <div id="normal-id" class="form-group">
+          <label for="idOverride">
+            <i class="fas fa-id-badge"></i> ID Override
+          </label>
+          <input type="text" id="idOverride" required placeholder="42069">
+        </div>
 
+        <div id="sprout-ids" class="form-group" style="display:none;">
+          <div class="form-group">
+            <label for="idOverrideA">
+              <i class="fas fa-users"></i> ID Override Grupo 1
+            </label>
+            <input type="text" id="idOverrideA" placeholder="ID para Grupo 1">
+          </div>
+          <div class="form-group">
+            <label for="idOverrideB">
+              <i class="fas fa-users"></i> ID Override Grupo 2
+            </label>
+            <input type="text" id="idOverrideB" placeholder="ID para Grupo 2">
+          </div>
+        </div>
+
+        <!-- Split Screen -->
+        <div id="splitscreen-section" class="form-group" style="display:none;">
+          <label for="splitScreenCount">
+            <i class="fas fa-desktop"></i> Cantidad de Split Screen
+          </label>
+          <input type="number" id="splitScreenCount" min="1" max="4" placeholder="1, 2, 3 o 4">
+          <small class="help-text">
+            <i class="fas fa-info-circle"></i> Número de pantallas divididas por estación
+          </small>
+        </div>
+
+        <!-- Configuración de Equipos -->
+        <div id="team-config" class="form-group" style="display:none;">
+          <h4><i class="fas fa-users"></i> Configuración de Equipos</h4>
+
+          <div class="form-group">
+            <label for="teamSize">
+              <i class="fas fa-user-friends"></i> Tamaño del Equipo
+            </label>
+            <input type="number" id="teamSize" min="1" max="10" placeholder="4">
+          </div>
+
+          <div class="form-group">
+            <label for="totalTeams">
+              <i class="fas fa-layer-group"></i> Total de Equipos
+            </label>
+            <input type="number" id="totalTeams" min="1" max="20" placeholder="10">
+          </div>
+        </div>
+      </div>
+      <!-- Tabla de Requerimientos de Captura -->
+      <div class="capture-requirements">
+        <h3><i class="fas fa-camera"></i> Requerimientos de Captura</h3>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Tipo de Captura</th>
+                <th>PS4</th>
+                <th>PS4 Dev</th>
+                <th>PS5</th>
+                <th>PS5 Dev</th>
+                <th>PC</th>
+                <th>Android</th>
+                <th>iOS</th>
+                <th>XSX</th>
+                <th>Switch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CSVProfile</td>
+                <td><input type="number" min="0" id="csv_ps4" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_ps4dev" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_ps5" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_ps5dev" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_pc" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_android" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_ios" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_xsx" class="capture-input"></td>
+                <td><input type="number" min="0" id="csv_switch" class="capture-input"></td>
+              </tr>
+              <tr>
+                <td>LLM</td>
+                <td></td>
+                <td><input type="number" min="0" id="llm_ps4dev" class="capture-input"></td>
+                <td></td>
+                <td><input type="number" min="0" id="llm_ps5dev" class="capture-input"></td>
+                <td><input type="number" min="0" id="llm_pc" class="capture-input"></td>
+                <td><input type="number" min="0" id="llm_android" class="capture-input"></td>
+                <td></td>
+                <td><input type="number" min="0" id="llm_xsx" class="capture-input"></td>
+                <td><input type="number" min="0" id="llm_switch" class="capture-input"></td>
+              </tr>
+              <tr>
+                <td>LWM</td>
+                <td></td>
+                <td><input type="number" min="0" id="lwm_ps4dev" class="capture-input"></td>
+                <td></td>
+                <td><input type="number" min="0" id="lwm_ps5dev" class="capture-input"></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td><input type="number" min="0" id="lwm_xsx" class="capture-input"></td>
+                <td><input type="number" min="0" id="lwm_switch" class="capture-input"></td>
+              </tr>
+              <tr>
+                <td>Trace</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td><input type="number" min="0" id="trace_pc" class="capture-input"></td>
+                <td><input type="number" min="0" id="trace_android" class="capture-input"></td>
+                <td><input type="number" min="0" id="trace_ios" class="capture-input"></td>
+                <td></td>
+                <td><input type="number" min="0" id="trace_switch" class="capture-input"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Botones de Acción -->
       <div class="button-group">
-        <button type="submit" class="btn save-btn">Guardar Cambios</button>
-        <button type
-="button" class="btn cancel-btn" onclick="window.location.href='profile.html'">Cancelar</button>
+        <button type="submit" class="btn save-btn">
+          <i class="fas fa-save"></i> Guardar Cambios
+        </button>
+        <button type="button" class="btn cancel-btn">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
       </div>
     </form>
-    <div id="message"></div>
+
+    <!-- Mensaje de estado -->
+    <div id="message" class="message"></div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loader"></div>
+    <p>Guardando cambios...</p>
   </div>
 
   <script src="../js/editSessions.js"></script>
 </body>
+
 </html>

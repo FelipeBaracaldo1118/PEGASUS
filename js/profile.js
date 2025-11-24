@@ -1093,7 +1093,7 @@ function viewSessionDetails(sessionId) {
           <button class="btn-delete" onclick="deleteSession('${session._id}')">
             <i class="fas fa-trash"></i> Eliminar sesión
           </button>
-          <button class="btn-assign" onclick="window.location.href='asignar_sesion.html?sessionId=${session._id}'">
+          <button class="btn-assign" onclick="window.location.href='/asignar_sesion.html?sessionId=${session._id}'">
             <i class="fas fa-user-plus"></i> Asignar Testers
           </button>
         </div>
@@ -1382,7 +1382,7 @@ async function showAllTesters() {
 
 // === EDIT SESSION LINK ===
 function editSession(sessionId) {
-  window.location.href = `/edit_session.html?id=${sessionId}`;
+  window.location.href = `/pages/edit_session.html?id=${sessionId}`;
 }
 
 // === SEARCH FUNCTIONALITY ===

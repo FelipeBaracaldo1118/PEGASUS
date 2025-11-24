@@ -184,6 +184,7 @@ body {
 .action-btn,
 .profile-actions button {
   padding: var(--space-3);
+  margin: 0.5rem;
   font-size: 0.9rem;
   border-radius: var(--radius);
   border: 1px solid var(--primary);
@@ -193,7 +194,6 @@ body {
   transition: all var(--transition);
   font-weight: 500;
 }
-
 .action-btn:hover,
 .profile-actions button:hover {
   background: var(--primary);

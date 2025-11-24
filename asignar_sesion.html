@@ -1,88 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <title>Asignar Testers a Sesión</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f9;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 12 px rgba(0, 0, 0, 0.1);
-            padding: 30px;
-        }
-
-        h2 {
-            text-align: center;
-        }
-
-        .session-info {
-            margin-bottom: 30px;
-        }
-
-        .assigned-list {
-            margin-top: 20px;
-        }
-
-        .assigned-list table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .assigned-list th,
-        .assigned-list td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-        }
-
-        .assigned-list th {
-            background: #f0f0f0;
-        }
-
-        .btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .btn:hover {
-            background: #0056b3;
-        }
-
-        #message {
-            color: red;
-            text-align: center;
-            margin-top: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="./css/asignarSession.css">
 </head>
-
 <body>
     <div class="container">
         <h2>Asignar Testers a Sesión</h2>
-
         <!-- BOTÓN VOLVER ATRÁS -->
         <button class="btn" onclick="window.location.href='pages/profile.html'">⬅ Volver al Perfil</button>
-
+        
         <div class="session-info" id="session-info"></div>
+        
         <button class="btn" id="assignBtn">Asignar testers automáticamente</button>
+        
         <div class="assigned-list" id="assigned-list"></div>
+        
         <div id="message"></div>
     </div>
 
-    <!-- Mueve el script aquí, al final del body -->
     <script>
         const SERVER_URL = "http://10.13.46.195:3000";
         const token = localStorage.getItem("token");
@@ -98,14 +35,17 @@
         async function fetchSessionInfo() {
             const sessionId = getSessionId();
             if (!sessionId) return;
+
             const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
                 headers: { "Authorization": token }
             });
             const session = await res.json();
+
             if (!res.ok) {
                 document.getElementById("session-info").innerText = session.message || "No se pudo cargar la sesión";
                 return;
             }
+
             let html = `<b>Backend:</b> ${session.backendName}<br>`;
             html += `<b>IdOverride:</b> ${session.idOverride}<br>`;
             html += `<b>Cantidad de jugadores:</b> ${session.totalPlayers}<br>`;
@@ -122,12 +62,15 @@
         document.getElementById("assignBtn").addEventListener("click", async function () {
             const sessionId = getSessionId();
             if (!sessionId) return;
+
             document.getElementById("message").innerText = "Asignando testers...";
+
             const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/assign`, {
                 method: "POST",
                 headers: { "Authorization": token }
             });
             const data = await res.json();
+
             if (res.ok) {
                 document.getElementById("message").style.color = "green";
                 document.getElementById("message").innerText = "Testers asignados correctamente.";
@@ -138,39 +81,55 @@
             }
         });
 
+        // ⬇️ AQUÍ ESTÁ LA FUNCIÓN MEJORADA - REEMPLAZA LA QUE TENÍAS ⬇️
         function renderAssignedList(list) {
             if (!list || list.length === 0) {
                 document.getElementById("assigned-list").innerHTML = "<i>No hay testers asignados aún.</i>";
                 return;
             }
-            let html = `<h3>Testers asignados:</h3>
-              <table>
-                <tr>
-                  <th>Tester</th>
-                  <th>Device</th>
-                  <th>Región</th>
-                  <th>MMR</th>
-                  <th>Pod</th>
-                  <th>Estación</th>
-                  <th>Captura asignada</th>
-                  <th>Grupo</th>
-                </tr>`;
+            
+            let html = `
+                <h3>Testers asignados (${list.length})</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tester</th>
+                            <th>Device</th>
+                            <th>Región</th>
+                            <th>MMR</th>
+                            <th>Pod</th>
+                            <th>Estación</th>
+                            <th>Captura asignada</th>
+                            <th>Grupo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
             list.forEach(t => {
-                html += `<tr>
-                  <td>${t.Epam_user || t.testerId}</td>
-                  <td>${t.device}</td>
-                  <td>${t.region}</td>
-                  <td>${t.mmr}</td>
-                  <td>${t.pod}</td>
-                  <td>${t.station}</td>
-                  <td>${Array.isArray(t.capturas) ? t.capturas.join(", ") : ""}</td>
-                  <td>${t.group ? t.group : ""}</td>
-                </tr>`;
+                html += `
+                    <tr>
+                        <td><strong>${t.Epam_user || t.testerId}</strong></td>
+                        <td>${t.device}</td>
+                        <td>${t.region}</td>
+                        <td>${t.mmr}</td>
+                        <td>${t.pod}</td>
+                        <td>${t.station}</td>
+                        <td>${Array.isArray(t.capturas) ? t.capturas.join(", ") : ""}</td>
+                        <td>${t.group ? `<span class="group-badge">${t.group}</span>` : ""}</td>
+                    </tr>
+                `;
             });
-            html += "</table>";
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
             document.getElementById("assigned-list").innerHTML = html;
         }
 
         fetchSessionInfo();
     </script>
 </body>
+</html>
