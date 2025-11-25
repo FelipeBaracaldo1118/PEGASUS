@@ -859,7 +859,14 @@ function viewSessionDetails(sessionId) {
   <button class="btn-end-playtest" onclick="endPlaytest('${session._id}')">
     <i class="fas fa-stop"></i> Finalizar Playtest
   </button>
-  
+
+   <!-- ✅ NUEVO BOTÓN DE EXPORTACIÓN -->
+  ${session.assignedTesters && session.assignedTesters.length > 0 ? `
+    <button class="btn-export" onclick="exportTestersToCSV('${session._id}')">
+      <i class="fas fa-file-excel"></i> Exportar a Excel/Sheets
+    </button>
+  ` : ''}
+
   <!-- Botones existentes -->
   <button class="btn-edit" onclick="editSession('${session._id}')">
     <i class="fas fa-edit"></i> Editar sesión
@@ -2215,8 +2222,312 @@ function stopAutoRefresh() {
     console.log('⏹️ Auto-refresh detenido');
   }
 }
+// ============================================
+// EXPORTAR TESTERS A CSV/EXCEL (FORMATO ACTUALIZADO)
+// ============================================
 
+/**
+ * Exporta los testers asignados a una sesión en formato CSV
+ * Compatible con Google Sheets y Excel
+ */
+async function exportTestersToCSV(sessionId) {
+  const token = getToken();
+  
+  try {
+    // Mostrar indicador de carga
+    showNotification('Generando archivo de exportación...', 'info');
+    
+    // Obtener datos de la sesión
+    const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      }
+    });
 
+    if (!response.ok) {
+      throw new Error('Error al obtener datos de la sesión');
+    }
+
+    const session = await response.json();
+
+    if (!session.assignedTesters || session.assignedTesters.length === 0) {
+      showNotification('No hay testers asignados para exportar', 'error');
+      return;
+    }
+
+    // Generar CSV
+    const csv = generateCSVContent(session);
+    
+    // Crear y descargar archivo
+    downloadCSV(csv, `Testers_${session.backendName}_${new Date().toISOString().split('T')[0]}.csv`);
+    
+    showNotification('✅ Archivo exportado correctamente', 'success');
+
+  } catch (error) {
+    console.error('Error al exportar:', error);
+    showNotification('Error al exportar: ' + error.message, 'error');
+  }
+}
+
+/**
+ * Genera el contenido CSV con los datos de los testers
+ * Formato según imagen proporcionada (nuevo orden)
+ */
+function generateCSVContent(session) {
+  // Encabezados del CSV (según el nuevo orden de la imagen)
+  const headers = [
+    'Primary',
+    'Model',
+    'Capture',
+    'Config',
+    'Location',
+    'Station',
+    'POD',
+    'Tester',
+    'Username',
+    'Splitscreen (player 2)',
+    'Replacement',
+    'Reemplazo Plataforma',
+    'Comentarios'
+  ];
+
+  // Crear filas de datos
+  const rows = [];
+  
+  session.assignedTesters.forEach((tester) => {
+    // Obtener dispositivo principal
+    const primaryDevice = tester.device || 
+                         (Array.isArray(tester.dispositivos) && tester.dispositivos.length > 0 
+                           ? tester.dispositivos[0] 
+                           : 'N/A');
+    
+    // Obtener modelo del dispositivo
+    const model = getDeviceModel(primaryDevice);
+    
+    // Obtener capturas
+    const captures = Array.isArray(tester.capturas) && tester.capturas.length > 0
+      ? tester.capturas.join(', ')
+      : '';
+    
+    // Determinar Config (ej: Splitscreen, DX12, etc.)
+    const config = getConfig(tester);
+    
+    // Location (región)
+    const location = tester.region || tester.Region || session.region || 'Bogota';
+    
+    // Station
+    const station = tester.Station || '';
+    
+    // POD
+    const pod = tester.Pod || '';
+    
+    // Tester (nombre completo)
+    const testerName = tester.Epam_user || tester.testerId || '';
+    
+    // Username (usuario EPAM formateado)
+    const username = testerName ? `EPAM-${testerName.replace(/\s+/g, '')}` : '';
+    
+    // Crear fila
+    const row = [
+      primaryDevice,           // Primary
+      model,                   // Model
+      captures,                // Capture
+      config,                  // Config
+      location,                // Location
+      station,                 // Station
+      pod,                     // POD
+      testerName,              // Tester
+      username,                // Username
+      '',                      // Splitscreen (player 2) - vacío
+      '',                      // Replacement - vacío
+      '',                      // Reemplazo Plataforma - vacío
+      ''                       // Comentarios - vacío
+    ];
+    
+    rows.push(row);
+  });
+
+  // Convertir a formato CSV
+  const csvContent = [
+    headers.join(','),
+    ...rows.map(row => row.map(cell => {
+      // Escapar comillas y envolver en comillas si contiene comas o comillas
+      const cellStr = String(cell);
+      if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+        return `"${cellStr.replace(/"/g, '""')}"`;
+      }
+      return cellStr;
+    }).join(','))
+  ].join('\n');
+
+  return csvContent;
+}
+
+/**
+ * Obtiene el modelo del dispositivo
+ */
+function getDeviceModel(device) {
+  const models = {
+    'PS5': 'Test Kit',
+    'PS4': 'Base Kit',
+    'PS4 Dev': 'Dev Kit',
+    'PS5 Dev': 'Test Kit',
+    'XSX': 'Anaconda',
+    'XB1': 'Base Test Kit',
+    'PC': 'Desktop Epic-1',
+    'Switch': 'Docked',
+    'Android': 'Samsung S20',
+    'iOS': 'iPhone 12'
+  };
+  
+  return models[device] || device || '';
+}
+
+/**
+ * Determina la configuración especial del tester
+ */
+function getConfig(tester) {
+  const configs = [];
+  
+  // Verificar si tiene capturas especiales
+  if (Array.isArray(tester.capturas)) {
+    if (tester.capturas.includes('DX12')) configs.push('DX12');
+    if (tester.capturas.includes('DX11')) configs.push('DX11');
+  }
+  
+  // Verificar splitscreen
+  if (tester.splitScreen || tester.isSplitScreen) {
+    configs.push('Splitscreen');
+  }
+  
+  return configs.join(', ');
+}
+
+/**
+ * Descarga el archivo CSV
+ */
+function downloadCSV(csvContent, filename) {
+  // Agregar BOM para compatibilidad con Excel y caracteres especiales
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+  
+  // Crear enlace de descarga
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Liberar memoria
+  URL.revokeObjectURL(url);
+}
+
+// ============================================
+// VERSIÓN ALTERNATIVA CON FORMATO EXCEL NATIVO
+// ============================================
+
+/**
+ * Exporta a formato Excel (.xlsx) con formato y colores
+ * Requiere SheetJS: <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+ */
+async function exportTestersToExcel(sessionId) {
+  const token = getToken();
+  
+  try {
+    showNotification('Generando archivo Excel...', 'info');
+    
+    const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!response.ok) throw new Error('Error al obtener datos');
+    const session = await response.json();
+
+    if (!session.assignedTesters || session.assignedTesters.length === 0) {
+      showNotification('No hay testers para exportar', 'error');
+      return;
+    }
+
+    // Preparar datos
+    const headers = [
+      'Primary', 'Model', 'Capture', 'Config', 'Location', 'Station', 
+      'POD', 'Tester', 'Username', 'Splitscreen (player 2)', 
+      'Replacement', 'Reemplazo Plataforma', 'Comentarios'
+    ];
+
+    // Crear datos
+    const data = [headers];
+    
+    session.assignedTesters.forEach((tester) => {
+      const primaryDevice = tester.device || 
+                           (Array.isArray(tester.dispositivos) && tester.dispositivos.length > 0 
+                             ? tester.dispositivos[0] 
+                             : 'N/A');
+      
+      const testerName = tester.Epam_user || tester.testerId || '';
+      const username = testerName ? `EPAM-${testerName.replace(/\s+/g, '')}` : '';
+      
+      const row = [
+        primaryDevice,                                              // Primary
+        getDeviceModel(primaryDevice),                             // Model
+        Array.isArray(tester.capturas) ? tester.capturas.join(', ') : '', // Capture
+        getConfig(tester),                                         // Config
+        tester.region || tester.Region || session.region || 'Bogota', // Location
+        tester.Station || '',                                      // Station
+        tester.Pod || '',                                          // POD
+        testerName,                                                // Tester
+        username,                                                  // Username
+        '',                                                        // Splitscreen (player 2)
+        '',                                                        // Replacement
+        '',                                                        // Reemplazo Plataforma
+        ''                                                         // Comentarios
+      ];
+      
+      data.push(row);
+    });
+
+    // Crear workbook
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Aplicar anchos de columna
+    ws['!cols'] = [
+      { wch: 10 }, // Primary
+      { wch: 20 }, // Model
+      { wch: 15 }, // Capture
+      { wch: 12 }, // Config
+      { wch: 15 }, // Location
+      { wch: 10 }, // Station
+      { wch: 12 }, // POD
+      { wch: 20 }, // Tester
+      { wch: 20 }, // Username
+      { wch: 20 }, // Splitscreen (player 2)
+      { wch: 15 }, // Replacement
+      { wch: 20 }, // Reemplazo Plataforma
+      { wch: 15 }  // Comentarios
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Testers');
+
+    // Descargar
+    XLSX.writeFile(wb, `Testers_${session.backendName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    showNotification('✅ Archivo Excel exportado', 'success');
+
+  } catch (error) {
+    console.error('Error:', error);
+    showNotification('Error al exportar: ' + error.message, 'error');
+  }
+}
 
 // === LOGOUT ===
 function logout() {
