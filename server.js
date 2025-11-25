@@ -484,10 +484,24 @@ app.get("/api/user/me", authMiddleware, async (req, res) => {
  */
 // Testers en el mismo pod
 app.get("/api/testers-in-pod", authMiddleware, async (req, res) => {
-  const user = await User.findById(req.userId);
-  if (!user || user.userType !== "keytester") return res.status(403).json({ message: "No autorizado" });
-  const testers = await User.find({ Pod: user.Pod, userType: "tester" }).select("-Password -__v");
-  res.json(testers);
+  try {
+    const user = await User.findById(req.userId);
+    if (!user || user.userType !== "keytester") {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    const testers = await User.find({ 
+      Pod: user.Pod, 
+      userType: "tester" 
+    })
+    .select("Epam_user Pod Station Region Devices StateOfInstalling IsPlaying currentSession")  // ✅ IsPlaying con mayúscula
+    .lean();
+    
+    res.json(testers);
+  } catch (error) {
+    console.error("Error en /api/testers-in-pod:", error);
+    res.status(500).json({ message: "Error al obtener testers" });
+  }
 });
 /**
  * @swagger
@@ -511,10 +525,23 @@ app.get("/api/testers-in-pod", authMiddleware, async (req, res) => {
  */
 // Todos los testers registrados
 app.get("/api/all-testers", authMiddleware, async (req, res) => {
-  const user = await User.findById(req.userId);
-  if (!user || user.userType !== "keytester") return res.status(403).json({ message: "No autorizado" });
-  const testers = await User.find({ userType: "tester" }).select("-Password -__v");
-  res.json(testers);
+  try {
+    const user = await User.findById(req.userId);
+    if (!user || user.userType !== "keytester") {
+      return res.status(403).json({ message: "No autorizado" });
+    }
+    
+    const testers = await User.find({ 
+      userType: "tester" 
+    })
+    .select("Epam_user Pod Station Region Devices StateOfInstalling IsPlaying currentSession")  // ✅ IsPlaying con mayúscula
+    .lean();
+    
+    res.json(testers);
+  } catch (error) {
+    console.error("Error en /api/all-testers:", error);
+    res.status(500).json({ message: "Error al obtener testers" });
+  }
 });
 /**
  * @swagger
@@ -1523,6 +1550,733 @@ app.get('/api/users/search', authMiddleware, async (req, res) => {
     console.error('Error al buscar usuarios:', error);
     res.status(500).json({ message: 'Error al buscar usuarios', error: error.message });
   }
+});
+
+//Reemplazar tester asignado a sesion
+/**
+ * @swagger
+ * /api/sessions/{sessionId}/replace/{testerId}:
+ *   post:
+ *     summary: Reemplazar un tester asignado en una sesión
+ *     description: |
+ *       Reemplaza un tester específico de una sesión con otro tester disponible.
+ *       Utiliza un algoritmo de búsqueda flexible con 4 niveles de prioridad:
+ *       1. Mismo dispositivo + región + POD (ideal)
+ *       2. Mismo dispositivo + región (sin POD)
+ *       3. Solo mismo dispositivo
+ *       4. Cualquier tester disponible
+ *     tags:
+ *       - Sessions
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID de la sesión
+ *         example: "507f1f77bcf86cd799439011"
+ *       - in: path
+ *         name: testerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID o nombre de usuario EPAM del tester a reemplazar
+ *         example: "Doe_John"
+ *     responses:
+ *       200:
+ *         description: Tester reemplazado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Tester reemplazado correctamente"
+ *                 matchLevel:
+ *                   type: string
+ *                   enum: [exact, no-pod, device-only, any]
+ *                   description: Nivel de coincidencia usado para encontrar el reemplazo
+ *                   example: "exact"
+ *                 oldTester:
+ *                   type: object
+ *                   properties:
+ *                     Epam_user:
+ *                       type: string
+ *                       example: "Doe_John"
+ *                     testerId:
+ *                       type: string
+ *                       example: "507f1f77bcf86cd799439011"
+ *                     device:
+ *                       type: string
+ *                       example: "PC"
+ *                     region:
+ *                       type: string
+ *                       example: "Bogota"
+ *                     pod:
+ *                       type: string
+ *                       example: "POD-A"
+ *                 newTester:
+ *                   type: object
+ *                   properties:
+ *                     Epam_user:
+ *                       type: string
+ *                       example: "Smith_Jane"
+ *                     testerId:
+ *                       type: string
+ *                       example: "507f1f77bcf86cd799439012"
+ *                     device:
+ *                       type: string
+ *                       example: "PC"
+ *                     region:
+ *                       type: string
+ *                       example: "Bogota"
+ *                     pod:
+ *                       type: string
+ *                       example: "POD-A"
+ *                 assignedTesters:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       404:
+ *         description: Sesión no encontrada, tester no encontrado o no hay testers disponibles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "No se encontró un tester disponible"
+ *                 requirements:
+ *                   type: object
+ *                   properties:
+ *                     device:
+ *                       type: string
+ *                     region:
+ *                       type: string
+ *                     pod:
+ *                       type: string
+ *                 availableTesters:
+ *                   type: number
+ *                   example: 5
+ *                 assignedTesters:
+ *                   type: number
+ *                   example: 3
+ *       403:
+ *         description: No autorizado para modificar esta sesión
+ *       500:
+ *         description: Error del servidor
+ */
+app.post('/api/sessions/:sessionId/replace/:testerId', authMiddleware, async (req, res) => {
+    try {
+        const { sessionId, testerId } = req.params;
+        
+        console.log('🔄 Solicitud de reemplazo:', { sessionId, testerId });
+
+        // 1. Buscar la sesión
+        const session = await Session.findById(sessionId);
+        
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        // 2. Verificar que el usuario sea el creador, admin o keytester
+        const currentUser = await User.findById(req.userId);
+        
+        if (!currentUser) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin && currentUser.userType !== 'keytester') {
+            return res.status(403).json({ message: 'No tienes permiso para modificar esta sesión' });
+        }
+
+        // 3. Encontrar el tester a reemplazar
+        const testerIndex = session.assignedTesters.findIndex(
+            t => (t.Epam_user === testerId || t.testerId?.toString() === testerId)
+        );
+
+        if (testerIndex === -1) {
+            return res.status(404).json({ message: 'Tester no encontrado en esta sesión' });
+        }
+
+        const oldTester = session.assignedTesters[testerIndex];
+        console.log('👤 Tester a reemplazar:', {
+            name: oldTester.Epam_user,
+            device: oldTester.device,
+            region: oldTester.region,
+            pod: oldTester.pod
+        });
+
+        // 4. ALGORITMO DE BÚSQUEDA FLEXIBLE (4 NIVELES)
+        
+        // IDs de testers ya asignados (para excluirlos)
+        const assignedIds = session.assignedTesters.map(t => t.testerId);
+        
+        let newTester = null;
+        let matchLevel = '';
+
+        // ========================================
+        // NIVEL 1: Búsqueda EXACTA (Ideal)
+        // Device + Region + Pod
+        // ========================================
+        if (oldTester.device && oldTester.region && oldTester.pod) {
+            const exactQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds },
+                'Devices.name': oldTester.device,
+                Region: oldTester.region,
+                Pod: oldTester.pod
+            };
+            
+            console.log('🔍 Nivel 1 - Búsqueda EXACTA:', JSON.stringify(exactQuery, null, 2));
+            newTester = await User.findOne(exactQuery);
+            
+            if (newTester) {
+                matchLevel = 'exact';
+                console.log('✅ Nivel 1 - Match EXACTO encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // NIVEL 2: Sin POD
+        // Device + Region (cualquier POD)
+        // ========================================
+        if (!newTester && oldTester.device && oldTester.region) {
+            const noPodQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds },
+                'Devices.name': oldTester.device,
+                Region: oldTester.region
+            };
+            
+            console.log('🔍 Nivel 2 - Sin POD:', JSON.stringify(noPodQuery, null, 2));
+            newTester = await User.findOne(noPodQuery);
+            
+            if (newTester) {
+                matchLevel = 'no-pod';
+                console.log('✅ Nivel 2 - Match sin POD encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // NIVEL 3: Solo Dispositivo
+        // Device (cualquier región y POD)
+        // ========================================
+        if (!newTester && oldTester.device) {
+            const deviceOnlyQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds },
+                'Devices.name': oldTester.device
+            };
+            
+            console.log('🔍 Nivel 3 - Solo DEVICE:', JSON.stringify(deviceOnlyQuery, null, 2));
+            newTester = await User.findOne(deviceOnlyQuery);
+            
+            if (newTester) {
+                matchLevel = 'device-only';
+                console.log('✅ Nivel 3 - Match solo por DEVICE encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // NIVEL 4: Cualquier Tester
+        // Solo que no esté asignado
+        // ========================================
+        if (!newTester) {
+            const anyQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds }
+            };
+            
+            console.log('🔍 Nivel 4 - CUALQUIER tester:', JSON.stringify(anyQuery, null, 2));
+            newTester = await User.findOne(anyQuery);
+            
+            if (newTester) {
+                matchLevel = 'any';
+                console.log('⚠️ Nivel 4 - Match GENÉRICO encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // Si NO se encontró ningún tester
+        // ========================================
+        if (!newTester) {
+            // Obtener información de debugging
+            const allTesters = await User.find({ userType: 'tester' })
+                .select('Epam_user Devices Region Pod Station');
+            
+            console.log('❌ No se encontró ningún tester disponible');
+            console.log('📋 Total de testers en BD:', allTesters.length);
+            console.log('🚫 Testers ya asignados:', assignedIds.length);
+
+            return res.status(404).json({ 
+                message: 'No se encontró un tester disponible para reemplazo',
+                requirements: {
+                    device: oldTester.device,
+                    region: oldTester.region,
+                    pod: oldTester.pod
+                },
+                availableTesters: allTesters.length,
+                assignedTesters: assignedIds.length,
+                suggestion: allTesters.length === assignedIds.length 
+                    ? 'Todos los testers están asignados a esta sesión'
+                    : 'Verifica que existan testers registrados con userType="tester"'
+            });
+        }
+
+        // ========================================
+        // 5. REEMPLAZAR EL TESTER
+        // ========================================
+        console.log('✅ Nuevo tester seleccionado:', {
+            name: newTester.Epam_user,
+            device: newTester.Devices?.[0]?.name,
+            region: newTester.Region,
+            pod: newTester.Pod,
+            matchLevel: matchLevel
+        });
+
+        // Construir el objeto del nuevo tester asignado
+        session.assignedTesters[testerIndex] = {
+            testerId: newTester._id,
+            Epam_user: newTester.Epam_user,
+            device: oldTester.device || (newTester.Devices && newTester.Devices[0]?.name),
+            region: newTester.Region || oldTester.region,
+            mmr: newTester.Mmr || oldTester.mmr,
+            pod: newTester.Pod || oldTester.pod,
+            station: newTester.Station,
+            capturas: oldTester.capturas || [],
+            dispositivos: oldTester.dispositivos || [oldTester.device],
+            group: oldTester.group,
+            team: oldTester.team
+        };
+
+        // 6. Guardar la sesión actualizada
+        await session.save();
+
+        console.log('💾 Sesión actualizada correctamente');
+
+        // 7. Respuesta exitosa
+        res.json({
+            success: true,
+            message: 'Tester reemplazado correctamente',
+            matchLevel: matchLevel,
+            matchDescription: {
+                'exact': 'Coincidencia exacta (mismo dispositivo, región y POD)',
+                'no-pod': 'Coincidencia sin POD (mismo dispositivo y región)',
+                'device-only': 'Coincidencia solo por dispositivo',
+                'any': 'Cualquier tester disponible'
+            }[matchLevel],
+            oldTester: {
+                Epam_user: oldTester.Epam_user,
+                testerId: oldTester.testerId,
+                device: oldTester.device,
+                region: oldTester.region,
+                pod: oldTester.pod
+            },
+            newTester: {
+                Epam_user: newTester.Epam_user,
+                testerId: newTester._id,
+                device: newTester.Devices?.[0]?.name,
+                region: newTester.Region,
+                pod: newTester.Pod,
+                station: newTester.Station
+            },
+            assignedTesters: session.assignedTesters
+        });
+
+    } catch (error) {
+        console.error('❌ Error al reemplazar tester:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Error al reemplazar tester',
+            error: error.message 
+        });
+    }
+});
+/**
+ * @swagger
+ * /api/users/{id}/details:
+ *   get:
+ *     summary: Obtener detalles completos de un usuario
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: Detalles del usuario
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.get('/api/users/:id/details', authMiddleware, async (req, res) => {
+    try {
+        const currentUser = await User.findById(req.userId);
+        
+        // Verificar permisos (solo keytester y admin pueden ver detalles de otros)
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: 'No autorizado' });
+        }
+
+        // Buscar el usuario
+        const user = await User.findById(req.params.id).select('-Password -__v');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Contar sesiones en las que ha participado
+        const sessionCount = await Session.countDocuments({
+            'assignedTesters.testerId': user._id
+        });
+
+        // Obtener últimas sesiones
+        const recentSessions = await Session.find({
+            'assignedTesters.testerId': user._id
+        })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('backendName buildString startTime createdAt sessionType');
+
+        // Respuesta completa
+        res.json({
+            user: {
+                _id: user._id,
+                Epam_user: user.Epam_user,
+                Accounts: user.Accounts,
+                Devices: user.Devices,
+                availability: user.availability,
+                Mmr: user.Mmr,
+                userType: user.userType,
+                isAdmin: user.isAdmin,
+                Pod: user.Pod,
+                Region: user.Region,
+                Station: user.Station,
+                IsPlaying: user.IsPlaying,
+                StateOfInstalling: user.StateOfInstalling,
+                Date_Time: user.Date_Time
+            },
+            stats: {
+                totalSessions: sessionCount,
+                recentSessions: recentSessions
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al obtener detalles del usuario:', error);
+        res.status(500).json({ 
+            message: 'Error al obtener detalles del usuario',
+            error: error.message 
+        });
+    }
+});
+/**
+ * @swagger
+ * /api/user/update-installation-status:
+ *   patch:
+ *     summary: Actualizar estado de instalación (solo para el propio usuario)
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [instalado, instalando, no instalado]
+ *     responses:
+ *       200:
+ *         description: Estado actualizado correctamente
+ */
+app.patch('/api/user/update-installation-status', authMiddleware, async (req, res) => {
+    try {
+        const { status } = req.body;
+        
+        // Validar estado
+        const validStatuses = ['instalado', 'instalando', 'no instalado'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                message: 'Estado inválido. Debe ser: instalado, instalando o no instalado' 
+            });
+        }
+
+        // Actualizar el usuario
+        const user = await User.findByIdAndUpdate(
+            req.userId,
+            { StateOfInstalling: status },
+            { new: true }
+        ).select('-Password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Estado de instalación actualizado correctamente',
+            user: {
+                _id: user._id,
+                Epam_user: user.Epam_user,
+                StateOfInstalling: user.StateOfInstalling
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar estado de instalación:', error);
+        res.status(500).json({ 
+            message: 'Error al actualizar estado de instalación',
+            error: error.message 
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/sessions/{sessionId}/update-playing-status:
+ *   patch:
+ *     summary: Actualizar estado "jugando" de testers en una sesión (solo keytester/admin)
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               isPlaying:
+ *                 type: boolean
+ *                 description: true para marcar como jugando, false para desmarcar
+ *               testerIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: IDs de los testers a actualizar (opcional, si no se envía actualiza todos)
+ *     responses:
+ *       200:
+ *         description: Estados actualizados correctamente
+ */
+app.patch('/api/sessions/:sessionId/update-playing-status', authMiddleware, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const { isPlaying, testerIds } = req.body;
+
+        // Verificar que el usuario sea keytester o admin
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ 
+                message: 'Solo keytesters y admins pueden actualizar el estado de juego' 
+            });
+        }
+
+        // Buscar la sesión
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        // Verificar que el usuario sea el creador de la sesión
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+            return res.status(403).json({ 
+                message: 'Solo el creador de la sesión puede actualizar el estado de juego' 
+            });
+        }
+
+        // Determinar qué testers actualizar
+        let testersToUpdate = [];
+        
+        if (testerIds && Array.isArray(testerIds) && testerIds.length > 0) {
+            // Actualizar solo los testers especificados
+            testersToUpdate = session.assignedTesters
+                .filter(t => testerIds.includes(t.testerId.toString()))
+                .map(t => t.testerId);
+        } else {
+            // Actualizar todos los testers de la sesión
+            testersToUpdate = session.assignedTesters.map(t => t.testerId);
+        }
+
+        if (testersToUpdate.length === 0) {
+            return res.status(400).json({ 
+                message: 'No hay testers para actualizar' 
+            });
+        }
+
+        // Actualizar el estado IsPlaying de los testers
+        const updateResult = await User.updateMany(
+            { _id: { $in: testersToUpdate } },
+            { $set: { IsPlaying: isPlaying } }
+        );
+
+        // Obtener los testers actualizados
+        const updatedTesters = await User.find({ 
+            _id: { $in: testersToUpdate } 
+        }).select('Epam_user IsPlaying');
+
+        res.json({
+            success: true,
+            message: `${updatedTesters.length} tester(s) ${isPlaying ? 'marcados como jugando' : 'desmarcados'}`,
+            updatedCount: updateResult.modifiedCount,
+            testers: updatedTesters
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar estado de juego:', error);
+        res.status(500).json({ 
+            message: 'Error al actualizar estado de juego',
+            error: error.message 
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/sessions/{sessionId}/start-playtest:
+ *   post:
+ *     summary: Iniciar playtest (marca todos los testers como jugando)
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Playtest iniciado correctamente
+ */
+app.post('/api/sessions/:sessionId/start-playtest', authMiddleware, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: 'Solo keytesters y admins pueden iniciar playtests' });
+        }
+
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+            return res.status(403).json({ message: 'Solo el creador de la sesión puede iniciar el playtest' });
+        }
+
+        const testerIds = session.assignedTesters.map(t => t.testerId);
+
+        if (testerIds.length === 0) {
+            return res.status(400).json({ message: 'No hay testers asignados a esta sesión' });
+        }
+
+        // ✅ CAMBIO AQUÍ: isPlaying en minúscula
+        await User.updateMany(
+            { _id: { $in: testerIds } },
+            { $set: { IsPlaying: true } }
+        );
+
+        session.actualStartTime = new Date();
+        await session.save();
+
+        res.json({
+            success: true,
+            message: `Playtest iniciado. ${testerIds.length} tester(s) marcados como jugando`,
+            session: {
+                _id: session._id,
+                backendName: session.backendName,
+                actualStartTime: session.actualStartTime,
+                testersCount: testerIds.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al iniciar playtest:', error);
+        res.status(500).json({ message: 'Error al iniciar playtest', error: error.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/sessions/{sessionId}/end-playtest:
+ *   post:
+ *     summary: Finalizar playtest (desmarca todos los testers como jugando)
+ *     tags: [Sessions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: sessionId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Playtest finalizado correctamente
+ */
+app.post('/api/sessions/:sessionId/end-playtest', authMiddleware, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: 'Solo keytesters y admins pueden finalizar playtests' });
+        }
+
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+            return res.status(403).json({ message: 'Solo el creador de la sesión puede finalizar el playtest' });
+        }
+
+        const testerIds = session.assignedTesters.map(t => t.testerId);
+
+        // ✅ CAMBIO AQUÍ: isPlaying en minúscula
+        await User.updateMany(
+            { _id: { $in: testerIds } },
+            { $set: { IsPlaying: false } }
+        );
+
+        session.actualEndTime = new Date();
+        await session.save();
+
+        res.json({
+            success: true,
+            message: `Playtest finalizado. ${testerIds.length} tester(s) desmarcados`,
+            session: {
+                _id: session._id,
+                backendName: session.backendName,
+                actualEndTime: session.actualEndTime
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al finalizar playtest:', error);
+        res.status(500).json({ message: 'Error al finalizar playtest', error: error.message });
+    }
 });
 
 //logout 
