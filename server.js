@@ -2764,5 +2764,5 @@ app.post("/logout", authMiddleware, async (req, res) => {
 // INICIAR SERVIDOR
 // --------------------------
 app.listen(3000, "0.0.0.0", () => {
-  console.log("Servidor Node corriendo en http://10.13.46.195:8080/");
+  console.log("Servidor Node corriendo en http://10.13.46.195:3000/");
 });
