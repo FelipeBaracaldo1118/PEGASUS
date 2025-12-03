@@ -25,6 +25,11 @@
     </div>
 
     <div class="header-right">
+      <!-- ✅ BOTÓN 2FA -->
+      <button id="setup2faBtn" class="totp-btn" title="Configurar autenticación de dos factores">
+        <i class="fas fa-lock"></i>
+      </button>
+      
       <div class="user-info" id="user-info">
         <span id="user-name" class="user-name"></span>
       </div>
@@ -51,7 +56,7 @@
         <!-- Profile Actions -->
         <div id="profile-actions" class="profile-actions"></div>
 
-        <!-- 🔹 NUEVO: Contenedor de sesiones -->
+        <!-- Contenedor de sesiones -->
         <div id="tester-sessions"></div>
       </section>
 
@@ -70,13 +75,46 @@
     </div>
   </main>
 
+  <!-- ✅ MODAL 2FA -->
+  <div id="totp-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="close-btn" id="close-totp-modal">&times;</span>
+      <h2>Configurar Autenticación 2FA</h2>
+      
+      <div id="totp-setup">
+        <p>Escanea este código QR con Google Authenticator o Microsoft Authenticator:</p>
+        <div id="qr-container" style="text-align: center; margin: 20px 0;">
+          <!-- QR Code se genera aquí -->
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 0.9em; color: #aaa;">
+          O ingresa manualmente este código:
+        </p>
+        <div style="background: #222; padding: 10px; border-radius: 5px; text-align: center; margin: 10px 0;">
+          <code id="totp-secret" style="color: #4ade80; font-size: 1.1em; letter-spacing: 2px;"></code>
+        </div>
+
+        <p style="margin-top: 20px;">Ingresa el código de 6 dígitos generado por tu app:</p>
+        <input type="text" id="verify-totp-input" placeholder="000000" maxlength="6" 
+               style="width: 100%; padding: 10px; margin: 10px 0; font-size: 1.2em; text-align: center; letter-spacing: 5px;">
+        
+        <button id="enable-totp-btn" style="width: 100%; padding: 12px; background: #4ade80; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+          Activar 2FA
+        </button>
+
+        <button id="disable-totp-btn" style="display:none; width: 100%; padding: 12px; background: #f87171; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;">
+          Desactivar 2FA
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- JS - ORDEN IMPORTANTE -->
   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
   <script src="../js/profile.js"></script>
+  <script src="../js/totp.js"></script>
   
-  <!-- Solo cargar si existe -->
   <script>
-    // Cargar testerManagement.js solo si existe
     const script = document.createElement('script');
     script.src = '../js/profile.js';
     script.onerror = () => console.warn('⚠️ testerManagement.js no encontrado (opcional)');

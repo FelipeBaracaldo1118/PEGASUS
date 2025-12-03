@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 const { swaggerUi, specs } = require('./swagger');
 
@@ -55,7 +57,10 @@ const userSchema = new mongoose.Schema({
   Region: { type: String },
   Station: { type: String },
   IsPlaying: { type: Boolean, default: false },
-  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado', 'instalado'], default: 'no instalado' } // <--- NUEVO CAMPO
+  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado', 'instalado'], default: 'no instalado' },
+  // ✅ NUEVOS CAMPOS PARA 2FA
+  totpSecret: { type: String, default: null },
+  totpEnabled: { type: Boolean, default: false }
 });
 const User = mongoose.model("User", userSchema);
 
@@ -2277,6 +2282,462 @@ app.post('/api/sessions/:sessionId/end-playtest', authMiddleware, async (req, re
         console.error('Error al finalizar playtest:', error);
         res.status(500).json({ message: 'Error al finalizar playtest', error: error.message });
     }
+});
+
+// ==================== RUTAS 2FA Y RECUPERACIÓN ====================
+
+/**
+ * @swagger
+ * /api/generate-totp:
+ *   get:
+ *     summary: Generar código TOTP y QR para configurar 2FA
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Código TOTP generado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 secret:
+ *                   type: string
+ *                   example: JBSWY3DPEHPK3PXP
+ *                 qrCode:
+ *                   type: string
+ *                   description: QR Code en formato Data URL
+ *                 totpEnabled:
+ *                   type: boolean
+ *                   example: false
+ *       401:
+ *         description: No autorizado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.get('/api/generate-totp', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    let secret = user.totpSecret;
+
+    // Si no tiene secret, generar uno nuevo
+    if (!secret) {
+      const generated = speakeasy.generateSecret({
+        name: `Pegasus (${user.Epam_user})`,
+        issuer: 'Pegasus FNPT'
+      });
+      secret = generated.base32;
+    }
+
+    // Generar QR Code
+    const otpauthUrl = speakeasy.otpauthURL({
+      secret: secret,
+      label: user.Epam_user,
+      issuer: 'Pegasus FNPT',
+      encoding: 'base32'
+    });
+
+    const qrCode = await QRCode.toDataURL(otpauthUrl);
+
+    res.json({
+      secret,
+      qrCode,
+      totpEnabled: user.totpEnabled || false
+    });
+  } catch (error) {
+    console.error('Error al generar código TOTP:', error);
+    res.status(500).json({ error: 'Error al generar código 2FA' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/enable-totp:
+ *   post:
+ *     summary: Activar autenticación 2FA
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - totpCode
+ *               - secret
+ *             properties:
+ *               totpCode:
+ *                 type: string
+ *                 example: "123456"
+ *               secret:
+ *                 type: string
+ *                 example: JBSWY3DPEHPK3PXP
+ *     responses:
+ *       200:
+ *         description: 2FA activado correctamente
+ *       400:
+ *         description: Código TOTP inválido
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.post('/api/enable-totp', authMiddleware, async (req, res) => {
+  try {
+    const { totpCode, secret } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Verificar código
+    const verified = speakeasy.totp.verify({
+      secret: secret,
+      encoding: 'base32',
+      token: totpCode,
+      window: 2 // Permite ±60 segundos de margen
+    });
+
+    if (!verified) {
+      return res.status(400).json({ error: 'Código TOTP inválido' });
+    }
+
+    // Guardar secret y activar 2FA
+    user.totpSecret = secret;
+    user.totpEnabled = true;
+    await user.save();
+
+    console.log(`✅ 2FA activado para usuario: ${user.Epam_user}`);
+
+    res.json({ 
+      success: true, 
+      message: '2FA activado correctamente' 
+    });
+  } catch (error) {
+    console.error('Error al activar 2FA:', error);
+    res.status(500).json({ error: 'Error al activar 2FA' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/disable-totp:
+ *   post:
+ *     summary: Desactivar autenticación 2FA
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - totpCode
+ *             properties:
+ *               totpCode:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: 2FA desactivado correctamente
+ *       400:
+ *         description: Código TOTP inválido o 2FA no activado
+ */
+app.post('/api/disable-totp', authMiddleware, async (req, res) => {
+  try {
+    const { totpCode } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (!user.totpEnabled) {
+      return res.status(400).json({ error: '2FA no está activado' });
+    }
+
+    // Verificar código actual
+    const verified = speakeasy.totp.verify({
+      secret: user.totpSecret,
+      encoding: 'base32',
+      token: totpCode,
+      window: 2
+    });
+
+    if (!verified) {
+      return res.status(400).json({ error: 'Código TOTP inválido' });
+    }
+
+    // Desactivar 2FA
+    user.totpEnabled = false;
+    user.totpSecret = null;
+    await user.save();
+
+    console.log(`🔓 2FA desactivado para usuario: ${user.Epam_user}`);
+
+    res.json({ 
+      success: true, 
+      message: '2FA desactivado correctamente' 
+    });
+  } catch (error) {
+    console.error('Error al desactivar 2FA:', error);
+    res.status(500).json({ error: 'Error al desactivar 2FA' });
+  }
+});
+
+// ==================== RUTAS RECUPERACIÓN DE CONTRASEÑA ====================
+
+/**
+ * @swagger
+ * /api/verify-user:
+ *   post:
+ *     summary: Verificar si un usuario existe y tiene 2FA activado
+ *     tags: [Recuperación de Contraseña]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: EPAM-JohnDoe
+ *     responses:
+ *       200:
+ *         description: Usuario verificado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 totpEnabled:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Usuario no encontrado
+ *       400:
+ *         description: Usuario sin 2FA configurado
+ */
+app.post('/api/verify-user', async (req, res) => {
+  try {
+    const { username } = req.body;
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Usuario requerido' });
+    }
+
+    const user = await User.findOne({ Epam_user: username });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (!user.totpEnabled) {
+      return res.status(400).json({ 
+        error: 'Este usuario no tiene 2FA configurado. Contacta al administrador para recuperar tu contraseña.' 
+      });
+    }
+
+    console.log(`✅ Usuario ${username} verificado para recuperación`);
+
+    res.json({ 
+      success: true, 
+      totpEnabled: true,
+      message: 'Usuario verificado. Ingresa tu código TOTP.'
+    });
+  } catch (error) {
+    console.error('Error al verificar usuario:', error);
+    res.status(500).json({ error: 'Error al verificar usuario' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/verify-totp:
+ *   post:
+ *     summary: Verificar código TOTP para recuperación de contraseña
+ *     tags: [Recuperación de Contraseña]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - totpCode
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: EPAM-JohnDoe
+ *               totpCode:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Código verificado correctamente
+ *       400:
+ *         description: Código inválido
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.post('/api/verify-totp', async (req, res) => {
+  try {
+    const { username, totpCode } = req.body;
+
+    if (!username || !totpCode) {
+      return res.status(400).json({ error: 'Usuario y código requeridos' });
+    }
+
+    const user = await User.findOne({ Epam_user: username });
+
+    if (!user || !user.totpEnabled) {
+      return res.status(400).json({ error: 'Usuario inválido o sin 2FA' });
+    }
+
+    // Verificar código TOTP
+    const verified = speakeasy.totp.verify({
+      secret: user.totpSecret,
+      encoding: 'base32',
+      token: totpCode,
+      window: 2
+    });
+
+    if (!verified) {
+      console.log(`❌ Código TOTP inválido para ${username}`);
+      return res.status(400).json({ error: 'Código TOTP inválido' });
+    }
+
+    console.log(`✅ Código TOTP verificado para ${username}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Código verificado. Ahora puedes cambiar tu contraseña.' 
+    });
+  } catch (error) {
+    console.error('Error al verificar código TOTP:', error);
+    res.status(500).json({ error: 'Error al verificar código' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/reset-password:
+ *   post:
+ *     summary: Restablecer contraseña de usuario
+ *     tags: [Recuperación de Contraseña]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - newPassword
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: EPAM-JohnDoe
+ *               newPassword:
+ *                 type: string
+ *                 example: newSecurePassword123
+ *     responses:
+ *       200:
+ *         description: Contraseña restablecida correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+
+    if (!username || !newPassword) {
+      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        error: 'La contraseña debe tener al menos 6 caracteres' 
+      });
+    }
+
+    const user = await User.findOne({ Epam_user: username });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Hash nueva contraseña
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.Password = hashedPassword;
+    await user.save();
+
+    console.log(`🔑 Contraseña restablecida para ${username}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.' 
+    });
+  } catch (error) {
+    console.error('Error al restablecer contraseña:', error);
+    res.status(500).json({ error: 'Error al restablecer contraseña' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/check-totp-status:
+ *   get:
+ *     summary: Verificar si el usuario tiene 2FA activado
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estado de 2FA del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totpEnabled:
+ *                   type: boolean
+ *                 username:
+ *                   type: string
+ */
+app.get('/api/check-totp-status', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('Epam_user totpEnabled');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({
+      totpEnabled: user.totpEnabled || false,
+      username: user.Epam_user
+    });
+  } catch (error) {
+    console.error('Error al verificar estado 2FA:', error);
+    res.status(500).json({ error: 'Error al verificar estado' });
+  }
 });
 
 //logout 
