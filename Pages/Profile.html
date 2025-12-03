@@ -37,50 +37,54 @@
   <!-- MAIN CONTENT -->
   <main class="main-content">
     <div class="dashboard">
-      <!-- LEFT PANEL (PROFILE INFO) -->
-      <section class="profile-container">
-        <h2>Mi Perfil</h2>
+      <!-- LEFT COLUMN (PROFILE + SESSIONS LIST) -->
+      <section class="left-column">
+        <!-- Profile Container -->
+        <div class="profile-container">
+          <h2>Mi Perfil</h2>
 
-        <!-- Profile Data -->
-        <div id="profile-data" class="profile-data">
-          <div class="loading">
-            <i class="fas fa-spinner fa-spin"></i> Cargando perfil...
+          <!-- Profile Data -->
+          <div id="profile-data" class="profile-data">
+            <div class="loading">
+              <i class="fas fa-spinner fa-spin"></i> Cargando perfil...
+            </div>
           </div>
+
+          <!-- Profile Actions -->
+          <div id="profile-actions" class="profile-actions"></div>
         </div>
 
-        <!-- Profile Actions -->
-        <div id="profile-actions" class="profile-actions"></div>
-
-        <!-- 🔹 NUEVO: Contenedor de sesiones -->
-        <div id="tester-sessions"></div>
+        <!-- Sessions List (solo para KeyTesters) -->
+        <div id="sessions-list-container" class="sessions-list-container" style="display: none;">
+          <h3><i class="fas fa-gamepad"></i> Mis Sesiones</h3>
+          <div id="sessions-list" class="sessions-list">
+            <div class="loading">
+              <i class="fas fa-spinner fa-spin"></i> Cargando sesiones...
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- RIGHT PANEL (DYNAMIC CONTENT) -->
-      <aside id="dynamic-panel" class="side-panel hidden">
+      <aside id="dynamic-panel" class="side-panel">
         <div class="panel-header">
           <h3 id="panel-title">Detalles</h3>
-          <button id="close-panel" class="close-panel">
+          <button id="close-panel" class="close-panel" style="display: none;">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div id="dynamic-content" class="dynamic-content">
-          <p>Selecciona una opción para ver más información.</p>
+          <div class="empty-state">
+            <i class="fas fa-hand-pointer"></i>
+            <p>Selecciona una sesión para ver los detalles</p>
+          </div>
         </div>
       </aside>
     </div>
   </main>
 
-  <!-- JS - ORDEN IMPORTANTE -->
+  <!-- JS -->
   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
   <script src="../js/profile.js"></script>
-  
-  <!-- Solo cargar si existe -->
-  <script>
-    // Cargar testerManagement.js solo si existe
-    const script = document.createElement('script');
-    script.src = '../js/profile.js';
-    script.onerror = () => console.warn('⚠️ testerManagement.js no encontrado (opcional)');
-    document.body.appendChild(script);
-  </script>
 </body>
 </html>
