@@ -16,7 +16,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 // Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
-app.use(express.static(path.join(__dirname)));
+
 
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(specs));
@@ -405,24 +405,31 @@ app.get("/protected", (req, res) => {
 // Middleware de autenticación
 const authMiddleware = (req, res, next) => {
   try {
-    // Obtener el token del header
-    const token = req.headers["authorization"];
+    // ✅ Obtener el token y remover "Bearer " si existe
+    let token = req.headers["authorization"];
 
-    console.log("Token recibido:", token); // Para debugging
+    console.log("Token recibido:", token);
 
     if (!token) {
       return res.status(401).json({ message: "No se proporcionó token" });
     }
 
+    // ✅ Remover "Bearer " del inicio si existe
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7);  // Remueve los primeros 7 caracteres ("Bearer ")
+    }
+
+    console.log("Token limpio:", token.substring(0, 20) + '...');
+
     // Verificar el token
     const decoded = jwt.verify(token, "SECRETO");
 
-    console.log("Token decodificado:", decoded); // Para debugging
+    console.log("Token decodificado:", decoded);
 
     // Asignar el userId al request
     req.userId = decoded.userId;
 
-    console.log("Usuario ID:", req.userId); // Para debugging
+    console.log("Usuario ID:", req.userId);
 
     next();
   } catch (error) {
@@ -2317,15 +2324,18 @@ app.post('/api/sessions/:sessionId/end-playtest', authMiddleware, async (req, re
  *         description: Usuario no encontrado
  */
 app.get('/api/generate-totp', authMiddleware, async (req, res) => {
+  console.log('🔥 RUTA /api/generate-totp ALCANZADA'); // ← AGREGAR ESTA LÍNEA
+  
   try {
     const user = await User.findById(req.userId);
+    console.log('👤 Usuario encontrado:', user ? user.Epam_user : 'NO'); // ← AGREGAR
+    
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
     let secret = user.totpSecret;
 
-    // Si no tiene secret, generar uno nuevo
     if (!secret) {
       const generated = speakeasy.generateSecret({
         name: `Pegasus (${user.Epam_user})`,
@@ -2334,7 +2344,6 @@ app.get('/api/generate-totp', authMiddleware, async (req, res) => {
       secret = generated.base32;
     }
 
-    // Generar QR Code
     const otpauthUrl = speakeasy.otpauthURL({
       secret: secret,
       label: user.Epam_user,
@@ -2344,13 +2353,15 @@ app.get('/api/generate-totp', authMiddleware, async (req, res) => {
 
     const qrCode = await QRCode.toDataURL(otpauthUrl);
 
+    console.log('✅ Enviando respuesta JSON'); // ← AGREGAR
+
     res.json({
       secret,
       qrCode,
       totpEnabled: user.totpEnabled || false
     });
   } catch (error) {
-    console.error('Error al generar código TOTP:', error);
+    console.error('❌ Error al generar código TOTP:', error);
     res.status(500).json({ error: 'Error al generar código 2FA' });
   }
 });
@@ -2535,32 +2546,44 @@ app.post('/api/disable-totp', authMiddleware, async (req, res) => {
 app.post('/api/verify-user', async (req, res) => {
   try {
     const { username } = req.body;
-    
+    console.log('📥 Solicitud de verificación para:', username); // ✅ LOG 1
     if (!username) {
+      console.log('❌ Username vacío'); // ✅ LOG 2
       return res.status(400).json({ error: 'Usuario requerido' });
     }
-
+ 
     const user = await User.findOne({ Epam_user: username });
-
+ 
+    console.log('🔍 Usuario encontrado:', user ? 'SÍ' : 'NO'); // ✅ LOG 3
+    if (user) {
+      console.log('📊 Datos del usuario:', {
+        Epam_user: user.Epam_user,
+        totpEnabled: user.totpEnabled,
+        totpSecret: user.totpSecret ? 'EXISTE' : 'NO EXISTE'
+      }); // ✅ LOG 4
+    }
+ 
     if (!user) {
+      console.log('❌ Usuario no encontrado en BD'); // ✅ LOG 5
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
+ 
     if (!user.totpEnabled) {
+      console.log('❌ Usuario sin 2FA activado'); // ✅ LOG 6
       return res.status(400).json({ 
         error: 'Este usuario no tiene 2FA configurado. Contacta al administrador para recuperar tu contraseña.' 
       });
     }
-
-    console.log(`✅ Usuario ${username} verificado para recuperación`);
-
+ 
+    console.log(`✅ Usuario ${username} verificado para recuperación`); // ✅ LOG 7
+ 
     res.json({ 
       success: true, 
       totpEnabled: true,
       message: 'Usuario verificado. Ingresa tu código TOTP.'
     });
   } catch (error) {
-    console.error('Error al verificar usuario:', error);
+    console.error('💥 Error al verificar usuario:', error); // ✅ LOG 8
     res.status(500).json({ error: 'Error al verificar usuario' });
   }
 });
@@ -2595,42 +2618,93 @@ app.post('/api/verify-user', async (req, res) => {
  *       404:
  *         description: Usuario no encontrado
  */
+// ==================== ENDPOINT: VERIFICAR CÓDIGO TOTP (RECUPERACIÓN) ====================
 app.post('/api/verify-totp', async (req, res) => {
   try {
     const { username, totpCode } = req.body;
-
+ 
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔐 [VERIFY-TOTP] Usuario:', username);
+    console.log('🔐 [VERIFY-TOTP] Código recibido:', totpCode);
+    console.log('🔐 [VERIFY-TOTP] Tipo de código:', typeof totpCode);
+ 
+    // Validación básica
     if (!username || !totpCode) {
-      return res.status(400).json({ error: 'Usuario y código requeridos' });
+      console.log('❌ [VERIFY-TOTP] Faltan datos');
+      return res.status(400).json({ error: 'Usuario y código TOTP requeridos' });
     }
-
-    const user = await User.findOne({ Epam_user: username });
-
-    if (!user || !user.totpEnabled) {
-      return res.status(400).json({ error: 'Usuario inválido o sin 2FA' });
+ 
+    // Validar formato del código
+    if (!/^\d{6}$/.test(totpCode)) {
+      console.log('❌ [VERIFY-TOTP] Formato de código inválido');
+      return res.status(400).json({ error: 'El código debe tener 6 dígitos numéricos' });
     }
-
-    // Verificar código TOTP
+ 
+    // Buscar usuario (case-insensitive)
+    const user = await User.findOne({ 
+      Epam_user: { $regex: new RegExp(`^${username}$`, 'i') }
+    });
+ 
+    if (!user) {
+      console.log('❌ [VERIFY-TOTP] Usuario no encontrado');
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+ 
+    console.log('✅ [VERIFY-TOTP] Usuario encontrado:', user.Epam_user);
+    console.log('📊 [VERIFY-TOTP] totpEnabled:', user.totpEnabled);
+    console.log('📊 [VERIFY-TOTP] totpSecret existe:', !!user.totpSecret);
+    if (user.totpSecret) {
+      console.log('📊 [VERIFY-TOTP] totpSecret (primeros 8 chars):', user.totpSecret.substring(0, 8) + '...');
+    }
+ 
+    if (!user.totpEnabled || !user.totpSecret) {
+      console.log('❌ [VERIFY-TOTP] 2FA no está configurado');
+      return res.status(400).json({ error: '2FA no está activado para este usuario' });
+    }
+ 
+    // ✅ GENERAR CÓDIGO ESPERADO (para debug)
+    const expectedToken = speakeasy.totp({
+      secret: user.totpSecret,
+      encoding: 'base32'
+    });
+    console.log('🔢 [VERIFY-TOTP] Código esperado:', expectedToken);
+    console.log('🔢 [VERIFY-TOTP] Código recibido:', totpCode);
+    console.log('🕐 [VERIFY-TOTP] Hora del servidor:', new Date().toISOString());
+ 
+    // ✅ VERIFICAR CÓDIGO TOTP
     const verified = speakeasy.totp.verify({
       secret: user.totpSecret,
       encoding: 'base32',
       token: totpCode,
-      window: 2
+      window: 2 // Permite ±60 segundos de diferencia
     });
-
+ 
+    console.log('🔍 [VERIFY-TOTP] Resultado de verificación:', verified);
+ 
     if (!verified) {
-      console.log(`❌ Código TOTP inválido para ${username}`);
-      return res.status(400).json({ error: 'Código TOTP inválido' });
+      console.log('❌ [VERIFY-TOTP] Código inválido');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return res.status(401).json({ 
+        error: 'Código TOTP inválido',
+        debug: {
+          expected: expectedToken,
+          received: totpCode,
+          serverTime: new Date().toISOString()
+        }
+      });
     }
-
-    console.log(`✅ Código TOTP verificado para ${username}`);
-
+ 
+    console.log('✅ [VERIFY-TOTP] Código verificado correctamente');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+ 
     res.json({ 
-      success: true, 
-      message: 'Código verificado. Ahora puedes cambiar tu contraseña.' 
+      success: true,
+      message: 'Código verificado correctamente' 
     });
+ 
   } catch (error) {
-    console.error('Error al verificar código TOTP:', error);
-    res.status(500).json({ error: 'Error al verificar código' });
+    console.error('💥 [VERIFY-TOTP] Error:', error);
+    res.status(500).json({ error: 'Error al verificar código TOTP' });
   }
 });
 
@@ -2664,43 +2738,84 @@ app.post('/api/verify-totp', async (req, res) => {
  *       404:
  *         description: Usuario no encontrado
  */
+// ==================== ENDPOINT: RESETEAR CONTRASEÑA ====================
 app.post('/api/reset-password', async (req, res) => {
   try {
     const { username, newPassword } = req.body;
-
+ 
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔐 [RESET-PASSWORD] Usuario:', username);
+    console.log('🔐 [RESET-PASSWORD] Nueva contraseña (longitud):', newPassword?.length);
+ 
     if (!username || !newPassword) {
-      return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
+      return res.status(400).json({ error: 'Usuario y nueva contraseña requeridos' });
     }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        error: 'La contraseña debe tener al menos 6 caracteres' 
-      });
+ 
+    if (newPassword.length < 6 || newPassword.length > 32) {
+      return res.status(400).json({ error: 'La contraseña debe tener entre 6 y 32 caracteres' });
     }
-
-    const user = await User.findOne({ Epam_user: username });
-
+ 
+    // ✅ Buscar usuario
+    const user = await User.findOne({
+      Epam_user: { $regex: new RegExp(`^${username}$`, 'i') }
+    });
+ 
     if (!user) {
+      console.log('❌ [RESET-PASSWORD] Usuario no encontrado');
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    // Hash nueva contraseña
+ 
+    console.log('✅ [RESET-PASSWORD] Usuario encontrado:', user.Epam_user);
+    console.log('📊 [RESET-PASSWORD] Password ACTUAL (hash):', user.Password.substring(0, 30) + '...'); // ✅ Password con mayúscula
+ 
+    // ✅ Hash de la nueva contraseña
     const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log('🔒 [RESET-PASSWORD] Nueva contraseña hasheada:', hashedPassword.substring(0, 30) + '...');
+ 
+    // ✅ Guardar hash anterior
+    const oldPasswordHash = user.Password;
+ 
+    // ✅ Actualizar contraseña (Password con mayúscula)
     user.Password = hashedPassword;
-    await user.save();
-
-    console.log(`🔑 Contraseña restablecida para ${username}`);
-
-    res.json({ 
-      success: true, 
-      message: 'Contraseña restablecida correctamente. Ya puedes iniciar sesión.' 
+ 
+    console.log('📝 [RESET-PASSWORD] Password asignada al objeto user');
+ 
+    // ✅ Guardar en BD
+    const savedUser = await user.save();
+ 
+    console.log('💾 [RESET-PASSWORD] user.save() ejecutado');
+    console.log('📊 [RESET-PASSWORD] savedUser.Password:', savedUser.Password.substring(0, 30) + '...');
+ 
+    // ✅ VERIFICACIÓN: Leer de nuevo
+    const verifyUser = await User.findById(user._id).lean();
+ 
+    console.log('🔍 [RESET-PASSWORD] VERIFICACIÓN EN BD:');
+    console.log('📊 [RESET-PASSWORD] Hash ANTERIOR:', oldPasswordHash.substring(0, 30) + '...');
+    console.log('📊 [RESET-PASSWORD] Hash NUEVO (esperado):', hashedPassword.substring(0, 30) + '...');
+    console.log('📊 [RESET-PASSWORD] Hash EN BD (actual):', verifyUser.Password.substring(0, 30) + '...');
+ 
+    if (verifyUser.Password === hashedPassword) {
+      console.log('✅✅✅ [RESET-PASSWORD] ¡CONTRASEÑA ACTUALIZADA CORRECTAMENTE EN BD!');
+    } else if (verifyUser.Password === oldPasswordHash) {
+      console.log('❌❌❌ [RESET-PASSWORD] ¡LA CONTRASEÑA NO SE ACTUALIZÓ! Sigue siendo la antigua');
+    } else {
+      console.log('⚠️⚠️⚠️ [RESET-PASSWORD] La contraseña cambió pero NO es la esperada');
+    }
+ 
+    console.log('✅ [RESET-PASSWORD] Proceso completado');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+ 
+    res.json({
+      success: true,
+      message: 'Contraseña restablecida correctamente'
     });
+ 
   } catch (error) {
-    console.error('Error al restablecer contraseña:', error);
-    res.status(500).json({ error: 'Error al restablecer contraseña' });
+    console.error('💥 [RESET-PASSWORD] Error:', error);
+    console.error('💥 [RESET-PASSWORD] Stack:', error.stack);
+    res.status(500).json({ error: 'Error al restablecer contraseña: ' + error.message });
   }
 });
-
 /**
  * @swagger
  * /api/check-totp-status:
@@ -2760,6 +2875,7 @@ app.post("/logout", authMiddleware, async (req, res) => {
 /*const pythonProcess = spawn('python', ['C:\\filesServer\\python\\actualizar_estado.py'], {
   stdio: 'inherit' // Esto muestra la salida del script Python en la consola de Node.js
 });*/
+app.use(express.static(path.join(__dirname)));
 // --------------------------
 // INICIAR SERVIDOR
 // --------------------------

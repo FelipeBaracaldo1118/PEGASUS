@@ -1,5 +1,7 @@
 // js/totp.js
 
+// ✅ DEFINIR SERVER_URL AL INICIO
+
 document.addEventListener('DOMContentLoaded', () => {
   const setup2faBtn = document.getElementById('setup2faBtn');
   const totpModal = document.getElementById('totp-modal');
@@ -9,10 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let currentSecret = '';
 
-  // Abrir modal
+  // ✅ Abrir modal
   setup2faBtn.addEventListener('click', async () => {
     try {
-      const response = await fetch('/api/generate-totp', {
+      // ✅ CAMBIO: Usar SERVER_URL
+      const response = await fetch(`${SERVER_URL}/api/generate-totp`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -36,6 +39,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         totpModal.style.display = 'flex';
+      } else {
+        alert(data.error || 'Error al generar código 2FA');
       }
     } catch (error) {
       alert('Error al generar código 2FA');
@@ -43,13 +48,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Cerrar modal
+  // ✅ Cerrar modal
   closeTotpModal.addEventListener('click', () => {
     totpModal.style.display = 'none';
     document.getElementById('verify-totp-input').value = '';
   });
 
-  // Activar 2FA
+  // ✅ Activar 2FA
   enableTotpBtn.addEventListener('click', async () => {
     const totpCode = document.getElementById('verify-totp-input').value.trim();
 
@@ -59,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch('/api/enable-totp', {
+      // ✅ CAMBIO: Usar SERVER_URL
+      const response = await fetch(`${SERVER_URL}/api/enable-totp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Desactivar 2FA
+  // ✅ Desactivar 2FA
   disableTotpBtn.addEventListener('click', async () => {
     const totpCode = document.getElementById('verify-totp-input').value.trim();
 
@@ -97,7 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     try {
-      const response = await fetch('/api/disable-totp', {
+      // ✅ CAMBIO: Usar SERVER_URL
+      const response = await fetch(`${SERVER_URL}/api/disable-totp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
