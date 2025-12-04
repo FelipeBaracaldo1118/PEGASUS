@@ -122,7 +122,37 @@
         </div>
       </form>
 
+      <!-- ✅ FORMULARIO DE RECUPERACIÓN -->
+      <form id="resetPasswordForm" style="display:none;">
+        <h2>Recuperar Contraseña</h2>
+        
+        <div id="reset-step-1">
+          <input type="text" id="reset-username" placeholder="Usuario EPAM" required>
+          <button type="button" id="verify-user-btn">Verificar Usuario</button>
+        </div>
+
+        <div id="reset-step-2" style="display:none;">
+          <p style="color: #4ade80; margin-bottom: 15px;">✓ Usuario verificado</p>
+          <input type="text" id="totp-code" placeholder="Código TOTP (6 dígitos)" 
+                 maxlength="6" pattern="[0-9]{6}" required>
+          <button type="button" id="verify-totp-btn">Verificar Código</button>
+        </div>
+
+        <div id="reset-step-3" style="display:none;">
+          <p style="color: #4ade80; margin-bottom: 15px;">✓ Código verificado</p>
+          <input type="password" id="new-password" placeholder="Nueva contraseña" 
+                 minlength="6" maxlength="32" required>
+          <input type="password" id="confirm-password" placeholder="Confirmar contraseña" 
+                 minlength="6" maxlength="32" required>
+          <button type="submit">Restablecer Contraseña</button>
+        </div>
+      </form>
+
       <p id="toggleForm" class="toggle">¿No tienes cuenta? Regístrate</p>
+      <!-- ✅ NUEVO ENLACE -->
+      <p id="forgotPassword" class="toggle" style="margin-top: 10px; font-size: 0.9em;">
+        ¿Olvidaste tu contraseña?
+      </p>
     </div>
     <p id="message"></p>
   </section>
@@ -147,7 +177,6 @@
         <div class="option" data-modal="modal-builds"><h2>Builds</h2></div>
         <div class="option" data-modal="modal-install"><h2>How to install</h2></div>
         <div class="option" data-modal="modal-commands"><h2>Command creator</h2></div>
-        <!-- ✅ NUEVO BOTÓN -->
         <div class="option" data-modal="modal-stats"><h2>📊 Estadísticas</h2></div>
       </div>
     </main>
@@ -186,7 +215,6 @@
     </div>
   </div>
 
-  <!-- ✅ NUEVO MODAL PARA ESTADÍSTICAS -->
   <div class="modal" id="modal-stats">
     <div class="modal-content">
       <span class="close-btn">&times;</span>
@@ -197,11 +225,222 @@
 
   <div id="nested-modals"></div>
 
-  <!-- ✅ SCRIPTS -->
+  <!-- ✅ SCRIPTS EN EL ORDEN CORRECTO -->
   <script src="./js/serverurl.js"></script>
   <script src="./js/app.js"></script>
   <script src="./js/commands.js"></script>
   <script src="./js/indexTwo.js"></script>
-  <!-- ❌ Eliminado ./js/index.js que no existe -->
+  
+  <!-- ✅ SCRIPT DE RECUPERACIÓN DE CONTRASEÑA (INLINE) -->
+  <script>
+    // ==================== CONFIGURACIÓN ====================
+    const API_URL = 'http://10.13.46.195:3000';
+    
+    // ==================== ESPERAR A QUE EL DOM ESTÉ LISTO ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🔧 Sistema de recuperación de contraseña iniciado');
+
+      // ==================== ELEMENTOS DEL DOM ====================
+      const forgotPasswordLink = document.getElementById('forgotPassword');
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const resetPasswordForm = document.getElementById('resetPasswordForm');
+      const toggleForm = document.getElementById('toggleForm');
+
+      const resetStep1 = document.getElementById('reset-step-1');
+      const resetStep2 = document.getElementById('reset-step-2');
+      const resetStep3 = document.getElementById('reset-step-3');
+
+      const resetUsernameInput = document.getElementById('reset-username');
+      const totpCodeInput = document.getElementById('totp-code');
+      const newPasswordInput = document.getElementById('new-password');
+      const confirmPasswordInput = document.getElementById('confirm-password');
+
+      const verifyUserBtn = document.getElementById('verify-user-btn');
+      const verifyTotpBtn = document.getElementById('verify-totp-btn');
+
+      let verifiedUsername = '';
+
+      // ==================== MOSTRAR FORMULARIO DE RECUPERACIÓN ====================
+      forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('📧 Mostrando formulario de recuperación');
+        
+        loginForm.style.display = 'none';
+        registerForm.style.display = 'none';
+        resetPasswordForm.style.display = 'block';
+        
+        // Resetear formulario
+        resetStep1.style.display = 'block';
+        resetStep2.style.display = 'none';
+        resetStep3.style.display = 'none';
+        resetPasswordForm.reset();
+        
+        toggleForm.textContent = 'Volver al login';
+        forgotPasswordLink.style.display = 'none';
+      });
+
+      // ==================== VOLVER AL LOGIN ====================
+      toggleForm.addEventListener('click', (e) => {
+        if (toggleForm.textContent === 'Volver al login') {
+          e.preventDefault();
+          loginForm.style.display = 'block';
+          registerForm.style.display = 'none';
+          resetPasswordForm.style.display = 'none';
+          
+          toggleForm.textContent = '¿No tienes cuenta? Regístrate';
+          forgotPasswordLink.style.display = 'block';
+        }
+      });
+
+      // ==================== PASO 1: VERIFICAR USUARIO ====================
+      verifyUserBtn.addEventListener('click', async () => {
+        const username = resetUsernameInput.value.trim();
+
+        if (!username) {
+          alert('Por favor ingresa tu usuario EPAM');
+          return;
+        }
+
+        verifyUserBtn.disabled = true;
+        verifyUserBtn.textContent = 'Verificando...';
+
+        try {
+          const response = await fetch(`${API_URL}/api/verify-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
+          });
+
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('El servidor no respondió correctamente');
+          }
+
+          const data = await response.json();
+
+          if (response.ok) {
+            verifiedUsername = username;
+            resetStep1.style.display = 'none';
+            resetStep2.style.display = 'block';
+            console.log('✅ Usuario verificado:', username);
+          } else {
+            alert(data.error || 'Usuario no encontrado o sin 2FA configurado');
+          }
+        } catch (error) {
+          console.error('Error al verificar usuario:', error);
+          alert('Error al verificar usuario: ' + error.message);
+        } finally {
+          verifyUserBtn.disabled = false;
+          verifyUserBtn.textContent = 'Verificar Usuario';
+        }
+      });
+
+      // ==================== PASO 2: VERIFICAR CÓDIGO TOTP ====================
+      verifyTotpBtn.addEventListener('click', async () => {
+        const totpCode = totpCodeInput.value.trim();
+
+        if (!totpCode || totpCode.length !== 6) {
+          alert('Ingresa un código válido de 6 dígitos');
+          return;
+        }
+
+        verifyTotpBtn.disabled = true;
+        verifyTotpBtn.textContent = 'Verificando...';
+
+        try {
+          const response = await fetch(`${API_URL}/api/verify-totp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              username: verifiedUsername, 
+              totpCode 
+            })
+          });
+
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('El servidor no respondió correctamente');
+          }
+
+          const data = await response.json();
+
+          if (response.ok) {
+            resetStep2.style.display = 'none';
+            resetStep3.style.display = 'block';
+            console.log('✅ Código TOTP verificado');
+          } else {
+            alert(data.error || 'Código TOTP inválido');
+          }
+        } catch (error) {
+          console.error('Error al verificar código:', error);
+          alert('Error al verificar código: ' + error.message);
+        } finally {
+          verifyTotpBtn.disabled = false;
+          verifyTotpBtn.textContent = 'Verificar Código';
+        }
+      });
+
+      // ==================== PASO 3: RESTABLECER CONTRASEÑA ====================
+      resetPasswordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const newPassword = newPasswordInput.value.trim();
+        const confirmPassword = confirmPasswordInput.value.trim();
+
+        if (newPassword !== confirmPassword) {
+          alert('Las contraseñas no coinciden');
+          return;
+        }
+
+        if (newPassword.length < 6) {
+          alert('La contraseña debe tener al menos 6 caracteres');
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/api/reset-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              username: verifiedUsername, 
+              newPassword 
+            })
+          });
+
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('El servidor no respondió correctamente');
+          }
+
+          const data = await response.json();
+
+          if (response.ok) {
+            alert('✅ Contraseña restablecida correctamente. Ya puedes iniciar sesión.');
+            
+            // Volver al login
+            loginForm.style.display = 'block';
+            resetPasswordForm.style.display = 'none';
+            toggleForm.textContent = '¿No tienes cuenta? Regístrate';
+            forgotPasswordLink.style.display = 'block';
+            
+            // Resetear formulario
+            resetPasswordForm.reset();
+            resetStep1.style.display = 'block';
+            resetStep2.style.display = 'none';
+            resetStep3.style.display = 'none';
+            verifiedUsername = '';
+            
+            console.log('✅ Contraseña restablecida exitosamente');
+          } else {
+            alert(data.error || 'Error al restablecer contraseña');
+          }
+        } catch (error) {
+          console.error('Error al restablecer contraseña:', error);
+          alert('Error al restablecer contraseña: ' + error.message);
+        }
+      });
+    });
+  </script>
 </body>
 </html>

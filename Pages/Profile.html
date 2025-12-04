@@ -25,6 +25,11 @@
     </div>
 
     <div class="header-right">
+      <!-- ✅ BOTÓN 2FA -->
+      <button id="setup2faBtn" class="totp-btn" title="Configurar autenticación de dos factores">
+        <i class="fas fa-lock"></i>
+      </button>
+      
       <div class="user-info" id="user-info">
         <span id="user-name" class="user-name"></span>
       </div>
@@ -37,54 +42,83 @@
   <!-- MAIN CONTENT -->
   <main class="main-content">
     <div class="dashboard">
-      <!-- LEFT COLUMN (PROFILE + SESSIONS LIST) -->
-      <section class="left-column">
-        <!-- Profile Container -->
-        <div class="profile-container">
-          <h2>Mi Perfil</h2>
+      <!-- LEFT PANEL (PROFILE INFO) -->
+      <section class="profile-container">
+        <h2>Mi Perfil</h2>
 
-          <!-- Profile Data -->
-          <div id="profile-data" class="profile-data">
-            <div class="loading">
-              <i class="fas fa-spinner fa-spin"></i> Cargando perfil...
-            </div>
-          </div>
-
-          <!-- Profile Actions -->
-          <div id="profile-actions" class="profile-actions"></div>
-        </div>
-
-        <!-- Sessions List (solo para KeyTesters) -->
-        <div id="sessions-list-container" class="sessions-list-container" style="display: none;">
-          <h3><i class="fas fa-gamepad"></i> Mis Sesiones</h3>
-          <div id="sessions-list" class="sessions-list">
-            <div class="loading">
-              <i class="fas fa-spinner fa-spin"></i> Cargando sesiones...
-            </div>
+        <!-- Profile Data -->
+        <div id="profile-data" class="profile-data">
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Cargando perfil...
           </div>
         </div>
+
+        <!-- Profile Actions -->
+        <div id="profile-actions" class="profile-actions"></div>
+
+        <!-- Contenedor de sesiones -->
+        <div id="tester-sessions"></div>
       </section>
 
       <!-- RIGHT PANEL (DYNAMIC CONTENT) -->
-      <aside id="dynamic-panel" class="side-panel">
+      <aside id="dynamic-panel" class="side-panel hidden">
         <div class="panel-header">
           <h3 id="panel-title">Detalles</h3>
-          <button id="close-panel" class="close-panel" style="display: none;">
+          <button id="close-panel" class="close-panel">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div id="dynamic-content" class="dynamic-content">
-          <div class="empty-state">
-            <i class="fas fa-hand-pointer"></i>
-            <p>Selecciona una sesión para ver los detalles</p>
-          </div>
+          <p>Selecciona una opción para ver más información.</p>
         </div>
       </aside>
     </div>
   </main>
 
-  <!-- JS -->
+  <!-- ✅ MODAL 2FA -->
+  <div id="totp-modal" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="close-btn" id="close-totp-modal">&times;</span>
+      <h2>Configurar Autenticación 2FA</h2>
+      
+      <div id="totp-setup">
+        <p>Escanea este código QR con Google Authenticator o Microsoft Authenticator:</p>
+        <div id="qr-container" style="text-align: center; margin: 20px 0;">
+          <!-- QR Code se genera aquí -->
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 0.9em; color: #aaa;">
+          O ingresa manualmente este código:
+        </p>
+        <div style="background: #222; padding: 10px; border-radius: 5px; text-align: center; margin: 10px 0;">
+          <code id="totp-secret" style="color: #4ade80; font-size: 1.1em; letter-spacing: 2px;"></code>
+        </div>
+
+        <p style="margin-top: 20px;">Ingresa el código de 6 dígitos generado por tu app:</p>
+        <input type="text" id="verify-totp-input" placeholder="000000" maxlength="6" 
+               style="width: 100%; padding: 10px; margin: 10px 0; font-size: 1.2em; text-align: center; letter-spacing: 5px;">
+        
+        <button id="enable-totp-btn" style="width: 100%; padding: 12px; background: #4ade80; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+          Activar 2FA
+        </button>
+
+        <button id="disable-totp-btn" style="display:none; width: 100%; padding: 12px; background: #f87171; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;">
+          Desactivar 2FA
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS - ORDEN IMPORTANTE -->
   <script src="/CommandGenerator/epic-cmd-gen-command-generator.js"></script>
   <script src="../js/profile.js"></script>
+  <script src="../js/totp.js"></script>
+  
+  <script>
+    const script = document.createElement('script');
+    script.src = '../js/profile.js';
+    script.onerror = () => console.warn('⚠️ testerManagement.js no encontrado (opcional)');
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>

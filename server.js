@@ -5,6 +5,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 const { swaggerUi, specs } = require('./swagger');
 
@@ -14,7 +16,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 // Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
-app.use(express.static(path.join(__dirname)));
+
 
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(specs));
@@ -55,7 +57,10 @@ const userSchema = new mongoose.Schema({
   Region: { type: String },
   Station: { type: String },
   IsPlaying: { type: Boolean, default: false },
-  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado', 'instalado'], default: 'no instalado' } // <--- NUEVO CAMPO
+  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado', 'instalado'], default: 'no instalado' },
+  // ✅ NUEVOS CAMPOS PARA 2FA
+  totpSecret: { type: String, default: null },
+  totpEnabled: { type: Boolean, default: false }
 });
 const User = mongoose.model("User", userSchema);
 
@@ -400,24 +405,31 @@ app.get("/protected", (req, res) => {
 // Middleware de autenticación
 const authMiddleware = (req, res, next) => {
   try {
-    // Obtener el token del header
-    const token = req.headers["authorization"];
+    // ✅ Obtener el token y remover "Bearer " si existe
+    let token = req.headers["authorization"];
 
-    console.log("Token recibido:", token); // Para debugging
+    console.log("Token recibido:", token);
 
     if (!token) {
       return res.status(401).json({ message: "No se proporcionó token" });
     }
 
+    // ✅ Remover "Bearer " del inicio si existe
+    if (token.startsWith('Bearer ')) {
+      token = token.slice(7);  // Remueve los primeros 7 caracteres ("Bearer ")
+    }
+
+    console.log("Token limpio:", token.substring(0, 20) + '...');
+
     // Verificar el token
     const decoded = jwt.verify(token, "SECRETO");
 
-    console.log("Token decodificado:", decoded); // Para debugging
+    console.log("Token decodificado:", decoded);
 
     // Asignar el userId al request
     req.userId = decoded.userId;
 
-    console.log("Usuario ID:", req.userId); // Para debugging
+    console.log("Usuario ID:", req.userId);
 
     next();
   } catch (error) {
@@ -489,14 +501,14 @@ app.get("/api/testers-in-pod", authMiddleware, async (req, res) => {
     if (!user || user.userType !== "keytester") {
       return res.status(403).json({ message: "No autorizado" });
     }
-
-    const testers = await User.find({
-      Pod: user.Pod,
-      userType: "tester"
+    
+    const testers = await User.find({ 
+      Pod: user.Pod, 
+      userType: "tester" 
     })
-      .select("Epam_user Pod Station Region Devices StateOfInstalling IsPlaying currentSession")  // ✅ IsPlaying con mayúscula
-      .lean();
-
+    .select("Epam_user Pod Station Region Devices StateOfInstalling IsPlaying currentSession")  // ✅ IsPlaying con mayúscula
+    .lean();
+    
     res.json(testers);
   } catch (error) {
     console.error("Error en /api/testers-in-pod:", error);
@@ -530,13 +542,13 @@ app.get("/api/all-testers", authMiddleware, async (req, res) => {
     if (!user || user.userType !== "keytester") {
       return res.status(403).json({ message: "No autorizado" });
     }
-
-    const testers = await User.find({
-      userType: "tester"
+    
+    const testers = await User.find({ 
+      userType: "tester" 
     })
-      .select("Epam_user Pod Station Region Devices StateOfInstalling IsPlaying currentSession")  // ✅ IsPlaying con mayúscula
-      .lean();
-
+    .select("Epam_user Pod Station Region Devices StateOfInstalling IsPlaying currentSession")  // ✅ IsPlaying con mayúscula
+    .lean();
+    
     res.json(testers);
   } catch (error) {
     console.error("Error en /api/all-testers:", error);
@@ -1671,231 +1683,231 @@ app.get('/api/users/search', authMiddleware, async (req, res) => {
  *         description: Error del servidor
  */
 app.post('/api/sessions/:sessionId/replace/:testerId', authMiddleware, async (req, res) => {
-  try {
-    const { sessionId, testerId } = req.params;
+    try {
+        const { sessionId, testerId } = req.params;
+        
+        console.log('🔄 Solicitud de reemplazo:', { sessionId, testerId });
 
-    console.log('🔄 Solicitud de reemplazo:', { sessionId, testerId });
+        // 1. Buscar la sesión
+        const session = await Session.findById(sessionId);
+        
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
 
-    // 1. Buscar la sesión
-    const session = await Session.findById(sessionId);
+        // 2. Verificar que el usuario sea el creador, admin o keytester
+        const currentUser = await User.findById(req.userId);
+        
+        if (!currentUser) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
 
-    if (!session) {
-      return res.status(404).json({ message: 'Sesión no encontrada' });
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin && currentUser.userType !== 'keytester') {
+            return res.status(403).json({ message: 'No tienes permiso para modificar esta sesión' });
+        }
+
+        // 3. Encontrar el tester a reemplazar
+        const testerIndex = session.assignedTesters.findIndex(
+            t => (t.Epam_user === testerId || t.testerId?.toString() === testerId)
+        );
+
+        if (testerIndex === -1) {
+            return res.status(404).json({ message: 'Tester no encontrado en esta sesión' });
+        }
+
+        const oldTester = session.assignedTesters[testerIndex];
+        console.log('👤 Tester a reemplazar:', {
+            name: oldTester.Epam_user,
+            device: oldTester.device,
+            region: oldTester.region,
+            pod: oldTester.pod
+        });
+
+        // 4. ALGORITMO DE BÚSQUEDA FLEXIBLE (4 NIVELES)
+        
+        // IDs de testers ya asignados (para excluirlos)
+        const assignedIds = session.assignedTesters.map(t => t.testerId);
+        
+        let newTester = null;
+        let matchLevel = '';
+
+        // ========================================
+        // NIVEL 1: Búsqueda EXACTA (Ideal)
+        // Device + Region + Pod
+        // ========================================
+        if (oldTester.device && oldTester.region && oldTester.pod) {
+            const exactQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds },
+                'Devices.name': oldTester.device,
+                Region: oldTester.region,
+                Pod: oldTester.pod
+            };
+            
+            console.log('🔍 Nivel 1 - Búsqueda EXACTA:', JSON.stringify(exactQuery, null, 2));
+            newTester = await User.findOne(exactQuery);
+            
+            if (newTester) {
+                matchLevel = 'exact';
+                console.log('✅ Nivel 1 - Match EXACTO encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // NIVEL 2: Sin POD
+        // Device + Region (cualquier POD)
+        // ========================================
+        if (!newTester && oldTester.device && oldTester.region) {
+            const noPodQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds },
+                'Devices.name': oldTester.device,
+                Region: oldTester.region
+            };
+            
+            console.log('🔍 Nivel 2 - Sin POD:', JSON.stringify(noPodQuery, null, 2));
+            newTester = await User.findOne(noPodQuery);
+            
+            if (newTester) {
+                matchLevel = 'no-pod';
+                console.log('✅ Nivel 2 - Match sin POD encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // NIVEL 3: Solo Dispositivo
+        // Device (cualquier región y POD)
+        // ========================================
+        if (!newTester && oldTester.device) {
+            const deviceOnlyQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds },
+                'Devices.name': oldTester.device
+            };
+            
+            console.log('🔍 Nivel 3 - Solo DEVICE:', JSON.stringify(deviceOnlyQuery, null, 2));
+            newTester = await User.findOne(deviceOnlyQuery);
+            
+            if (newTester) {
+                matchLevel = 'device-only';
+                console.log('✅ Nivel 3 - Match solo por DEVICE encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // NIVEL 4: Cualquier Tester
+        // Solo que no esté asignado
+        // ========================================
+        if (!newTester) {
+            const anyQuery = {
+                userType: 'tester',
+                _id: { $nin: assignedIds }
+            };
+            
+            console.log('🔍 Nivel 4 - CUALQUIER tester:', JSON.stringify(anyQuery, null, 2));
+            newTester = await User.findOne(anyQuery);
+            
+            if (newTester) {
+                matchLevel = 'any';
+                console.log('⚠️ Nivel 4 - Match GENÉRICO encontrado:', newTester.Epam_user);
+            }
+        }
+
+        // ========================================
+        // Si NO se encontró ningún tester
+        // ========================================
+        if (!newTester) {
+            // Obtener información de debugging
+            const allTesters = await User.find({ userType: 'tester' })
+                .select('Epam_user Devices Region Pod Station');
+            
+            console.log('❌ No se encontró ningún tester disponible');
+            console.log('📋 Total de testers en BD:', allTesters.length);
+            console.log('🚫 Testers ya asignados:', assignedIds.length);
+
+            return res.status(404).json({ 
+                message: 'No se encontró un tester disponible para reemplazo',
+                requirements: {
+                    device: oldTester.device,
+                    region: oldTester.region,
+                    pod: oldTester.pod
+                },
+                availableTesters: allTesters.length,
+                assignedTesters: assignedIds.length,
+                suggestion: allTesters.length === assignedIds.length 
+                    ? 'Todos los testers están asignados a esta sesión'
+                    : 'Verifica que existan testers registrados con userType="tester"'
+            });
+        }
+
+        // ========================================
+        // 5. REEMPLAZAR EL TESTER
+        // ========================================
+        console.log('✅ Nuevo tester seleccionado:', {
+            name: newTester.Epam_user,
+            device: newTester.Devices?.[0]?.name,
+            region: newTester.Region,
+            pod: newTester.Pod,
+            matchLevel: matchLevel
+        });
+
+        // Construir el objeto del nuevo tester asignado
+        session.assignedTesters[testerIndex] = {
+            testerId: newTester._id,
+            Epam_user: newTester.Epam_user,
+            device: oldTester.device || (newTester.Devices && newTester.Devices[0]?.name),
+            region: newTester.Region || oldTester.region,
+            mmr: newTester.Mmr || oldTester.mmr,
+            pod: newTester.Pod || oldTester.pod,
+            station: newTester.Station,
+            capturas: oldTester.capturas || [],
+            dispositivos: oldTester.dispositivos || [oldTester.device],
+            group: oldTester.group,
+            team: oldTester.team
+        };
+
+        // 6. Guardar la sesión actualizada
+        await session.save();
+
+        console.log('💾 Sesión actualizada correctamente');
+
+        // 7. Respuesta exitosa
+        res.json({
+            success: true,
+            message: 'Tester reemplazado correctamente',
+            matchLevel: matchLevel,
+            matchDescription: {
+                'exact': 'Coincidencia exacta (mismo dispositivo, región y POD)',
+                'no-pod': 'Coincidencia sin POD (mismo dispositivo y región)',
+                'device-only': 'Coincidencia solo por dispositivo',
+                'any': 'Cualquier tester disponible'
+            }[matchLevel],
+            oldTester: {
+                Epam_user: oldTester.Epam_user,
+                testerId: oldTester.testerId,
+                device: oldTester.device,
+                region: oldTester.region,
+                pod: oldTester.pod
+            },
+            newTester: {
+                Epam_user: newTester.Epam_user,
+                testerId: newTester._id,
+                device: newTester.Devices?.[0]?.name,
+                region: newTester.Region,
+                pod: newTester.Pod,
+                station: newTester.Station
+            },
+            assignedTesters: session.assignedTesters
+        });
+
+    } catch (error) {
+        console.error('❌ Error al reemplazar tester:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Error al reemplazar tester',
+            error: error.message 
+        });
     }
-
-    // 2. Verificar que el usuario sea el creador, admin o keytester
-    const currentUser = await User.findById(req.userId);
-
-    if (!currentUser) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin && currentUser.userType !== 'keytester') {
-      return res.status(403).json({ message: 'No tienes permiso para modificar esta sesión' });
-    }
-
-    // 3. Encontrar el tester a reemplazar
-    const testerIndex = session.assignedTesters.findIndex(
-      t => (t.Epam_user === testerId || t.testerId?.toString() === testerId)
-    );
-
-    if (testerIndex === -1) {
-      return res.status(404).json({ message: 'Tester no encontrado en esta sesión' });
-    }
-
-    const oldTester = session.assignedTesters[testerIndex];
-    console.log('👤 Tester a reemplazar:', {
-      name: oldTester.Epam_user,
-      device: oldTester.device,
-      region: oldTester.region,
-      pod: oldTester.pod
-    });
-
-    // 4. ALGORITMO DE BÚSQUEDA FLEXIBLE (4 NIVELES)
-
-    // IDs de testers ya asignados (para excluirlos)
-    const assignedIds = session.assignedTesters.map(t => t.testerId);
-
-    let newTester = null;
-    let matchLevel = '';
-
-    // ========================================
-    // NIVEL 1: Búsqueda EXACTA (Ideal)
-    // Device + Region + Pod
-    // ========================================
-    if (oldTester.device && oldTester.region && oldTester.pod) {
-      const exactQuery = {
-        userType: 'tester',
-        _id: { $nin: assignedIds },
-        'Devices.name': oldTester.device,
-        Region: oldTester.region,
-        Pod: oldTester.pod
-      };
-
-      console.log('🔍 Nivel 1 - Búsqueda EXACTA:', JSON.stringify(exactQuery, null, 2));
-      newTester = await User.findOne(exactQuery);
-
-      if (newTester) {
-        matchLevel = 'exact';
-        console.log('✅ Nivel 1 - Match EXACTO encontrado:', newTester.Epam_user);
-      }
-    }
-
-    // ========================================
-    // NIVEL 2: Sin POD
-    // Device + Region (cualquier POD)
-    // ========================================
-    if (!newTester && oldTester.device && oldTester.region) {
-      const noPodQuery = {
-        userType: 'tester',
-        _id: { $nin: assignedIds },
-        'Devices.name': oldTester.device,
-        Region: oldTester.region
-      };
-
-      console.log('🔍 Nivel 2 - Sin POD:', JSON.stringify(noPodQuery, null, 2));
-      newTester = await User.findOne(noPodQuery);
-
-      if (newTester) {
-        matchLevel = 'no-pod';
-        console.log('✅ Nivel 2 - Match sin POD encontrado:', newTester.Epam_user);
-      }
-    }
-
-    // ========================================
-    // NIVEL 3: Solo Dispositivo
-    // Device (cualquier región y POD)
-    // ========================================
-    if (!newTester && oldTester.device) {
-      const deviceOnlyQuery = {
-        userType: 'tester',
-        _id: { $nin: assignedIds },
-        'Devices.name': oldTester.device
-      };
-
-      console.log('🔍 Nivel 3 - Solo DEVICE:', JSON.stringify(deviceOnlyQuery, null, 2));
-      newTester = await User.findOne(deviceOnlyQuery);
-
-      if (newTester) {
-        matchLevel = 'device-only';
-        console.log('✅ Nivel 3 - Match solo por DEVICE encontrado:', newTester.Epam_user);
-      }
-    }
-
-    // ========================================
-    // NIVEL 4: Cualquier Tester
-    // Solo que no esté asignado
-    // ========================================
-    if (!newTester) {
-      const anyQuery = {
-        userType: 'tester',
-        _id: { $nin: assignedIds }
-      };
-
-      console.log('🔍 Nivel 4 - CUALQUIER tester:', JSON.stringify(anyQuery, null, 2));
-      newTester = await User.findOne(anyQuery);
-
-      if (newTester) {
-        matchLevel = 'any';
-        console.log('⚠️ Nivel 4 - Match GENÉRICO encontrado:', newTester.Epam_user);
-      }
-    }
-
-    // ========================================
-    // Si NO se encontró ningún tester
-    // ========================================
-    if (!newTester) {
-      // Obtener información de debugging
-      const allTesters = await User.find({ userType: 'tester' })
-        .select('Epam_user Devices Region Pod Station');
-
-      console.log('❌ No se encontró ningún tester disponible');
-      console.log('📋 Total de testers en BD:', allTesters.length);
-      console.log('🚫 Testers ya asignados:', assignedIds.length);
-
-      return res.status(404).json({
-        message: 'No se encontró un tester disponible para reemplazo',
-        requirements: {
-          device: oldTester.device,
-          region: oldTester.region,
-          pod: oldTester.pod
-        },
-        availableTesters: allTesters.length,
-        assignedTesters: assignedIds.length,
-        suggestion: allTesters.length === assignedIds.length
-          ? 'Todos los testers están asignados a esta sesión'
-          : 'Verifica que existan testers registrados con userType="tester"'
-      });
-    }
-
-    // ========================================
-    // 5. REEMPLAZAR EL TESTER
-    // ========================================
-    console.log('✅ Nuevo tester seleccionado:', {
-      name: newTester.Epam_user,
-      device: newTester.Devices?.[0]?.name,
-      region: newTester.Region,
-      pod: newTester.Pod,
-      matchLevel: matchLevel
-    });
-
-    // Construir el objeto del nuevo tester asignado
-    session.assignedTesters[testerIndex] = {
-      testerId: newTester._id,
-      Epam_user: newTester.Epam_user,
-      device: oldTester.device || (newTester.Devices && newTester.Devices[0]?.name),
-      region: newTester.Region || oldTester.region,
-      mmr: newTester.Mmr || oldTester.mmr,
-      pod: newTester.Pod || oldTester.pod,
-      station: newTester.Station,
-      capturas: oldTester.capturas || [],
-      dispositivos: oldTester.dispositivos || [oldTester.device],
-      group: oldTester.group,
-      team: oldTester.team
-    };
-
-    // 6. Guardar la sesión actualizada
-    await session.save();
-
-    console.log('💾 Sesión actualizada correctamente');
-
-    // 7. Respuesta exitosa
-    res.json({
-      success: true,
-      message: 'Tester reemplazado correctamente',
-      matchLevel: matchLevel,
-      matchDescription: {
-        'exact': 'Coincidencia exacta (mismo dispositivo, región y POD)',
-        'no-pod': 'Coincidencia sin POD (mismo dispositivo y región)',
-        'device-only': 'Coincidencia solo por dispositivo',
-        'any': 'Cualquier tester disponible'
-      }[matchLevel],
-      oldTester: {
-        Epam_user: oldTester.Epam_user,
-        testerId: oldTester.testerId,
-        device: oldTester.device,
-        region: oldTester.region,
-        pod: oldTester.pod
-      },
-      newTester: {
-        Epam_user: newTester.Epam_user,
-        testerId: newTester._id,
-        device: newTester.Devices?.[0]?.name,
-        region: newTester.Region,
-        pod: newTester.Pod,
-        station: newTester.Station
-      },
-      assignedTesters: session.assignedTesters
-    });
-
-  } catch (error) {
-    console.error('❌ Error al reemplazar tester:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error al reemplazar tester',
-      error: error.message
-    });
-  }
 });
 /**
  * @swagger
@@ -1919,65 +1931,65 @@ app.post('/api/sessions/:sessionId/replace/:testerId', authMiddleware, async (re
  *         description: Usuario no encontrado
  */
 app.get('/api/users/:id/details', authMiddleware, async (req, res) => {
-  try {
-    const currentUser = await User.findById(req.userId);
+    try {
+        const currentUser = await User.findById(req.userId);
+        
+        // Verificar permisos (solo keytester y admin pueden ver detalles de otros)
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: 'No autorizado' });
+        }
 
-    // Verificar permisos (solo keytester y admin pueden ver detalles de otros)
-    if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
-      return res.status(403).json({ message: 'No autorizado' });
+        // Buscar el usuario
+        const user = await User.findById(req.params.id).select('-Password -__v');
+        
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Contar sesiones en las que ha participado
+        const sessionCount = await Session.countDocuments({
+            'assignedTesters.testerId': user._id
+        });
+
+        // Obtener últimas sesiones
+        const recentSessions = await Session.find({
+            'assignedTesters.testerId': user._id
+        })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('backendName buildString startTime createdAt sessionType');
+
+        // Respuesta completa
+        res.json({
+            user: {
+                _id: user._id,
+                Epam_user: user.Epam_user,
+                Accounts: user.Accounts,
+                Devices: user.Devices,
+                availability: user.availability,
+                Mmr: user.Mmr,
+                userType: user.userType,
+                isAdmin: user.isAdmin,
+                Pod: user.Pod,
+                Region: user.Region,
+                Station: user.Station,
+                IsPlaying: user.IsPlaying,
+                StateOfInstalling: user.StateOfInstalling,
+                Date_Time: user.Date_Time
+            },
+            stats: {
+                totalSessions: sessionCount,
+                recentSessions: recentSessions
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al obtener detalles del usuario:', error);
+        res.status(500).json({ 
+            message: 'Error al obtener detalles del usuario',
+            error: error.message 
+        });
     }
-
-    // Buscar el usuario
-    const user = await User.findById(req.params.id).select('-Password -__v');
-
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    // Contar sesiones en las que ha participado
-    const sessionCount = await Session.countDocuments({
-      'assignedTesters.testerId': user._id
-    });
-
-    // Obtener últimas sesiones
-    const recentSessions = await Session.find({
-      'assignedTesters.testerId': user._id
-    })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('backendName buildString startTime createdAt sessionType');
-
-    // Respuesta completa
-    res.json({
-      user: {
-        _id: user._id,
-        Epam_user: user.Epam_user,
-        Accounts: user.Accounts,
-        Devices: user.Devices,
-        availability: user.availability,
-        Mmr: user.Mmr,
-        userType: user.userType,
-        isAdmin: user.isAdmin,
-        Pod: user.Pod,
-        Region: user.Region,
-        Station: user.Station,
-        IsPlaying: user.IsPlaying,
-        StateOfInstalling: user.StateOfInstalling,
-        Date_Time: user.Date_Time
-      },
-      stats: {
-        totalSessions: sessionCount,
-        recentSessions: recentSessions
-      }
-    });
-
-  } catch (error) {
-    console.error('Error al obtener detalles del usuario:', error);
-    res.status(500).json({
-      message: 'Error al obtener detalles del usuario',
-      error: error.message
-    });
-  }
 });
 /**
  * @swagger
@@ -2002,45 +2014,45 @@ app.get('/api/users/:id/details', authMiddleware, async (req, res) => {
  *         description: Estado actualizado correctamente
  */
 app.patch('/api/user/update-installation-status', authMiddleware, async (req, res) => {
-  try {
-    const { status } = req.body;
+    try {
+        const { status } = req.body;
+        
+        // Validar estado
+        const validStatuses = ['instalado', 'instalando', 'no instalado'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ 
+                message: 'Estado inválido. Debe ser: instalado, instalando o no instalado' 
+            });
+        }
 
-    // Validar estado
-    const validStatuses = ['instalado', 'instalando', 'no instalado'];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        message: 'Estado inválido. Debe ser: instalado, instalando o no instalado'
-      });
+        // Actualizar el usuario
+        const user = await User.findByIdAndUpdate(
+            req.userId,
+            { StateOfInstalling: status },
+            { new: true }
+        ).select('-Password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Estado de instalación actualizado correctamente',
+            user: {
+                _id: user._id,
+                Epam_user: user.Epam_user,
+                StateOfInstalling: user.StateOfInstalling
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar estado de instalación:', error);
+        res.status(500).json({ 
+            message: 'Error al actualizar estado de instalación',
+            error: error.message 
+        });
     }
-
-    // Actualizar el usuario
-    const user = await User.findByIdAndUpdate(
-      req.userId,
-      { StateOfInstalling: status },
-      { new: true }
-    ).select('-Password');
-
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Estado de instalación actualizado correctamente',
-      user: {
-        _id: user._id,
-        Epam_user: user.Epam_user,
-        StateOfInstalling: user.StateOfInstalling
-      }
-    });
-
-  } catch (error) {
-    console.error('Error al actualizar estado de instalación:', error);
-    res.status(500).json({
-      message: 'Error al actualizar estado de instalación',
-      error: error.message
-    });
-  }
 });
 
 /**
@@ -2077,75 +2089,75 @@ app.patch('/api/user/update-installation-status', authMiddleware, async (req, re
  *         description: Estados actualizados correctamente
  */
 app.patch('/api/sessions/:sessionId/update-playing-status', authMiddleware, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const { isPlaying, testerIds } = req.body;
+    try {
+        const { sessionId } = req.params;
+        const { isPlaying, testerIds } = req.body;
 
-    // Verificar que el usuario sea keytester o admin
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
-      return res.status(403).json({
-        message: 'Solo keytesters y admins pueden actualizar el estado de juego'
-      });
+        // Verificar que el usuario sea keytester o admin
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ 
+                message: 'Solo keytesters y admins pueden actualizar el estado de juego' 
+            });
+        }
+
+        // Buscar la sesión
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        // Verificar que el usuario sea el creador de la sesión
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+            return res.status(403).json({ 
+                message: 'Solo el creador de la sesión puede actualizar el estado de juego' 
+            });
+        }
+
+        // Determinar qué testers actualizar
+        let testersToUpdate = [];
+        
+        if (testerIds && Array.isArray(testerIds) && testerIds.length > 0) {
+            // Actualizar solo los testers especificados
+            testersToUpdate = session.assignedTesters
+                .filter(t => testerIds.includes(t.testerId.toString()))
+                .map(t => t.testerId);
+        } else {
+            // Actualizar todos los testers de la sesión
+            testersToUpdate = session.assignedTesters.map(t => t.testerId);
+        }
+
+        if (testersToUpdate.length === 0) {
+            return res.status(400).json({ 
+                message: 'No hay testers para actualizar' 
+            });
+        }
+
+        // Actualizar el estado IsPlaying de los testers
+        const updateResult = await User.updateMany(
+            { _id: { $in: testersToUpdate } },
+            { $set: { IsPlaying: isPlaying } }
+        );
+
+        // Obtener los testers actualizados
+        const updatedTesters = await User.find({ 
+            _id: { $in: testersToUpdate } 
+        }).select('Epam_user IsPlaying');
+
+        res.json({
+            success: true,
+            message: `${updatedTesters.length} tester(s) ${isPlaying ? 'marcados como jugando' : 'desmarcados'}`,
+            updatedCount: updateResult.modifiedCount,
+            testers: updatedTesters
+        });
+
+    } catch (error) {
+        console.error('Error al actualizar estado de juego:', error);
+        res.status(500).json({ 
+            message: 'Error al actualizar estado de juego',
+            error: error.message 
+        });
     }
-
-    // Buscar la sesión
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({ message: 'Sesión no encontrada' });
-    }
-
-    // Verificar que el usuario sea el creador de la sesión
-    if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
-      return res.status(403).json({
-        message: 'Solo el creador de la sesión puede actualizar el estado de juego'
-      });
-    }
-
-    // Determinar qué testers actualizar
-    let testersToUpdate = [];
-
-    if (testerIds && Array.isArray(testerIds) && testerIds.length > 0) {
-      // Actualizar solo los testers especificados
-      testersToUpdate = session.assignedTesters
-        .filter(t => testerIds.includes(t.testerId.toString()))
-        .map(t => t.testerId);
-    } else {
-      // Actualizar todos los testers de la sesión
-      testersToUpdate = session.assignedTesters.map(t => t.testerId);
-    }
-
-    if (testersToUpdate.length === 0) {
-      return res.status(400).json({
-        message: 'No hay testers para actualizar'
-      });
-    }
-
-    // Actualizar el estado IsPlaying de los testers
-    const updateResult = await User.updateMany(
-      { _id: { $in: testersToUpdate } },
-      { $set: { IsPlaying: isPlaying } }
-    );
-
-    // Obtener los testers actualizados
-    const updatedTesters = await User.find({
-      _id: { $in: testersToUpdate }
-    }).select('Epam_user IsPlaying');
-
-    res.json({
-      success: true,
-      message: `${updatedTesters.length} tester(s) ${isPlaying ? 'marcados como jugando' : 'desmarcados'}`,
-      updatedCount: updateResult.modifiedCount,
-      testers: updatedTesters
-    });
-
-  } catch (error) {
-    console.error('Error al actualizar estado de juego:', error);
-    res.status(500).json({
-      message: 'Error al actualizar estado de juego',
-      error: error.message
-    });
-  }
 });
 
 /**
@@ -2167,53 +2179,53 @@ app.patch('/api/sessions/:sessionId/update-playing-status', authMiddleware, asyn
  *         description: Playtest iniciado correctamente
  */
 app.post('/api/sessions/:sessionId/start-playtest', authMiddleware, async (req, res) => {
-  try {
-    const { sessionId } = req.params;
+    try {
+        const { sessionId } = req.params;
 
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
-      return res.status(403).json({ message: 'Solo keytesters y admins pueden iniciar playtests' });
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: 'Solo keytesters y admins pueden iniciar playtests' });
+        }
+
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+            return res.status(403).json({ message: 'Solo el creador de la sesión puede iniciar el playtest' });
+        }
+
+        const testerIds = session.assignedTesters.map(t => t.testerId);
+
+        if (testerIds.length === 0) {
+            return res.status(400).json({ message: 'No hay testers asignados a esta sesión' });
+        }
+
+        // ✅ CAMBIO AQUÍ: isPlaying en minúscula
+        await User.updateMany(
+            { _id: { $in: testerIds } },
+            { $set: { IsPlaying: true } }
+        );
+
+        session.actualStartTime = new Date();
+        await session.save();
+
+        res.json({
+            success: true,
+            message: `Playtest iniciado. ${testerIds.length} tester(s) marcados como jugando`,
+            session: {
+                _id: session._id,
+                backendName: session.backendName,
+                actualStartTime: session.actualStartTime,
+                testersCount: testerIds.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al iniciar playtest:', error);
+        res.status(500).json({ message: 'Error al iniciar playtest', error: error.message });
     }
-
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({ message: 'Sesión no encontrada' });
-    }
-
-    if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
-      return res.status(403).json({ message: 'Solo el creador de la sesión puede iniciar el playtest' });
-    }
-
-    const testerIds = session.assignedTesters.map(t => t.testerId);
-
-    if (testerIds.length === 0) {
-      return res.status(400).json({ message: 'No hay testers asignados a esta sesión' });
-    }
-
-    // ✅ CAMBIO AQUÍ: isPlaying en minúscula
-    await User.updateMany(
-      { _id: { $in: testerIds } },
-      { $set: { IsPlaying: true } }
-    );
-
-    session.actualStartTime = new Date();
-    await session.save();
-
-    res.json({
-      success: true,
-      message: `Playtest iniciado. ${testerIds.length} tester(s) marcados como jugando`,
-      session: {
-        _id: session._id,
-        backendName: session.backendName,
-        actualStartTime: session.actualStartTime,
-        testersCount: testerIds.length
-      }
-    });
-
-  } catch (error) {
-    console.error('Error al iniciar playtest:', error);
-    res.status(500).json({ message: 'Error al iniciar playtest', error: error.message });
-  }
 });
 
 /**
@@ -2235,185 +2247,613 @@ app.post('/api/sessions/:sessionId/start-playtest', authMiddleware, async (req, 
  *         description: Playtest finalizado correctamente
  */
 app.post('/api/sessions/:sessionId/end-playtest', authMiddleware, async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+
+        const currentUser = await User.findById(req.userId);
+        if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+            return res.status(403).json({ message: 'Solo keytesters y admins pueden finalizar playtests' });
+        }
+
+        const session = await Session.findById(sessionId);
+        if (!session) {
+            return res.status(404).json({ message: 'Sesión no encontrada' });
+        }
+
+        if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+            return res.status(403).json({ message: 'Solo el creador de la sesión puede finalizar el playtest' });
+        }
+
+        const testerIds = session.assignedTesters.map(t => t.testerId);
+
+        // ✅ CAMBIO AQUÍ: isPlaying en minúscula
+        await User.updateMany(
+            { _id: { $in: testerIds } },
+            { $set: { IsPlaying: false } }
+        );
+
+        session.actualEndTime = new Date();
+        await session.save();
+
+        res.json({
+            success: true,
+            message: `Playtest finalizado. ${testerIds.length} tester(s) desmarcados`,
+            session: {
+                _id: session._id,
+                backendName: session.backendName,
+                actualEndTime: session.actualEndTime
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al finalizar playtest:', error);
+        res.status(500).json({ message: 'Error al finalizar playtest', error: error.message });
+    }
+});
+
+// ==================== RUTAS 2FA Y RECUPERACIÓN ====================
+
+/**
+ * @swagger
+ * /api/generate-totp:
+ *   get:
+ *     summary: Generar código TOTP y QR para configurar 2FA
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Código TOTP generado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 secret:
+ *                   type: string
+ *                   example: JBSWY3DPEHPK3PXP
+ *                 qrCode:
+ *                   type: string
+ *                   description: QR Code en formato Data URL
+ *                 totpEnabled:
+ *                   type: boolean
+ *                   example: false
+ *       401:
+ *         description: No autorizado
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.get('/api/generate-totp', authMiddleware, async (req, res) => {
+  console.log('🔥 RUTA /api/generate-totp ALCANZADA'); // ← AGREGAR ESTA LÍNEA
+  
   try {
-    const { sessionId } = req.params;
-
-    const currentUser = await User.findById(req.userId);
-    if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
-      return res.status(403).json({ message: 'Solo keytesters y admins pueden finalizar playtests' });
+    const user = await User.findById(req.userId);
+    console.log('👤 Usuario encontrado:', user ? user.Epam_user : 'NO'); // ← AGREGAR
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({ message: 'Sesión no encontrada' });
+    let secret = user.totpSecret;
+
+    if (!secret) {
+      const generated = speakeasy.generateSecret({
+        name: `Pegasus (${user.Epam_user})`,
+        issuer: 'Pegasus FNPT'
+      });
+      secret = generated.base32;
     }
 
-    if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
-      return res.status(403).json({ message: 'Solo el creador de la sesión puede finalizar el playtest' });
+    const otpauthUrl = speakeasy.otpauthURL({
+      secret: secret,
+      label: user.Epam_user,
+      issuer: 'Pegasus FNPT',
+      encoding: 'base32'
+    });
+
+    const qrCode = await QRCode.toDataURL(otpauthUrl);
+
+    console.log('✅ Enviando respuesta JSON'); // ← AGREGAR
+
+    res.json({
+      secret,
+      qrCode,
+      totpEnabled: user.totpEnabled || false
+    });
+  } catch (error) {
+    console.error('❌ Error al generar código TOTP:', error);
+    res.status(500).json({ error: 'Error al generar código 2FA' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/enable-totp:
+ *   post:
+ *     summary: Activar autenticación 2FA
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - totpCode
+ *               - secret
+ *             properties:
+ *               totpCode:
+ *                 type: string
+ *                 example: "123456"
+ *               secret:
+ *                 type: string
+ *                 example: JBSWY3DPEHPK3PXP
+ *     responses:
+ *       200:
+ *         description: 2FA activado correctamente
+ *       400:
+ *         description: Código TOTP inválido
+ *       404:
+ *         description: Usuario no encontrado
+ */
+app.post('/api/enable-totp', authMiddleware, async (req, res) => {
+  try {
+    const { totpCode, secret } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    const testerIds = session.assignedTesters.map(t => t.testerId);
+    // Verificar código
+    const verified = speakeasy.totp.verify({
+      secret: secret,
+      encoding: 'base32',
+      token: totpCode,
+      window: 2 // Permite ±60 segundos de margen
+    });
 
-    // ✅ CAMBIO AQUÍ: isPlaying en minúscula
-    await User.updateMany(
-      { _id: { $in: testerIds } },
-      { $set: { IsPlaying: false } }
-    );
+    if (!verified) {
+      return res.status(400).json({ error: 'Código TOTP inválido' });
+    }
 
-    session.actualEndTime = new Date();
-    await session.save();
+    // Guardar secret y activar 2FA
+    user.totpSecret = secret;
+    user.totpEnabled = true;
+    await user.save();
 
+    console.log(`✅ 2FA activado para usuario: ${user.Epam_user}`);
+
+    res.json({ 
+      success: true, 
+      message: '2FA activado correctamente' 
+    });
+  } catch (error) {
+    console.error('Error al activar 2FA:', error);
+    res.status(500).json({ error: 'Error al activar 2FA' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/disable-totp:
+ *   post:
+ *     summary: Desactivar autenticación 2FA
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - totpCode
+ *             properties:
+ *               totpCode:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: 2FA desactivado correctamente
+ *       400:
+ *         description: Código TOTP inválido o 2FA no activado
+ */
+app.post('/api/disable-totp', authMiddleware, async (req, res) => {
+  try {
+    const { totpCode } = req.body;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (!user.totpEnabled) {
+      return res.status(400).json({ error: '2FA no está activado' });
+    }
+
+    // Verificar código actual
+    const verified = speakeasy.totp.verify({
+      secret: user.totpSecret,
+      encoding: 'base32',
+      token: totpCode,
+      window: 2
+    });
+
+    if (!verified) {
+      return res.status(400).json({ error: 'Código TOTP inválido' });
+    }
+
+    // Desactivar 2FA
+    user.totpEnabled = false;
+    user.totpSecret = null;
+    await user.save();
+
+    console.log(`🔓 2FA desactivado para usuario: ${user.Epam_user}`);
+
+    res.json({ 
+      success: true, 
+      message: '2FA desactivado correctamente' 
+    });
+  } catch (error) {
+    console.error('Error al desactivar 2FA:', error);
+    res.status(500).json({ error: 'Error al desactivar 2FA' });
+  }
+});
+
+// ==================== RUTAS RECUPERACIÓN DE CONTRASEÑA ====================
+
+/**
+ * @swagger
+ * /api/verify-user:
+ *   post:
+ *     summary: Verificar si un usuario existe y tiene 2FA activado
+ *     tags: [Recuperación de Contraseña]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: EPAM-JohnDoe
+ *     responses:
+ *       200:
+ *         description: Usuario verificado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 totpEnabled:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Usuario no encontrado
+ *       400:
+ *         description: Usuario sin 2FA configurado
+ */
+app.post('/api/verify-user', async (req, res) => {
+  try {
+    const { username } = req.body;
+    console.log('📥 Solicitud de verificación para:', username); // ✅ LOG 1
+    if (!username) {
+      console.log('❌ Username vacío'); // ✅ LOG 2
+      return res.status(400).json({ error: 'Usuario requerido' });
+    }
+ 
+    const user = await User.findOne({ Epam_user: username });
+ 
+    console.log('🔍 Usuario encontrado:', user ? 'SÍ' : 'NO'); // ✅ LOG 3
+    if (user) {
+      console.log('📊 Datos del usuario:', {
+        Epam_user: user.Epam_user,
+        totpEnabled: user.totpEnabled,
+        totpSecret: user.totpSecret ? 'EXISTE' : 'NO EXISTE'
+      }); // ✅ LOG 4
+    }
+ 
+    if (!user) {
+      console.log('❌ Usuario no encontrado en BD'); // ✅ LOG 5
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+ 
+    if (!user.totpEnabled) {
+      console.log('❌ Usuario sin 2FA activado'); // ✅ LOG 6
+      return res.status(400).json({ 
+        error: 'Este usuario no tiene 2FA configurado. Contacta al administrador para recuperar tu contraseña.' 
+      });
+    }
+ 
+    console.log(`✅ Usuario ${username} verificado para recuperación`); // ✅ LOG 7
+ 
+    res.json({ 
+      success: true, 
+      totpEnabled: true,
+      message: 'Usuario verificado. Ingresa tu código TOTP.'
+    });
+  } catch (error) {
+    console.error('💥 Error al verificar usuario:', error); // ✅ LOG 8
+    res.status(500).json({ error: 'Error al verificar usuario' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/verify-totp:
+ *   post:
+ *     summary: Verificar código TOTP para recuperación de contraseña
+ *     tags: [Recuperación de Contraseña]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - totpCode
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: EPAM-JohnDoe
+ *               totpCode:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Código verificado correctamente
+ *       400:
+ *         description: Código inválido
+ *       404:
+ *         description: Usuario no encontrado
+ */
+// ==================== ENDPOINT: VERIFICAR CÓDIGO TOTP (RECUPERACIÓN) ====================
+app.post('/api/verify-totp', async (req, res) => {
+  try {
+    const { username, totpCode } = req.body;
+ 
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔐 [VERIFY-TOTP] Usuario:', username);
+    console.log('🔐 [VERIFY-TOTP] Código recibido:', totpCode);
+    console.log('🔐 [VERIFY-TOTP] Tipo de código:', typeof totpCode);
+ 
+    // Validación básica
+    if (!username || !totpCode) {
+      console.log('❌ [VERIFY-TOTP] Faltan datos');
+      return res.status(400).json({ error: 'Usuario y código TOTP requeridos' });
+    }
+ 
+    // Validar formato del código
+    if (!/^\d{6}$/.test(totpCode)) {
+      console.log('❌ [VERIFY-TOTP] Formato de código inválido');
+      return res.status(400).json({ error: 'El código debe tener 6 dígitos numéricos' });
+    }
+ 
+    // Buscar usuario (case-insensitive)
+    const user = await User.findOne({ 
+      Epam_user: { $regex: new RegExp(`^${username}$`, 'i') }
+    });
+ 
+    if (!user) {
+      console.log('❌ [VERIFY-TOTP] Usuario no encontrado');
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+ 
+    console.log('✅ [VERIFY-TOTP] Usuario encontrado:', user.Epam_user);
+    console.log('📊 [VERIFY-TOTP] totpEnabled:', user.totpEnabled);
+    console.log('📊 [VERIFY-TOTP] totpSecret existe:', !!user.totpSecret);
+    if (user.totpSecret) {
+      console.log('📊 [VERIFY-TOTP] totpSecret (primeros 8 chars):', user.totpSecret.substring(0, 8) + '...');
+    }
+ 
+    if (!user.totpEnabled || !user.totpSecret) {
+      console.log('❌ [VERIFY-TOTP] 2FA no está configurado');
+      return res.status(400).json({ error: '2FA no está activado para este usuario' });
+    }
+ 
+    // ✅ GENERAR CÓDIGO ESPERADO (para debug)
+    const expectedToken = speakeasy.totp({
+      secret: user.totpSecret,
+      encoding: 'base32'
+    });
+    console.log('🔢 [VERIFY-TOTP] Código esperado:', expectedToken);
+    console.log('🔢 [VERIFY-TOTP] Código recibido:', totpCode);
+    console.log('🕐 [VERIFY-TOTP] Hora del servidor:', new Date().toISOString());
+ 
+    // ✅ VERIFICAR CÓDIGO TOTP
+    const verified = speakeasy.totp.verify({
+      secret: user.totpSecret,
+      encoding: 'base32',
+      token: totpCode,
+      window: 2 // Permite ±60 segundos de diferencia
+    });
+ 
+    console.log('🔍 [VERIFY-TOTP] Resultado de verificación:', verified);
+ 
+    if (!verified) {
+      console.log('❌ [VERIFY-TOTP] Código inválido');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      return res.status(401).json({ 
+        error: 'Código TOTP inválido',
+        debug: {
+          expected: expectedToken,
+          received: totpCode,
+          serverTime: new Date().toISOString()
+        }
+      });
+    }
+ 
+    console.log('✅ [VERIFY-TOTP] Código verificado correctamente');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+ 
+    res.json({ 
+      success: true,
+      message: 'Código verificado correctamente' 
+    });
+ 
+  } catch (error) {
+    console.error('💥 [VERIFY-TOTP] Error:', error);
+    res.status(500).json({ error: 'Error al verificar código TOTP' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/reset-password:
+ *   post:
+ *     summary: Restablecer contraseña de usuario
+ *     tags: [Recuperación de Contraseña]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - newPassword
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: EPAM-JohnDoe
+ *               newPassword:
+ *                 type: string
+ *                 example: newSecurePassword123
+ *     responses:
+ *       200:
+ *         description: Contraseña restablecida correctamente
+ *       400:
+ *         description: Datos inválidos
+ *       404:
+ *         description: Usuario no encontrado
+ */
+// ==================== ENDPOINT: RESETEAR CONTRASEÑA ====================
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+ 
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔐 [RESET-PASSWORD] Usuario:', username);
+    console.log('🔐 [RESET-PASSWORD] Nueva contraseña (longitud):', newPassword?.length);
+ 
+    if (!username || !newPassword) {
+      return res.status(400).json({ error: 'Usuario y nueva contraseña requeridos' });
+    }
+ 
+    if (newPassword.length < 6 || newPassword.length > 32) {
+      return res.status(400).json({ error: 'La contraseña debe tener entre 6 y 32 caracteres' });
+    }
+ 
+    // ✅ Buscar usuario
+    const user = await User.findOne({
+      Epam_user: { $regex: new RegExp(`^${username}$`, 'i') }
+    });
+ 
+    if (!user) {
+      console.log('❌ [RESET-PASSWORD] Usuario no encontrado');
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+ 
+    console.log('✅ [RESET-PASSWORD] Usuario encontrado:', user.Epam_user);
+    console.log('📊 [RESET-PASSWORD] Password ACTUAL (hash):', user.Password.substring(0, 30) + '...'); // ✅ Password con mayúscula
+ 
+    // ✅ Hash de la nueva contraseña
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    console.log('🔒 [RESET-PASSWORD] Nueva contraseña hasheada:', hashedPassword.substring(0, 30) + '...');
+ 
+    // ✅ Guardar hash anterior
+    const oldPasswordHash = user.Password;
+ 
+    // ✅ Actualizar contraseña (Password con mayúscula)
+    user.Password = hashedPassword;
+ 
+    console.log('📝 [RESET-PASSWORD] Password asignada al objeto user');
+ 
+    // ✅ Guardar en BD
+    const savedUser = await user.save();
+ 
+    console.log('💾 [RESET-PASSWORD] user.save() ejecutado');
+    console.log('📊 [RESET-PASSWORD] savedUser.Password:', savedUser.Password.substring(0, 30) + '...');
+ 
+    // ✅ VERIFICACIÓN: Leer de nuevo
+    const verifyUser = await User.findById(user._id).lean();
+ 
+    console.log('🔍 [RESET-PASSWORD] VERIFICACIÓN EN BD:');
+    console.log('📊 [RESET-PASSWORD] Hash ANTERIOR:', oldPasswordHash.substring(0, 30) + '...');
+    console.log('📊 [RESET-PASSWORD] Hash NUEVO (esperado):', hashedPassword.substring(0, 30) + '...');
+    console.log('📊 [RESET-PASSWORD] Hash EN BD (actual):', verifyUser.Password.substring(0, 30) + '...');
+ 
+    if (verifyUser.Password === hashedPassword) {
+      console.log('✅✅✅ [RESET-PASSWORD] ¡CONTRASEÑA ACTUALIZADA CORRECTAMENTE EN BD!');
+    } else if (verifyUser.Password === oldPasswordHash) {
+      console.log('❌❌❌ [RESET-PASSWORD] ¡LA CONTRASEÑA NO SE ACTUALIZÓ! Sigue siendo la antigua');
+    } else {
+      console.log('⚠️⚠️⚠️ [RESET-PASSWORD] La contraseña cambió pero NO es la esperada');
+    }
+ 
+    console.log('✅ [RESET-PASSWORD] Proceso completado');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+ 
     res.json({
       success: true,
-      message: `Playtest finalizado. ${testerIds.length} tester(s) desmarcados`,
-      session: {
-        _id: session._id,
-        backendName: session.backendName,
-        actualEndTime: session.actualEndTime
-      }
+      message: 'Contraseña restablecida correctamente'
     });
-
+ 
   } catch (error) {
-    console.error('Error al finalizar playtest:', error);
-    res.status(500).json({ message: 'Error al finalizar playtest', error: error.message });
+    console.error('💥 [RESET-PASSWORD] Error:', error);
+    console.error('💥 [RESET-PASSWORD] Stack:', error.stack);
+    res.status(500).json({ error: 'Error al restablecer contraseña: ' + error.message });
   }
 });
-
-
-
-// ============================================
-// OBTENER TESTERS DISPONIBLES PARA REEMPLAZO
-// ============================================
-app.get('/api/testers-available', authMiddleware, async (req, res) => {
+/**
+ * @swagger
+ * /api/check-totp-status:
+ *   get:
+ *     summary: Verificar si el usuario tiene 2FA activado
+ *     tags: [Autenticación 2FA]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estado de 2FA del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totpEnabled:
+ *                   type: boolean
+ *                 username:
+ *                   type: string
+ */
+app.get('/api/check-totp-status', authMiddleware, async (req, res) => {
   try {
-    const { device, sessionId } = req.query;
-
-    console.log('📡 Solicitando testers disponibles:', { device, sessionId });
-
-    // ✅ FILTRO FLEXIBLE: Solo excluir los que están jugando
-    let filter = {
-      userType: 'tester',
-      IsPlaying: { $ne: true }  // Solo excluir los que están jugando
-    };
-
-    // Excluir testers ya asignados a la sesión
-    if (sessionId) {
-      const session = await Session.findById(sessionId);
-
-      if (session && session.assignedTesters && session.assignedTesters.length > 0) {
-        const assignedTesterIds = session.assignedTesters
-          .map(t => t.testerId)
-          .filter(id => id);
-
-        if (assignedTesterIds.length > 0) {
-          filter._id = { $nin: assignedTesterIds };
-          console.log(`🚫 Excluyendo ${assignedTesterIds.length} testers ya asignados`);
-        }
-      }
+    const user = await User.findById(req.userId).select('Epam_user totpEnabled');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
-
-    console.log('🔍 Filtro aplicado:', JSON.stringify(filter, null, 2));
-
-    // Buscar testers
-    const testers = await User.find(filter)
-      .select('Epam_user Pod Station Devices StateOfInstalling IsPlaying Region Mmr')
-      .sort({ Epam_user: 1 })
-      .lean();
-
-    console.log(`✅ Testers disponibles encontrados: ${testers.length}`);
-
-    res.json(testers);
-
-  } catch (error) {
-    console.error('❌ Error al obtener testers disponibles:', error);
-    res.status(500).json({
-      error: 'Error al obtener testers disponibles',
-      details: error.message
-    });
-  }
-});
-
-// ============================================
-// REEMPLAZAR TESTER EN SESIÓN (MANUAL)
-// ============================================
-app.post('/api/sessions/:sessionId/replace-tester', async (req, res) => {
-  try {
-    const { sessionId } = req.params;
-    const { currentTesterId, newTesterId } = req.body;
-
-    console.log('🔄 Reemplazando tester:', { currentTesterId, newTesterId });
-
-    const session = await Session.findById(sessionId);
-    if (!session) {
-      return res.status(404).json({ error: 'Sesión no encontrada' });
-    }
-
-    // Buscar el tester actual en la sesión
-    const currentTesterIndex = session.assignedTesters.findIndex(
-      t => t.Epam_user === currentTesterId || t.testerId === currentTesterId
-    );
-
-    if (currentTesterIndex === -1) {
-      return res.status(404).json({ error: 'Tester actual no encontrado en la sesión' });
-    }
-
-    // Obtener datos del tester actual
-    const currentTesterData = session.assignedTesters[currentTesterIndex];
-
-    // Buscar el nuevo tester en la BD
-    const newTester = await User.findOne({ Epam_user: newTesterId });
-    if (!newTester) {
-      return res.status(404).json({ error: 'Nuevo tester no encontrado' });
-    }
-
-    // ✅ Versión simple: Siempre usar device del nuevo tester
-    let newDevice = null;
-
-    if (newTester.Devices && Array.isArray(newTester.Devices) && newTester.Devices.length > 0) {
-      // Usar el device principal del nuevo tester
-      newDevice = newTester.Devices[0].name;
-      console.log(`✅ Usando device del nuevo tester: ${newDevice}`);
-    } else {
-      // Si no tiene devices, mantener el anterior como fallback
-      newDevice = currentTesterData.device;
-      console.log(`⚠️ Nuevo tester sin devices, manteniendo: ${newDevice}`);
-    }
-
-    const newTesterData = {
-      Epam_user: newTester.Epam_user,
-      testerId: newTester._id,
-      device: newDevice,  // ✅ Device del nuevo tester
-      group: currentTesterData.group,
-      capturas: currentTesterData.capturas,
-      region: newTester.Region,
-      Pod: newTester.Pod,
-      Station: newTester.Station,
-      StateOfInstalling: newTester.StateOfInstalling,
-      IsPlaying: newTester.IsPlaying
-    };
-
-    console.log('📋 Datos del nuevo tester:', newTesterData);
-
-    // Reemplazar
-    session.assignedTesters[currentTesterIndex] = newTesterData;
-    await session.save();
-
-    console.log('✅ Tester reemplazado exitosamente');
 
     res.json({
-      message: 'Tester reemplazado exitosamente',
-      oldTester: currentTesterData,
-      newTester: newTesterData
+      totpEnabled: user.totpEnabled || false,
+      username: user.Epam_user
     });
-
   } catch (error) {
-    console.error('❌ Error al reemplazar tester:', error);
-    res.status(500).json({ error: 'Error al reemplazar tester' });
+    console.error('Error al verificar estado 2FA:', error);
+    res.status(500).json({ error: 'Error al verificar estado' });
   }
 });
-
-
-
 
 //logout 
 app.post("/logout", authMiddleware, async (req, res) => {
@@ -2435,9 +2875,10 @@ app.post("/logout", authMiddleware, async (req, res) => {
 /*const pythonProcess = spawn('python', ['C:\\filesServer\\python\\actualizar_estado.py'], {
   stdio: 'inherit' // Esto muestra la salida del script Python en la consola de Node.js
 });*/
+app.use(express.static(path.join(__dirname)));
 // --------------------------
 // INICIAR SERVIDOR
 // --------------------------
 app.listen(3000, "0.0.0.0", () => {
-  console.log("Servidor Node corriendo en http://10.13.46.195:8080/");
+  console.log("Servidor Node corriendo en http://10.13.46.195:3000/");
 });
