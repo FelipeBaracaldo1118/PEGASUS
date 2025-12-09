@@ -2854,6 +2854,196 @@ app.get('/api/check-totp-status', authMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Error al verificar estado' });
   }
 });
+// ============================================
+// OBTENER TESTERS DISPONIBLES PARA REEMPLAZO
+// ============================================
+
+app.get('/api/testers-available', authMiddleware, async (req, res) => {
+  try {
+    const { device, sessionId } = req.query;
+    
+    console.log('📡 Solicitando testers disponibles:', { device, sessionId });
+    
+    // ✅ FILTRO MÍNIMO
+    let filter = {
+      userType: 'tester'
+    };
+    
+    // Excluir testers ya asignados a la sesión
+    let excludedIds = [];
+    if (sessionId) {
+      const session = await Session.findById(sessionId);
+      
+      if (session && session.assignedTesters && session.assignedTesters.length > 0) {
+        excludedIds = session.assignedTesters
+          .map(t => t.testerId)
+          .filter(id => id);
+        
+        if (excludedIds.length > 0) {
+          filter._id = { $nin: excludedIds };
+          console.log(`🚫 Excluyendo ${excludedIds.length} testers ya asignados`);
+        }
+      }
+    }
+    
+    console.log('🔍 Filtro aplicado:', JSON.stringify(filter, null, 2));
+    
+    // Buscar TODOS los testers disponibles
+    let testers = await User.find(filter)
+      .select('Epam_user Pod Station Devices StateOfInstalling IsPlaying Region Mmr')
+      .lean();
+    
+    // ✅ ORDENAR POR PRIORIDAD (mejor match primero)
+    testers = testers.map(tester => {
+      let priority = 0;
+      
+      // +100 puntos si tiene el dispositivo requerido
+      if (device && tester.Devices && tester.Devices.some(d => d.name === device)) {
+        priority += 100;
+      }
+      
+      // +50 puntos si está instalado
+      if (tester.StateOfInstalling === 'instalado') {
+        priority += 50;
+      }
+      
+      // +30 puntos si NO está jugando
+      if (!tester.IsPlaying) {
+        priority += 30;
+      }
+      
+      // +20 puntos si está instalando (mejor que no instalado)
+      if (tester.StateOfInstalling === 'instalando') {
+        priority += 20;
+      }
+      
+      return { ...tester, priority };
+    });
+    
+    // Ordenar por prioridad (mayor a menor)
+    testers.sort((a, b) => b.priority - a.priority);
+    
+    console.log(`✅ Testers disponibles encontrados: ${testers.length}`);
+    console.log('📊 Top 3 por prioridad:', testers.slice(0, 3).map(t => ({
+      name: t.Epam_user,
+      priority: t.priority,
+      device: t.Devices?.[0]?.name,
+      state: t.StateOfInstalling,
+      playing: t.IsPlaying
+    })));
+    
+    res.json(testers);
+    
+  } catch (error) {
+    console.error('❌ Error al obtener testers disponibles:', error);
+    res.status(500).json({ 
+      error: 'Error al obtener testers disponibles',
+      details: error.message 
+    });
+  }
+});
+
+// ============================================
+// REEMPLAZAR TESTER EN SESIÓN (MANUAL)
+// ============================================
+app.post('/api/sessions/:sessionId/replace-tester', authMiddleware, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { currentTesterId, newTesterId } = req.body;
+    
+    console.log('🔄 Reemplazando tester:', { sessionId, currentTesterId, newTesterId });
+    
+    // Verificar permisos
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser || (currentUser.userType !== 'keytester' && !currentUser.isAdmin)) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+    
+    // Buscar la sesión
+    const session = await Session.findById(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({ error: 'Sesión no encontrada' });
+    }
+    
+    // Verificar que sea el creador o admin
+    if (session.createdBy.toString() !== req.userId && !currentUser.isAdmin) {
+      return res.status(403).json({ message: 'No autorizado para modificar esta sesión' });
+    }
+    
+    // Buscar el nuevo tester
+    const newTester = await User.findOne({ Epam_user: newTesterId });
+    
+    if (!newTester) {
+      return res.status(404).json({ error: 'Nuevo tester no encontrado' });
+    }
+    
+    // Verificar que el nuevo tester esté disponible
+    if (newTester.IsPlaying) {
+      return res.status(400).json({ error: 'El tester está ocupado' });
+    }
+    
+    // Reemplazar en el array de testers
+    const testerIndex = session.assignedTesters.findIndex(t => 
+      (t.Epam_user || t.testerId?.toString()) === currentTesterId
+    );
+    
+    if (testerIndex === -1) {
+      return res.status(404).json({ error: 'Tester actual no encontrado en la sesión' });
+    }
+    
+    // Mantener la información del tester anterior
+    const oldTesterData = session.assignedTesters[testerIndex];
+    
+    // Crear nuevo objeto de tester con la información actualizada
+    session.assignedTesters[testerIndex] = {
+      Epam_user: newTester.Epam_user,
+      testerId: newTester._id,
+      device: oldTesterData.device,
+      group: oldTesterData.group,
+      team: oldTesterData.team,
+      capturas: oldTesterData.capturas || [],
+      dispositivos: oldTesterData.dispositivos || [oldTesterData.device],
+      Pod: newTester.Pod,
+      Station: newTester.Station,
+      Region: newTester.Region,
+      Mmr: newTester.Mmr,
+      StateOfInstalling: newTester.StateOfInstalling,
+      IsPlaying: false
+    };
+    
+    // Guardar cambios
+    await session.save();
+    
+    console.log('✅ Tester reemplazado exitosamente');
+    
+    res.json({ 
+      success: true,
+      message: 'Tester reemplazado exitosamente',
+      oldTester: {
+        Epam_user: oldTesterData.Epam_user,
+        device: oldTesterData.device
+      },
+      newTester: {
+        Epam_user: newTester.Epam_user,
+        device: oldTesterData.device,
+        Pod: newTester.Pod,
+        Station: newTester.Station
+      },
+      session: {
+        _id: session._id,
+        assignedTesters: session.assignedTesters
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error al reemplazar tester:', error);
+    res.status(500).json({ 
+      error: 'Error al reemplazar tester',
+      details: error.message 
+    });
+  }
+});
 
 //logout 
 app.post("/logout", authMiddleware, async (req, res) => {

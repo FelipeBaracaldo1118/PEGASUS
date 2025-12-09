@@ -70,6 +70,8 @@ function getRandomAvatar() {
 
 // === FETCH KEYTESTER SESSIONS ===
 async function fetchKeyTesterSessions() {
+  console.log("🎮 Cargando sesiones de KeyTester...");
+
   try {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -89,129 +91,146 @@ async function fetchKeyTesterSessions() {
     }
 
     const sessions = await response.json();
-    const sessionsContainer = document.getElementById("tester-sessions");
+    console.log("✅ Sesiones cargadas:", sessions);
 
-    if (!sessions || sessions.length === 0) {
-      sessionsContainer.innerHTML = `
-        <h3><i class="fas fa-gamepad"></i> Mis Sesiones de Juego</h3>
-        <div class="no-sessions">
-          <i class="fas fa-inbox"></i>
-          <p>No has creado ninguna sesión todavía</p>
-          <button class="action-btn create-btn" onclick="window.location.href='/keytester_sessions.html'">
-            <i class="fas fa-plus"></i> Crear primera sesión
+    // Guardar sesiones globalmente
+    window.lastSessions = sessions;
+
+    // Mostrar el contenedor de sesiones
+    const sessionsContainer = document.getElementById("sessions-list-container");
+    if (sessionsContainer) {
+      sessionsContainer.style.display = 'block';
+    }
+
+    // Renderizar lista de sesiones en la columna izquierda
+    renderKeyTesterSessionsList(sessions);
+
+  } catch (error) {
+    console.error('❌ Error al cargar sesiones:', error);
+    const sessionsList = document.getElementById("sessions-list");
+    if (sessionsList) {
+      sessionsList.innerHTML = `
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>Error al cargar las sesiones: ${error.message}</p>
+          <button onclick="fetchKeyTesterSessions()" class="retry-btn">
+            <i class="fas fa-sync"></i> Reintentar
           </button>
         </div>
       `;
-      return;
     }
+  }
+}
+// ============================================
+// RENDERIZAR LISTA DE SESIONES (KeyTester - Columna izquierda)
+// ============================================
+function renderKeyTesterSessionsList(sessions) {
+  const sessionsList = document.getElementById("sessions-list");
 
-    let html = `
-      <h3><i class="fas fa-gamepad"></i> Mis Sesiones de Juego (${sessions.length})</h3>
-      <div class="sessions-grid">
-    `;
+  if (!sessionsList) {
+    console.error("❌ No se encontró sessions-list");
+    return;
+  }
 
-    sessions.forEach(session => {
-      const startDate = new Date(session.startTime);
-      const endDate = session.endTime ? new Date(session.endTime) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
-      const now = new Date();
-
-      let statusClass = 'status-upcoming';
-      let statusText = 'Próximamente';
-      let statusIcon = 'clock';
-
-      if (now >= startDate && now <= endDate) {
-        statusClass = 'status-active';
-        statusText = 'En curso';
-        statusIcon = 'play-circle';
-      } else if (now > endDate) {
-        statusClass = 'status-finished';
-        statusText = 'Finalizada';
-        statusIcon = 'check-circle';
-      }
-
-      const testersCount = session.assignedTesters?.length || 0;
-
-      html += `
-        <div class="session-card ${statusClass}">
-          <div class="session-status-badge ${statusClass}">
-            <i class="fas fa-${statusIcon}"></i>
-            <span>${statusText}</span>
-          </div>
-          
-          <div class="session-header">
-            <h4 class="session-title">
-              <i class="fas fa-gamepad"></i>
-              ${session.backendName || 'Sin nombre'}
-            </h4>
-          </div>
-
-          <div class="session-body">
-            <div class="session-info-grid">
-              <div class="info-item">
-                <i class="fas fa-calendar-alt"></i>
-                <div>
-                  <label>Fecha</label>
-                  <span>${startDate.toLocaleDateString('es-ES')}</span>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <label>Hora</label>
-                  <span>${startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <i class="fas fa-users"></i>
-                <div>
-                  <label>Testers</label>
-                  <span>${testersCount}</span>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <i class="fas fa-code-branch"></i>
-                <div>
-                  <label>Build</label>
-                  <span>${session.buildString || 'N/A'}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="session-footer">
-            <button class="btn-view-details" onclick="viewSessionDetails('${session._id}')">
-              <i class="fas fa-eye"></i> Ver detalles
-            </button>
-            <button class="btn-edit" onclick="editSession('${session._id}')">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn-delete" onclick="deleteSession('${session._id}')">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    sessionsContainer.innerHTML = html;
-
-  } catch (error) {
-    console.error('Error al cargar sesiones:', error);
-    const sessionsContainer = document.getElementById("tester-sessions");
-    sessionsContainer.innerHTML = `
-      <div class="error-message">
-        <i class="fas fa-exclamation-circle"></i>
-        <p>Error al cargar las sesiones: ${error.message}</p>
-        <button onclick="fetchKeyTesterSessions()" class="retry-btn">
-          <i class="fas fa-sync"></i> Reintentar
+  if (!sessions || sessions.length === 0) {
+    sessionsList.innerHTML = `
+      <div class="no-sessions">
+        <i class="fas fa-inbox"></i>
+        <p>No has creado ninguna sesión todavía</p>
+        <button class="action-btn create-btn" onclick="window.location.href='/keytester_sessions.html'">
+          <i class="fas fa-plus"></i> Crear primera sesión
         </button>
       </div>
     `;
+    return;
   }
+
+  let html = '';
+
+  sessions.forEach(session => {
+    // ✅ Validar y parsear fecha correctamente
+    let startDate;
+    try {
+      startDate = new Date(session.startTime);
+      if (isNaN(startDate.getTime())) {
+        console.warn(`Fecha inválida para sesión ${session._id}:`, session.startTime);
+        startDate = new Date(); // Fecha actual como fallback
+      }
+    } catch (e) {
+      console.error('Error al parsear fecha:', e);
+      startDate = new Date();
+    }
+
+    const endDate = session.endTime ? new Date(session.endTime) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+    const now = new Date();
+
+    let statusClass = 'status-upcoming';
+    let statusIcon = 'clock';
+    let statusText = 'Próxima';
+
+    if (now >= startDate && now <= endDate) {
+      statusClass = 'status-active';
+      statusIcon = 'play-circle';
+      statusText = 'En curso';
+    } else if (now > endDate) {
+      statusClass = 'status-finished';
+      statusIcon = 'check-circle';
+      statusText = 'Finalizada';
+    }
+
+    const testersCount = session.assignedTesters?.length || 0;
+    const sessionId = session._id || session.sessionId;
+
+    // ✅ Formatear fecha y hora
+    const formattedDate = startDate.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: 'short'
+    });
+
+    const formattedTime = startDate.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    html += `
+      <div class="session-item ${statusClass}" onclick="viewSessionDetails('${sessionId}')">
+        <div class="session-item-header">
+          <div class="session-status-indicator ${statusClass}">
+            <i class="fas fa-${statusIcon}"></i>
+          </div>
+          <div class="session-item-info">
+            <h4 class="session-item-title">${session.backendName || 'Sin nombre'}</h4>
+            <div class="session-item-meta">
+              <span class="session-date">
+                <i class="fas fa-calendar"></i>
+                ${formattedDate}
+              </span>
+              <span class="session-time">
+                <i class="fas fa-clock"></i>
+                ${formattedTime}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="session-item-footer">
+          <span class="session-testers-count">
+            <i class="fas fa-users"></i>
+            ${testersCount} ${testersCount === 1 ? 'tester' : 'testers'}
+          </span>
+          <span class="session-status-text ${statusClass}">
+            ${statusText}
+          </span>
+        </div>
+        
+        <div class="session-item-arrow">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+      </div>
+    `;
+  });
+
+  sessionsList.innerHTML = html;
 }
 // ============================================
 // FETCH TESTER SESSIONS (Para testers normales)
@@ -223,14 +242,13 @@ async function fetchTesterSessions() {
       throw new Error("No hay token disponible");
     }
 
-    const sessionsContainer = document.getElementById("tester-sessions");
-    if (!sessionsContainer) {
-      throw new Error("Contenedor de sesiones no encontrado");
+    const content = document.getElementById("dynamic-content");
+    if (!content) {
+      throw new Error("Contenedor de contenido no encontrado");
     }
 
     // Mostrar loading
-    sessionsContainer.innerHTML = `
-      <h3><i class="fas fa-calendar-check"></i> Mis Sesiones Asignadas</h3>
+    content.innerHTML = `
       <div class="loading">
         <i class="fas fa-spinner fa-spin"></i>
         <p>Cargando sesiones...</p>
@@ -253,150 +271,16 @@ async function fetchTesterSessions() {
 
     const sessions = await response.json();
 
-    // Mostrar mensaje si no hay sesiones
-    if (!sessions || sessions.length === 0) {
-      sessionsContainer.innerHTML = `
-        <h3><i class="fas fa-calendar-check"></i> Mis Sesiones Asignadas</h3>
-        <div class="no-sessions">
-          <i class="fas fa-inbox"></i>
-          <p>No tienes sesiones asignadas todavía</p>
-          <p class="info-text">Espera a que un KeyTester te asigne a una sesión de juego</p>
-        </div>
-      `;
-      return;
-    }
+    // Guardar sesiones globalmente
+    window.lastSessions = sessions;
 
-    // Renderizar sesiones
-    let html = `
-      <h3><i class="fas fa-calendar-check"></i> Mis Sesiones Asignadas (${sessions.length})</h3>
-      <div class="sessions-grid">
-    `;
-
-    sessions.forEach(session => {
-      const startDate = new Date(session.startTime);
-      const endDate = session.endTime ? new Date(session.endTime) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
-      const now = new Date();
-
-      let statusClass = 'status-upcoming';
-      let statusText = 'Próximamente';
-      let statusIcon = 'clock';
-
-      if (now >= startDate && now <= endDate) {
-        statusClass = 'status-active';
-        statusText = 'En curso';
-        statusIcon = 'play-circle';
-      } else if (now > endDate) {
-        statusClass = 'status-finished';
-        statusText = 'Finalizada';
-        statusIcon = 'check-circle';
-      }
-
-      const formattedDate = startDate.toLocaleDateString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-
-      const formattedTime = startDate.toLocaleTimeString('es-ES', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      const myAssignment = session.assignment || {};
-      // Encontrar mi asignación en esta sesión
-      // const myAssignment = session.assignedTesters?.find(
-      //   tester => tester.testerId.toString() === currentUser._id
-      // );
-
-      html += `
-        <div class="session-card ${statusClass}">
-          <div class="session-status-badge ${statusClass}">
-            <i class="fas fa-${statusIcon}"></i>
-            <span>${statusText}</span>
-          </div>
-          
-          <div class="session-header">
-            <h4 class="session-title">
-              <i class="fas fa-gamepad"></i>
-              ${session.backendName || 'Sin nombre'}
-            </h4>
-          </div>
-
-          <div class="session-body">
-            <div class="session-info-grid">
-              <div class="info-item">
-                <i class="fas fa-calendar-alt"></i>
-                <div>
-                  <label>Fecha</label>
-                  <span>${formattedDate}</span>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <label>Hora</label>
-                  <span>${session.startTime}</span>
-                </div>
-              </div>
-
-              <div class="info-item">
-                <i class="fas fa-gamepad"></i>
-                 <div>
-    <label>Dispositivo</label>
-    <span>${myAssignment.device || myAssignment.dispositivos?.[0] || 'N/A'}</span>
-  </div>
-              </div>
-
-              <div class="info-item">
-                <i class="fas fa-camera"></i>
-                <div>
-    <label>Capturas</label>
-    <span>${myAssignment.capturas && myAssignment.capturas.length > 0
-          ? myAssignment.capturas.join(', ')
-          : 'Ninguna'}</span>
-  </div>
-              </div>
-            </div>
-
-            ${session.buildString ? `
-              <div class="session-description">
-                <i class="fas fa-info-circle"></i>
-                <p><strong>Build:</strong> ${session.buildString}</p>
-              </div>
-            ` : ''}
-
-            ${session.sessionType && session.sessionType !== 'normal' ? `
-              <div class="session-type">
-                <i class="fas fa-tag"></i>
-                <span>Tipo: ${session.sessionType}</span>
-              </div>
-            ` : ''}
-
-            ${myAssignment.group ? `
-              <div class="session-group">
-                <i class="fas fa-users"></i>
-                <span>Grupo: ${myAssignment.group}</span>
-              </div>
-            ` : ''}
-          </div>
-
-          <div class="session-footer">
-            <button class="btn-view-details" onclick="viewTesterSessionDetails('${session.sessionId}')">
-              <i class="fas fa-eye"></i> Ver detalles
-            </button>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `</div>`;
-    sessionsContainer.innerHTML = html;
+    // Renderizar lista de sesiones
+    renderSessionsListInPanel(sessions, 'tester');
 
   } catch (error) {
     console.error('Error al cargar sesiones:', error);
-    const sessionsContainer = document.getElementById("tester-sessions");
-    sessionsContainer.innerHTML = `
+    const content = document.getElementById("dynamic-content");
+    content.innerHTML = `
       <div class="error-message">
         <i class="fas fa-exclamation-circle"></i>
         <p>Error al cargar las sesiones: ${error.message}</p>
@@ -407,6 +291,175 @@ async function fetchTesterSessions() {
     `;
   }
 }
+
+function renderSessionsListInPanel(sessions, userType) {
+  const content = document.getElementById("dynamic-content");
+  const title = document.getElementById("panel-title");
+  const closeBtn = document.getElementById("close-panel");
+
+  // Ocultar botón de cerrar en vista de lista
+  closeBtn.style.display = 'none';
+
+  if (!sessions || sessions.length === 0) {
+    title.innerHTML = `<i class="fas fa-gamepad"></i> Mis Sesiones`;
+    content.innerHTML = `
+      <div class="no-sessions">
+        <i class="fas fa-inbox"></i>
+        <p>No tienes sesiones ${userType === 'keytester' ? 'creadas' : 'asignadas'}</p>
+        ${userType === 'keytester' ? `
+          <button class="action-btn create-btn" onclick="window.location.href='/keytester_sessions.html'">
+            <i class="fas fa-plus"></i> Crear primera sesión
+          </button>
+        ` : ''}
+      </div>
+    `;
+    return;
+  }
+
+  title.innerHTML = `
+    <i class="fas fa-gamepad"></i> 
+    Mis Sesiones (${sessions.length})
+  `;
+
+  let html = '<div class="sessions-grid-view">';
+
+  sessions.forEach(session => {
+    const startDate = new Date(session.startTime);
+    const endDate = session.endTime ? new Date(session.endTime) : new Date(startDate.getTime() + 2 * 60 * 60 * 1000);
+    const now = new Date();
+
+    let statusClass = 'status-upcoming';
+    let statusText = 'Próximamente';
+    let statusIcon = 'clock';
+
+    if (now >= startDate && now <= endDate) {
+      statusClass = 'status-active';
+      statusText = 'En curso';
+      statusIcon = 'play-circle';
+    } else if (now > endDate) {
+      statusClass = 'status-finished';
+      statusText = 'Finalizada';
+      statusIcon = 'check-circle';
+    }
+
+    const sessionId = session._id || session.sessionId;
+    const testersCount = session.assignedTesters?.length || 0;
+    const myAssignment = session.assignment || {};
+
+    html += `
+      <div class="session-card-compact ${statusClass}">
+        <div class="session-status-badge ${statusClass}">
+          <i class="fas fa-${statusIcon}"></i>
+          <span>${statusText}</span>
+        </div>
+        
+        <div class="session-card-header">
+          <h4 class="session-title">
+            <i class="fas fa-gamepad"></i>
+            ${session.backendName || 'Sin nombre'}
+          </h4>
+        </div>
+
+        <div class="session-card-body">
+          <div class="session-info-row">
+            <i class="fas fa-calendar-alt"></i>
+            <span>${startDate.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+          </div>
+
+          <div class="session-info-row">
+            <i class="fas fa-clock"></i>
+            <span>${session.startTime || startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+
+          ${userType === 'keytester' ? `
+            <div class="session-info-row">
+              <i class="fas fa-users"></i>
+              <span>${testersCount} testers</span>
+            </div>
+            
+            <div class="session-info-row">
+              <i class="fas fa-code-branch"></i>
+              <span>${session.buildString || 'N/A'}</span>
+            </div>
+          ` : `
+            <div class="session-info-row">
+              <i class="fas fa-gamepad"></i>
+              <span>${myAssignment.device || myAssignment.dispositivos?.[0] || 'N/A'}</span>
+            </div>
+            
+            <div class="session-info-row">
+              <i class="fas fa-camera"></i>
+              <span>${myAssignment.capturas && myAssignment.capturas.length > 0
+        ? myAssignment.capturas.join(', ')
+        : 'Ninguna'}</span>
+            </div>
+          `}
+        </div>
+
+        <div class="session-card-footer">
+          <button class="btn-view-details-primary" onclick="viewSessionDetailsExpanded('${sessionId}', '${userType}')">
+            <i class="fas fa-eye"></i> Ver detalles
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  content.innerHTML = html;
+}
+const closePanelBtn = document.getElementById("close-panel");
+if (closePanelBtn) {
+  closePanelBtn.addEventListener("click", function () {
+    console.log("🔙 Cerrando panel de detalles");
+
+    const content = document.getElementById("dynamic-content");
+    const title = document.getElementById("panel-title");
+    const closeBtn = document.getElementById("close-panel");
+
+    // Ocultar botón de cerrar
+    if (closeBtn) closeBtn.style.display = 'none';
+
+    // Restaurar título
+    if (title) title.innerHTML = 'Detalles';
+
+    // Mostrar estado vacío
+    if (content) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-hand-pointer"></i>
+          <p>Selecciona una sesión para ver los detalles</p>
+        </div>
+      `;
+    }
+
+    // Quitar selección de sesiones
+    document.querySelectorAll('.session-item').forEach(item => {
+      item.classList.remove('active');
+    });
+  });
+}
+// ============================================
+// VER DETALLES EXPANDIDOS (ÁREA AMARILLA)
+// ============================================
+function viewSessionDetailsExpanded(sessionId, userType) {
+  const closeBtn = document.getElementById("close-panel");
+  const title = document.getElementById("panel-title");
+
+  // Mostrar botón de cerrar
+  closeBtn.style.display = 'flex';
+
+  // Actualizar título
+  title.innerHTML = '<i class="fas fa-arrow-left"></i> Detalles de la Sesión';
+
+  // Llamar a la función de detalles correspondiente
+  if (userType === 'keytester') {
+    viewSessionDetails(sessionId);
+  } else {
+    viewTesterSessionDetails(sessionId);
+  }
+}
+
 function viewTesterSessionDetails(sessionId) {
   const token = localStorage.getItem("token");
   const content = document.getElementById("dynamic-content");
@@ -705,6 +758,7 @@ function viewSessionDetails(sessionId) {
   const content = document.getElementById("dynamic-content");
   const title = document.getElementById("panel-title");
   const panel = document.getElementById("dynamic-panel");
+  const closeBtn = document.getElementById("close-panel");
 
   panel.classList.remove("hidden");
   title.innerHTML = '<i class="fas fa-gamepad"></i> Detalles de la Sesión';
@@ -807,50 +861,136 @@ function viewSessionDetails(sessionId) {
           </div>
         </div>
 
-        ${session.assignedTesters && session.assignedTesters.length > 0 ? `
-          <div class="testers-section">
-            <h4 class="section-title">
-              <i class="fas fa-users"></i>
-              Testers Asignados (${session.assignedTesters.length})
-            </h4>
-            <div class="testers-grid">
-              ${session.assignedTesters.map(tester => {
-                const testerId = tester.Epam_user || tester.testerId || tester._id;
-                return `
-                  <div class="tester-card">
-                    <div class="tester-info">
-                      <span class="tester-name">${tester.Epam_user || 'Sin nombre'}</span>
-                      <span class="tester-details">
-                        ${tester.device ? `<span class="device">${tester.device}</span>` : ''}
-                        ${tester.group ? `<span class="group">Grupo ${tester.group}</span>` : ''}
-                      </span>
-                      ${tester.capturas ? `
-                        <div class="captures">
-                          <small>Capturas: ${tester.capturas.join(', ')}</small>
-                        </div>
-                      ` : ''}
-                    </div>
-                    <div class="tester-actions">
-                      <button 
-                        class="btn-replace-tester" 
-                        onclick="replaceTesterFromSession('${session._id}', '${testerId}')"
-                        title="Reemplazar este tester"
-                      >
-                        <i class="fas fa-sync-alt"></i> Reemplazar
-                      </button>
-                    </div>
+      ${session.assignedTesters && session.assignedTesters.length > 0 ? `
+  <div class="testers-section">
+    <h4 class="section-title">
+      <i class="fas fa-users"></i>
+      Testers Asignados (${session.assignedTesters.length})
+    </h4>
+    <div class="testers-grid-enhanced">
+      ${session.assignedTesters.map(tester => {
+        const testerId = tester.Epam_user || tester.testerId || tester._id;
+        const testerAvatar = getRandomAvatar();
+
+        // Estado de instalación
+        const installStatus = tester.StateOfInstalling || 'no instalado';
+        let installBadge = '';
+        let installIcon = '';
+
+        if (installStatus === 'instalado') {
+          installBadge = 'status-installed';
+          installIcon = 'check-circle';
+        } else if (installStatus === 'instalando') {
+          installBadge = 'status-installing';
+          installIcon = 'spinner fa-spin';
+        } else {
+          installBadge = 'status-not-installed';
+          installIcon = 'times-circle';
+        }
+
+        // Estado de juego
+        const isPlaying = tester.IsPlaying === true;
+        const playingBadge = isPlaying ? 'status-playing' : 'status-available';
+        const playingIcon = isPlaying ? 'gamepad' : 'circle';
+        const playingText = isPlaying ? 'Jugando' : 'Disponible';
+
+        return `
+          <div class="tester-card-enhanced">
+            <!-- Avatar y nombre -->
+            <div class="tester-card-header">
+              <div class="tester-avatar-wrapper">
+                <img src="${testerAvatar}" alt="${testerId}" class="tester-avatar-small" onerror="this.onerror=null; this.src='/images/avatars/peep-1.png';">
+                <div class="tester-status-indicator ${playingBadge}">
+                  <i class="fas fa-${playingIcon}"></i>
+                </div>
+              </div>
+              <div class="tester-info-header">
+                <h5 class="tester-name">${testerId}</h5>
+                <span class="tester-playing-status ${playingBadge}">
+                  <i class="fas fa-${playingIcon}"></i>
+                  ${playingText}
+                </span>
+              </div>
+            </div>
+
+            <!-- Información del tester -->
+            <div class="tester-card-body">
+              <!-- Dispositivo -->
+              ${tester.device ? `
+                <div class="tester-info-row">
+                  <i class="fas fa-mobile-alt"></i>
+                  <span class="device-badge">${tester.device}</span>
+                </div>
+              ` : ''}
+
+              <!-- Grupo -->
+              ${tester.group ? `
+                <div class="tester-info-row">
+                  <i class="fas fa-layer-group"></i>
+                  <span>Grupo ${tester.group}</span>
+                </div>
+              ` : ''}
+
+              <!-- Capturas -->
+              ${tester.capturas && tester.capturas.length > 0 ? `
+                <div class="tester-info-row">
+                  <i class="fas fa-camera"></i>
+                  <div class="captures-list">
+                    ${tester.capturas.map(cap => `
+                      <span class="capture-tag">${cap}</span>
+                    `).join('')}
                   </div>
-                `;
-              }).join('')}
+                </div>
+              ` : ''}
+
+              <!-- Estado de instalación -->
+              <div class="tester-info-row">
+                <i class="fas fa-download"></i>
+                <span class="install-status ${installBadge}">
+                  <i class="fas fa-${installIcon}"></i>
+                  ${installStatus.charAt(0).toUpperCase() + installStatus.slice(1)}
+                </span>
+              </div>
+
+              <!-- Ubicación -->
+              ${tester.Pod || tester.Station ? `
+                <div class="tester-info-row">
+                  <i class="fas fa-map-marker-alt"></i>
+                  <span>${tester.Pod || 'N/A'} - ${tester.Station || 'N/A'}</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <!-- Acciones -->
+            <div class="tester-card-actions">
+              <button 
+                class="btn-replace-auto" 
+                onclick="replaceTesterFromSession('${session._id}', '${testerId}')"
+                title="Reemplazo automático"
+              >
+                <i class="fas fa-sync-alt"></i>
+                Reemplazo Auto
+              </button>
+              <button 
+                class="btn-replace-manual" 
+                onclick="openManualReplaceModal('${session._id}', '${testerId}', '${tester.device || ''}')"
+                title="Elegir reemplazo manualmente"
+              >
+                <i class="fas fa-user-edit"></i>
+                Reemplazo Manual
+              </button>
             </div>
           </div>
-        ` : `
-          <div class="no-testers">
-            <i class="fas fa-user-slash"></i>
-            <p>Aún no hay testers asignados a esta sesión</p>
-          </div>
-        `}
-
+        `;
+      }).join('')}
+    </div>
+  </div>
+` : `
+  <div class="no-testers">
+    <i class="fas fa-user-slash"></i>
+    <p>Aún no hay testers asignados a esta sesión</p>
+  </div>
+`}
         <div class="actions-section">
   <!-- ✅ BOTONES DE CONTROL DE PLAYTEST -->
   <button class="btn-start-playtest" onclick="startPlaytest('${session._id}')">
@@ -1081,122 +1221,522 @@ color: white;
     `;
     });
 }
+// ============================================
+// MODAL DE REEMPLAZO MANUAL
+// ============================================
+async function openManualReplaceModal(sessionId, currentTesterId, device) {
+  console.log('🔍 Abriendo modal de reemplazo:', { sessionId, currentTesterId, device });
+  
+  const token = getToken();
+  
+  if (!token) {
+    alert('No hay token de autenticación');
+    return;
+  }
+  
+  // Crear modal
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'replace-modal';
+  
+  modal.innerHTML = `
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3>
+          <i class="fas fa-user-edit"></i>
+          Reemplazar Tester
+        </h3>
+        <button class="modal-close" onclick="closeReplaceModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="replace-info">
+          <p><strong>Tester actual:</strong> ${currentTesterId}</p>
+          ${device ? `<p><strong>Dispositivo:</strong> ${device}</p>` : ''}
+        </div>
+        
+        <div class="loading-testers">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Cargando testers disponibles...</p>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Cargar testers disponibles
+  try {
+    console.log('📡 Solicitando testers disponibles...');
+    
+    // ✅ CAMBIO: Incluir sessionId en la URL
+    const params = new URLSearchParams();
+    if (device) params.append('device', device);
+    params.append('sessionId', sessionId); // ← NUEVO
+    
+    const url = `${SERVER_URL}/api/testers-available?${params.toString()}`;
+    console.log('URL:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('📊 Respuesta del servidor:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error del servidor:', errorText);
+      throw new Error(`Error ${response.status}: ${errorText}`);
+    }
+    
+    const testers = await response.json();
+    console.log('✅ Testers recibidos:', testers);
+    
+    // Filtrar el tester actual (por si acaso)
+    const availableTesters = testers.filter(t => {
+      const testerId = t.Epam_user || t._id || t.testerId;
+      return testerId !== currentTesterId;
+    });
+    
+    console.log('📋 Testers disponibles (filtrados):', availableTesters.length);
+    
+    renderAvailableTesters(availableTesters, sessionId, currentTesterId, device);
+    
+  } catch (error) {
+    console.error('❌ Error al cargar testers:', error);
+    
+    const modalBody = document.querySelector('#replace-modal .modal-body');
+    if (modalBody) {
+      modalBody.innerHTML = `
+        <div class="replace-info">
+          <p><strong>Tester actual:</strong> ${currentTesterId}</p>
+          ${device ? `<p><strong>Dispositivo:</strong> ${device}</p>` : ''}
+        </div>
+        <div class="error-message">
+          <i class="fas fa-exclamation-circle"></i>
+          <p>Error al cargar testers: ${error.message}</p>
+          <button class="retry-btn" onclick="openManualReplaceModal('${sessionId}', '${currentTesterId}', '${device || ''}')">
+            <i class="fas fa-sync"></i> Reintentar
+          </button>
+        </div>
+      `;
+    }
+  }
+}
+
+// Renderizar lista de testers disponibles
+function renderAvailableTesters(testers, sessionId, currentTesterId, requiredDevice) {
+  const modalBody = document.querySelector('#replace-modal .modal-body');
+  
+  if (!modalBody) {
+    console.error('❌ No se encontró el modal body');
+    return;
+  }
+  
+  if (!testers || testers.length === 0) {
+    modalBody.innerHTML = `
+      <div class="replace-info">
+        <p><strong>Tester actual:</strong> ${currentTesterId}</p>
+        ${requiredDevice ? `<p><strong>Dispositivo requerido:</strong> ${requiredDevice}</p>` : ''}
+      </div>
+      <div class="no-testers">
+        <i class="fas fa-user-slash"></i>
+        <p>No hay testers disponibles para reemplazo</p>
+        <small>Todos los testers están asignados a esta sesión</small>
+      </div>
+    `;
+    return;
+  }
+  
+  // Ordenar testers: primero los que tienen el dispositivo requerido
+  const sortedTesters = [...testers].sort((a, b) => {
+    if (!requiredDevice) return 0;
+    
+    const aHasDevice = a.Devices && a.Devices.some(d => d.name === requiredDevice);
+    const bHasDevice = b.Devices && b.Devices.some(d => d.name === requiredDevice);
+    
+    if (aHasDevice && !bHasDevice) return -1;
+    if (!aHasDevice && bHasDevice) return 1;
+    return 0;
+  });
+  
+  const testersHTML = sortedTesters.map(tester => {
+    const hasRequiredDevice = requiredDevice && tester.Devices && 
+                              tester.Devices.some(d => d.name === requiredDevice);
+    
+    const devices = tester.Devices && tester.Devices.length > 0
+      ? tester.Devices.map(d => d.name).join(', ')
+      : 'Sin dispositivos';
+    
+    // ✅ CAMBIO: Determinar el badge según coincidencia
+    let deviceBadge = '';
+    let warningMessage = '';
+    
+    if (requiredDevice) {
+      if (hasRequiredDevice) {
+        deviceBadge = '<span class="device-badge device-match">✓ Dispositivo compatible</span>';
+      } else {
+        deviceBadge = '<span class="device-badge device-mismatch">⚠ Dispositivo diferente</span>';
+        warningMessage = `<small class="warning-text">⚠️ Este tester no tiene ${requiredDevice}, pero puedes asignarlo de todas formas</small>`;
+      }
+    }
+    
+    // Estado de instalación
+    let installBadge = '';
+    if (tester.StateOfInstalling === 'instalado') {
+      installBadge = '<span class="status-badge status-installed">✓ Instalado</span>';
+    } else if (tester.StateOfInstalling === 'instalando') {
+      installBadge = '<span class="status-badge status-installing">⏳ Instalando</span>';
+    } else {
+      installBadge = '<span class="status-badge status-not-installed">✗ No instalado</span>';
+    }
+    
+    // Estado de juego
+    let playingBadge = '';
+    if (tester.IsPlaying) {
+      playingBadge = '<span class="status-badge status-playing">🎮 Jugando</span>';
+    }
+    
+    return `
+      <div class="tester-option ${hasRequiredDevice ? 'recommended' : 'alternative'}" 
+           data-tester-id="${tester._id}" 
+           data-tester-name="${tester.Epam_user}">
+        
+        <div class="tester-header">
+          <div class="tester-name">
+            <i class="fas fa-user"></i>
+            <strong>${tester.Epam_user}</strong>
+            ${hasRequiredDevice ? '<i class="fas fa-star recommended-icon" title="Recomendado"></i>' : ''}
+          </div>
+          <div class="tester-badges">
+            ${deviceBadge}
+            ${installBadge}
+            ${playingBadge}
+          </div>
+        </div>
+        
+        <div class="tester-details">
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="fas fa-gamepad"></i> Dispositivos:
+            </span>
+            <span class="detail-value">${devices}</span>
+          </div>
+          
+          <div class="detail-row">
+            <span class="detail-label">
+              <i class="fas fa-map-marker-alt"></i> Ubicación:
+            </span>
+            <span class="detail-value">${tester.Pod || 'N/A'} - ${tester.Station || 'N/A'}</span>
+          </div>
+          
+          ${tester.Region ? `
+            <div class="detail-row">
+              <span class="detail-label">
+                <i class="fas fa-globe"></i> Región:
+              </span>
+              <span class="detail-value">${tester.Region}</span>
+            </div>
+          ` : ''}
+          
+          ${tester.Mmr ? `
+            <div class="detail-row">
+              <span class="detail-label">
+                <i class="fas fa-trophy"></i> MMR:
+              </span>
+              <span class="detail-value">${tester.Mmr}</span>
+            </div>
+          ` : ''}
+        </div>
+        
+        ${warningMessage ? `<div class="warning-message">${warningMessage}</div>` : ''}
+        
+        <button class="select-tester-btn" 
+                onclick="confirmManualReplacement('${sessionId}', '${currentTesterId}', '${tester.Epam_user}')">
+          <i class="fas fa-check"></i>
+          Seleccionar
+        </button>
+      </div>
+    `;
+  }).join('');
+  
+  modalBody.innerHTML = `
+    <div class="replace-info">
+      <p><strong>Tester actual:</strong> ${currentTesterId}</p>
+      ${requiredDevice ? `<p><strong>Dispositivo requerido:</strong> ${requiredDevice}</p>` : ''}
+    </div>
+    
+    <div class="search-container">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        id="search-replacement" 
+        placeholder="Buscar tester por nombre..." 
+        oninput="filterReplacementTesters()"
+      />
+    </div>
+    
+    <div class="testers-list">
+      ${testersHTML}
+    </div>
+    
+    <div class="modal-footer">
+      <p class="testers-count">
+        <i class="fas fa-users"></i>
+        ${testers.length} tester${testers.length !== 1 ? 's' : ''} disponible${testers.length !== 1 ? 's' : ''}
+      </p>
+    </div>
+  `;
+}
+// Filtrar testers en el modal
+function filterReplacementTesters() {
+  const searchValue = document.getElementById('search-replacement').value.toLowerCase();
+  const testerOptions = document.querySelectorAll('.tester-option');
+  
+  testerOptions.forEach(option => {
+    const testerName = option.getAttribute('data-tester-name');
+    if (testerName.includes(searchValue)) {
+      option.style.display = 'block';
+    } else {
+      option.style.display = 'none';
+    }
+  });
+}
+
+// Confirmar reemplazo manual
+async function confirmManualReplacement(sessionId, currentTesterId, newTesterId) {
+  if (!confirm(`¿Confirmar reemplazo de ${currentTesterId} por ${newTesterId}?`)) {
+    return;
+  }
+  
+  const token = getToken();
+  
+  try {
+    const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/replace-tester`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        currentTesterId: currentTesterId,
+        newTesterId: newTesterId
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      alert(`✅ ${data.message}\n\nAnterior: ${data.oldTester.Epam_user}\nNuevo: ${data.newTester.Epam_user}`);
+      
+      // ✅ NUEVO: Cerrar modal y recargar vista
+      closeReplaceModal();
+      
+      // Recargar la vista de la sesión
+      await viewSessionDetails(sessionId);
+      
+      // ✅ OPCIONAL: Mostrar notificación de éxito
+      showNotification('Tester reemplazado exitosamente', 'success');
+      
+    } else {
+      alert(`❌ Error: ${data.error || data.message}`);
+    }
+    
+  } catch (error) {
+    console.error('Error al confirmar reemplazo:', error);
+    alert('Error al reemplazar tester');
+  }
+}
+// Cerrar modal
+function closeReplaceModal() {
+  const modal = document.getElementById('replace-modal');
+  if (modal) {
+    modal.remove();
+  }
+}
+// ============================================
+// FILTRAR TESTERS EN EL MODAL
+// ============================================
+function filterReplacementTesters() {
+  const searchInput = document.getElementById('search-replacement');
+  if (!searchInput) return;
+  
+  const searchTerm = searchInput.value.toLowerCase();
+  const testerOptions = document.querySelectorAll('.tester-option');
+  
+  testerOptions.forEach(option => {
+    const testerName = option.getAttribute('data-tester-name') || '';
+    if (testerName.includes(searchTerm)) {
+      option.style.display = 'block';
+    } else {
+      option.style.display = 'none';
+    }
+  });
+}
+
+// ============================================
+// CONFIRMAR REEMPLAZO MANUAL
+// ============================================
+async function confirmManualReplacement(sessionId, currentTesterId, newTesterId) {
+  if (!confirm(`¿Confirmar reemplazo de ${currentTesterId} por ${newTesterId}?`)) {
+    return;
+  }
+  
+  const token = getToken();
+  
+  try {
+    const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/replace-tester`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        currentTesterId: currentTesterId,
+        newTesterId: newTesterId
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (response.ok) {
+      alert(`✅ ${data.message}\n\nAnterior: ${data.oldTester.Epam_user}\nNuevo: ${data.newTester.Epam_user}`);
+      closeReplaceModal();
+      
+      // Recargar la vista de la sesión
+      viewSessionDetails(sessionId);
+    } else {
+      alert(`❌ Error: ${data.error || data.message}`);
+    }
+    
+  } catch (error) {
+    console.error('Error al confirmar reemplazo:', error);
+    alert('Error al reemplazar tester');
+  }
+}
+
 
 // ✅ FUNCIONES PARA CONTROLAR PLAYTEST
 async function startPlaytest(sessionId) {
-    if (!confirm('¿Iniciar el playtest? Esto marcará a todos los testers como "jugando".')) {
-        return;
+  if (!confirm('¿Iniciar el playtest? Esto marcará a todos los testers como "jugando".')) {
+    return;
+  }
+
+  const token = getToken();
+
+  try {
+    const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/start-playtest`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showNotification(data.message, 'success');
+      // Recargar detalles de la sesión
+      setTimeout(() => viewSessionDetails(sessionId), 1000);
+    } else {
+      throw new Error(data.message || 'Error al iniciar playtest');
     }
-
-    const token = getToken();
-
-    try {
-        const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/start-playtest`, {
-            method: 'POST',
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showNotification(data.message, 'success');
-            // Recargar detalles de la sesión
-            setTimeout(() => viewSessionDetails(sessionId), 1000);
-        } else {
-            throw new Error(data.message || 'Error al iniciar playtest');
-        }
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
+  } catch (error) {
+    showNotification('Error: ' + error.message, 'error');
+  }
 }
 
 async function endPlaytest(sessionId) {
-    if (!confirm('¿Finalizar el playtest? Esto desmarcará a todos los testers.')) {
-        return;
+  if (!confirm('¿Finalizar el playtest? Esto desmarcará a todos los testers.')) {
+    return;
+  }
+
+  const token = getToken();
+
+  try {
+    const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/end-playtest`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      showNotification(data.message, 'success');
+      setTimeout(() => viewSessionDetails(sessionId), 1000);
+    } else {
+      throw new Error(data.message || 'Error al finalizar playtest');
     }
-
-    const token = getToken();
-
-    try {
-        const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/end-playtest`, {
-            method: 'POST',
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showNotification(data.message, 'success');
-            setTimeout(() => viewSessionDetails(sessionId), 1000);
-        } else {
-            throw new Error(data.message || 'Error al finalizar playtest');
-        }
-    } catch (error) {
-        showNotification('Error: ' + error.message, 'error');
-    }
+  } catch (error) {
+    showNotification('Error: ' + error.message, 'error');
+  }
 }
 
 // ✅ FUNCIÓN PARA ACTUALIZAR ESTADO DE INSTALACIÓN (TESTERS)
 async function updateInstallationStatus(status) {
-    const token = getToken();
-    
-    try {
-        const response = await fetch(`${SERVER_URL}/api/user/update-installation-status`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status })
-        });
+  const token = getToken();
 
-        const data = await response.json();
+  try {
+    const response = await fetch(`${SERVER_URL}/api/user/update-installation-status`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status })
+    });
 
-        if (response.ok) {
-            showNotification('Estado de instalación actualizado correctamente', 'success');
-            
-            // Actualizar indicador visual
-            const indicator = document.querySelector('.status-indicator');
-            if (indicator) {
-                indicator.className = `status-indicator status-${status.replace(' ', '-')}`;
-            }
-        } else {
-            throw new Error(data.message || 'Error al actualizar estado');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error al actualizar estado: ' + error.message, 'error');
-        
-        // Revertir el select
-        await fetchProfile();
+    const data = await response.json();
+
+    if (response.ok) {
+      showNotification('Estado de instalación actualizado correctamente', 'success');
+
+      // Actualizar indicador visual
+      const indicator = document.querySelector('.status-indicator');
+      if (indicator) {
+        indicator.className = `status-indicator status-${status.replace(' ', '-')}`;
+      }
+    } else {
+      throw new Error(data.message || 'Error al actualizar estado');
     }
+  } catch (error) {
+    console.error('Error:', error);
+    showNotification('Error al actualizar estado: ' + error.message, 'error');
+
+    // Revertir el select
+    await fetchProfile();
+  }
 }
 
 // ✅ FUNCIÓN PARA MOSTRAR NOTIFICACIONES
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-        <span>${message}</span>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.innerHTML = `
+    <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+    <span>${message}</span>
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // Mostrar con animación
+  setTimeout(() => notification.classList.add('show'), 100);
+  
+  // Ocultar después de 3 segundos
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 // ============================================
@@ -1250,95 +1790,12 @@ async function fetchProfile() {
 
     const userAvatar = getRandomAvatar();
 
-    // Formatear dispositivos
-    const devicesHtml = user.Devices && user.Devices.length > 0 
-  ? user.Devices
-      .sort((a, b) => (a.priority || 999) - (b.priority || 999))
-      .map(device => {
-        const deviceName = (device.name || 'Sin nombre').toLowerCase();
-        let icon = '🎮';
-        
-        if (deviceName.includes('ps') || deviceName.includes('playstation')) {
-          icon = '🎮';
-        } else if (deviceName.includes('xbox')) {
-          icon = '🎮';
-        } else if (deviceName.includes('pc')) {
-          icon = '💻';
-        } else if (deviceName.includes('switch') || deviceName.includes('nintendo')) {
-          icon = '🕹️';
-        } else if (deviceName.includes('mobile') || deviceName.includes('android') || deviceName.includes('ios')) {
-          icon = '📱';
-        }
-        
-        return `<span class="device-badge">${icon} ${device.name || 'Sin nombre'}</span>`;
-      }).join(' ')
-  : '<span class="no-data">Sin dispositivos</span>';
-
-    // Formatear cuentas
-    const accountsHtml = user.Accounts && user.Accounts.length > 0
-      ? user.Accounts.map(account => `<span class="account-badge">${account}</span>`).join(' ')
-      : '<span class="no-data">Sin cuentas</span>';
-
-    // Estado de disponibilidad
-    const availabilityClass = user.availability === "Disponible" ? "available" : "unavailable";
-    const availabilityIcon = user.availability === "Disponible" ? "✅" : "❌";
-
     let html = `
       <div class="profile-avatar-container">
         <img src="${userAvatar}" alt="${user.Epam_user}" class="profile-avatar" onerror="this.onerror=null; this.src='/images/avatars/peep-1.png';">
       </div>
-      
-      <div class="profile-section">
-        <div class="profile-item">
-          <label>Usuario EPAM:</label> 
-          <span class="profile-value">${user.Epam_user || "N/A"}</span>
-        </div>
-        
-        <div class="profile-item">
-          <label>Rol:</label> 
-          <span class="profile-value role-badge ${user.userType || (user.isAdmin ? "keytester" : "tester")}">
-            ${user.userType || (user.isAdmin ? "keytester" : "tester")}
-          </span>
-        </div>
-
-        <div class="profile-item">
-          <label>Pod:</label> 
-          <span class="profile-value pod-badge">${user.Pod || "N/A"}</span>
-        </div>
-
-        <div class="profile-item">
-          <label>Región:</label> 
-          <span class="profile-value">${user.Region || "N/A"}</span>
-        </div>
-
-        <div class="profile-item">
-          <label>Estación:</label> 
-          <span class="profile-value station-badge">${user.Station || "N/A"}</span>
-        </div>
-
-        <div class="profile-item">
-          <label>Disponibilidad:</label> 
-          <span class="profile-value availability-badge ${availabilityClass}">
-            ${availabilityIcon} ${user.availability || "Desconocido"}
-          </span>
-        </div>
-      </div>
-
-      <div class="profile-section">
-        <div class="profile-item">
-          <label>Dispositivos:</label>
-          <div class="devices-container">
-            ${devicesHtml}
-          </div>
-        </div>
-
-        <div class="profile-item">
-          <label>Cuentas:</label>
-          <div class="accounts-container">
-            ${accountsHtml}
-          </div>
-        </div>
-      </div>
+      <div><label>Usuario EPAM:</label> ${user.Epam_user || "N/A"}</div>
+      <div><label>Rol:</label> ${user.userType || (user.isAdmin ? "keytester" : "tester")}</div>
       
       <div class="installation-status-control">
         <label for="installation-status">Estado de Instalación:</label>
@@ -1376,6 +1833,7 @@ async function fetchProfile() {
         </div>
       `;
 
+      // ✅ Cargar sesiones de KeyTester en la columna izquierda
       console.log("🎮 Cargando sesiones de KeyTester...");
       await fetchKeyTesterSessions();
 
@@ -1390,6 +1848,7 @@ async function fetchProfile() {
         </div>
       `;
 
+      // ✅ Cargar sesiones de Tester en el panel derecho
       console.log("📋 Cargando sesiones de Tester...");
       await fetchTesterSessions();
     }
@@ -1406,60 +1865,60 @@ async function fetchProfile() {
 
 // Función para actualizar estado de instalación
 async function updateInstallationStatus(status) {
-    const token = getToken();
-    
-    try {
-        const response = await fetch(`${SERVER_URL}/api/user/update-installation-status`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status })
-        });
+  const token = getToken();
 
-        const data = await response.json();
+  try {
+    const response = await fetch(`${SERVER_URL}/api/user/update-installation-status`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ status })
+    });
 
-        if (response.ok) {
-            // Mostrar mensaje de éxito
-            showNotification('Estado de instalación actualizado correctamente', 'success');
-            
-            // Actualizar indicador visual
-            const indicator = document.querySelector('.status-indicator');
-            if (indicator) {
-                indicator.className = `status-indicator status-${status}`;
-            }
-        } else {
-            throw new Error(data.message || 'Error al actualizar estado');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('Error al actualizar estado: ' + error.message, 'error');
-        
-        // Revertir el select
-        await fetchProfile();
+    const data = await response.json();
+
+    if (response.ok) {
+      // Mostrar mensaje de éxito
+      showNotification('Estado de instalación actualizado correctamente', 'success');
+
+      // Actualizar indicador visual
+      const indicator = document.querySelector('.status-indicator');
+      if (indicator) {
+        indicator.className = `status-indicator status-${status}`;
+      }
+    } else {
+      throw new Error(data.message || 'Error al actualizar estado');
     }
+  } catch (error) {
+    console.error('Error:', error);
+    showNotification('Error al actualizar estado: ' + error.message, 'error');
+
+    // Revertir el select
+    await fetchProfile();
+  }
 }
 
 // Función auxiliar para mostrar notificaciones
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
         <span>${message}</span>
     `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 100);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add('show');
+  }, 100);
+
+  setTimeout(() => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 
@@ -1502,80 +1961,80 @@ async function deleteSession(sessionId) {
 }
 // FUNCIÓN PARA REEMPLAZAR TESTER DESDE DETALLES DE SESIÓN
 async function replaceTesterFromSession(sessionId, testerId) {
-    if (!confirm(`¿Estás seguro de que deseas reemplazar al tester ${testerId}?`)) {
-        return;
-    }
+  if (!confirm(`¿Estás seguro de que deseas reemplazar al tester ${testerId}?`)) {
+    return;
+  }
 
-    const token = localStorage.getItem("token");
-    const content = document.getElementById("dynamic-content");
-    
-    // Mostrar mensaje de carga
-    const loadingMsg = document.createElement('div');
-    loadingMsg.className = 'loading-overlay';
-    loadingMsg.innerHTML = `
+  const token = localStorage.getItem("token");
+  const content = document.getElementById("dynamic-content");
+
+  // Mostrar mensaje de carga
+  const loadingMsg = document.createElement('div');
+  loadingMsg.className = 'loading-overlay';
+  loadingMsg.innerHTML = `
         <div class="loading-message">
             <i class="fas fa-spinner fa-spin"></i>
             <p>Reemplazando tester...</p>
         </div>
     `;
-    content.appendChild(loadingMsg);
+  content.appendChild(loadingMsg);
 
-    try {
-        const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/replace/${testerId}`, {
-            method: "POST",
-            headers: { 
-                "Authorization": token,
-                "Content-Type": "application/json"
-            }
-        });
-        
-        const data = await res.json();
+  try {
+    const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/replace/${testerId}`, {
+      method: "POST",
+      headers: {
+        "Authorization": token,
+        "Content-Type": "application/json"
+      }
+    });
 
-        // Remover mensaje de carga
-        loadingMsg.remove();
+    const data = await res.json();
 
-        if (res.ok) {
-            // Mostrar mensaje de éxito
-            const successMsg = document.createElement('div');
-            successMsg.className = 'success-message-float';
-            successMsg.innerHTML = `
+    // Remover mensaje de carga
+    loadingMsg.remove();
+
+    if (res.ok) {
+      // Mostrar mensaje de éxito
+      const successMsg = document.createElement('div');
+      successMsg.className = 'success-message-float';
+      successMsg.innerHTML = `
                 <i class="fas fa-check-circle"></i>
                 Tester reemplazado correctamente
                 ${data.newTester ? `<br><small>Nuevo: ${data.newTester.Epam_user || data.newTester.testerId}</small>` : ''}
             `;
-            content.appendChild(successMsg);
-            
-            // Remover mensaje después de 3 segundos
-            setTimeout(() => successMsg.remove(), 3000);
-            
-            // Recargar los detalles de la sesión
-            viewSessionDetails(sessionId);
-        } else {
-            // Mostrar mensaje de error
-            const errorMsg = document.createElement('div');
-            errorMsg.className = 'error-message-float';
-            errorMsg.innerHTML = `
+      content.appendChild(successMsg);
+
+      // Remover mensaje después de 3 segundos
+      setTimeout(() => successMsg.remove(), 3000);
+
+      // Recargar los detalles de la sesión
+      viewSessionDetails(sessionId);
+    } else {
+      // Mostrar mensaje de error
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'error-message-float';
+      errorMsg.innerHTML = `
                 <i class="fas fa-exclamation-circle"></i>
                 ${data.message || "Error al reemplazar tester"}
             `;
-            content.appendChild(errorMsg);
-            
-            setTimeout(() => errorMsg.remove(), 3000);
-        }
-    } catch (error) {
-        loadingMsg.remove();
-        
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'error-message-float';
-        errorMsg.innerHTML = `
+      content.appendChild(errorMsg);
+
+      setTimeout(() => errorMsg.remove(), 3000);
+    }
+  } catch (error) {
+    loadingMsg.remove();
+
+    const errorMsg = document.createElement('div');
+    errorMsg.className = 'error-message-float';
+    errorMsg.innerHTML = `
             <i class="fas fa-exclamation-circle"></i>
             Error de conexión al reemplazar tester
         `;
-        content.appendChild(errorMsg);
-        
-        setTimeout(() => errorMsg.remove(), 3000);
-        console.error(error);
-    }
+    content.appendChild(errorMsg);
+
+    setTimeout(() => errorMsg.remove(), 3000);
+    console.error(error);
+  }
 }
 // === POD TESTERS ===
 async function showPodTesters() {
@@ -1593,13 +2052,13 @@ async function showPodTesters() {
   try {
     const timestamp = new Date().getTime();
     const res = await fetch(`${SERVER_URL}/api/testers-in-pod?_t=${timestamp}`, {
-      headers: { 
+      headers: {
         Authorization: token,
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
     });
-    
+
     if (!res.ok) throw new Error("Error HTTP: " + res.status);
     const testers = await res.json();
 
@@ -1635,29 +2094,29 @@ async function showPodTesters() {
           </thead>
           <tbody>
             ${testers.map((t) => {
-              const devices = Array.isArray(t.Devices) 
-                ? t.Devices.map((d) => d.name).join(", ") 
-                : "-";
-              
-              const installStatus = t.StateOfInstalling || 'no instalado';
-              let installBadge = '';
-              if (installStatus === 'instalado') {
-                installBadge = '<span class="status-badge status-installed">✅ Instalado</span>';
-              } else if (installStatus === 'instalando') {
-                installBadge = '<span class="status-badge status-installing">⏳ Instalando</span>';
-              } else {
-                installBadge = '<span class="status-badge status-not-installed">❌ No instalado</span>';
-              }
-              
-              // ✅ CAMBIO: IsPlaying en lugar de isPlaying
-              console.log(`👤 ${t.Epam_user} - IsPlaying:`, t.IsPlaying);
-              
-              const isPlaying = t.IsPlaying === true; // ✅ CAMBIO AQUÍ
-              const playingBadge = isPlaying 
-                ? '<span class="status-badge status-playing">🎮 Jugando</span>'
-                : '<span class="status-badge status-available">⚪ Disponible</span>';
+      const devices = Array.isArray(t.Devices)
+        ? t.Devices.map((d) => d.name).join(", ")
+        : "-";
 
-              return `
+      const installStatus = t.StateOfInstalling || 'no instalado';
+      let installBadge = '';
+      if (installStatus === 'instalado') {
+        installBadge = '<span class="status-badge status-installed">✅ Instalado</span>';
+      } else if (installStatus === 'instalando') {
+        installBadge = '<span class="status-badge status-installing">⏳ Instalando</span>';
+      } else {
+        installBadge = '<span class="status-badge status-not-installed">❌ No instalado</span>';
+      }
+
+      // ✅ CAMBIO: IsPlaying en lugar de isPlaying
+      console.log(`👤 ${t.Epam_user} - IsPlaying:`, t.IsPlaying);
+
+      const isPlaying = t.IsPlaying === true; // ✅ CAMBIO AQUÍ
+      const playingBadge = isPlaying
+        ? '<span class="status-badge status-playing">🎮 Jugando</span>'
+        : '<span class="status-badge status-available">⚪ Disponible</span>';
+
+      return `
                 <tr onclick="viewUserDetails('${t._id}')" style="cursor: pointer;">
                   <td><strong>${t.Epam_user}</strong></td>
                   <td>${t.Pod || 'N/A'}</td>
@@ -1668,12 +2127,12 @@ async function showPodTesters() {
                   <td>${playingBadge}</td>
                 </tr>
               `;
-            }).join("")}
+    }).join("")}
           </tbody>
         </table>
       </div>
     `;
-    
+
     content.innerHTML = html;
   } catch (error) {
     console.error('Error al cargar testers del pod:', error);
@@ -1704,13 +2163,13 @@ async function showAllTesters() {
   try {
     const timestamp = new Date().getTime();
     const res = await fetch(`${SERVER_URL}/api/all-testers?_t=${timestamp}`, {
-      headers: { 
+      headers: {
         Authorization: token,
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
     });
-    
+
     if (!res.ok) throw new Error("Error HTTP: " + res.status);
     const testers = await res.json();
 
@@ -1746,29 +2205,29 @@ async function showAllTesters() {
           </thead>
           <tbody>
             ${testers.map((t) => {
-              const devices = Array.isArray(t.Devices) 
-                ? t.Devices.map((d) => d.name).join(", ") 
-                : "-";
-              
-              const installStatus = t.StateOfInstalling || 'no instalado';
-              let installBadge = '';
-              if (installStatus === 'instalado') {
-                installBadge = '<span class="status-badge status-installed">✅ Instalado</span>';
-              } else if (installStatus === 'instalando') {
-                installBadge = '<span class="status-badge status-installing">⏳ Instalando</span>';
-              } else {
-                installBadge = '<span class="status-badge status-not-installed">❌ No instalado</span>';
-              }
-              
-              // ✅ CAMBIO: IsPlaying en lugar de isPlaying
-              console.log(`👤 ${t.Epam_user} - IsPlaying:`, t.IsPlaying);
-              
-              const isPlaying = t.IsPlaying === true; // ✅ CAMBIO AQUÍ
-              const playingBadge = isPlaying 
-                ? '<span class="status-badge status-playing">🎮 Jugando</span>'
-                : '<span class="status-badge status-available">⚪ Disponible</span>';
+      const devices = Array.isArray(t.Devices)
+        ? t.Devices.map((d) => d.name).join(", ")
+        : "-";
 
-              return `
+      const installStatus = t.StateOfInstalling || 'no instalado';
+      let installBadge = '';
+      if (installStatus === 'instalado') {
+        installBadge = '<span class="status-badge status-installed">✅ Instalado</span>';
+      } else if (installStatus === 'instalando') {
+        installBadge = '<span class="status-badge status-installing">⏳ Instalando</span>';
+      } else {
+        installBadge = '<span class="status-badge status-not-installed">❌ No instalado</span>';
+      }
+
+      // ✅ CAMBIO: IsPlaying en lugar de isPlaying
+      console.log(`👤 ${t.Epam_user} - IsPlaying:`, t.IsPlaying);
+
+      const isPlaying = t.IsPlaying === true; // ✅ CAMBIO AQUÍ
+      const playingBadge = isPlaying
+        ? '<span class="status-badge status-playing">🎮 Jugando</span>'
+        : '<span class="status-badge status-available">⚪ Disponible</span>';
+
+      return `
                 <tr onclick="viewUserDetails('${t._id}')" style="cursor: pointer;">
                   <td><strong>${t.Epam_user}</strong></td>
                   <td>${t.Pod || 'N/A'}</td>
@@ -1779,12 +2238,12 @@ async function showAllTesters() {
                   <td>${playingBadge}</td>
                 </tr>
               `;
-            }).join("")}
+    }).join("")}
           </tbody>
         </table>
       </div>
     `;
-    
+
     content.innerHTML = html;
   } catch (error) {
     console.error('Error al cargar testers:', error);
@@ -2047,8 +2506,14 @@ function displaySearchResultsInPanel(results, query) {
 const closePanel = document.getElementById("close-panel");
 if (closePanel) {
   closePanel.addEventListener("click", function () {
-    document.getElementById("dynamic-panel").classList.add("hidden");
-    searchInput.value = ""; // Limpiar búsqueda
+    // Volver a cargar la lista de sesiones según el tipo de usuario
+    if (currentUser) {
+      if (currentUser.userType === "keytester" || currentUser.isAdmin) {
+        fetchKeyTesterSessions();
+      } else {
+        fetchTesterSessions();
+      }
+    }
   });
 }
 // Función para ver detalles de un usuario
@@ -2277,20 +2742,20 @@ let currentView = null; // 'all-testers', 'pod-testers', o null
 function startAutoRefresh(viewType, intervalSeconds = 5) {
   // Detener cualquier refresh anterior
   stopAutoRefresh();
-  
+
   currentView = viewType;
-  
+
   // Configurar nuevo intervalo
   autoRefreshInterval = setInterval(() => {
     console.log(`🔄 Auto-refresh: ${viewType}`);
-    
+
     if (viewType === 'all-testers') {
       showAllTesters();
     } else if (viewType === 'pod-testers') {
       showPodTesters();
     }
   }, intervalSeconds * 1000);
-  
+
   console.log(`✅ Auto-refresh activado cada ${intervalSeconds} segundos`);
 }
 
@@ -2313,11 +2778,11 @@ function stopAutoRefresh() {
  */
 async function exportTestersToCSV(sessionId) {
   const token = getToken();
-  
+
   try {
     // Mostrar indicador de carga
     showNotification('Generando archivo de exportación...', 'info');
-    
+
     // Obtener datos de la sesión
     const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
       headers: {
@@ -2339,10 +2804,10 @@ async function exportTestersToCSV(sessionId) {
 
     // Generar CSV
     const csv = generateCSVContent(session);
-    
+
     // Crear y descargar archivo
     downloadCSV(csv, `Testers_${session.backendName}_${new Date().toISOString().split('T')[0]}.csv`);
-    
+
     showNotification('✅ Archivo exportado correctamente', 'success');
 
   } catch (error) {
@@ -2375,40 +2840,40 @@ function generateCSVContent(session) {
 
   // Crear filas de datos
   const rows = [];
-  
+
   session.assignedTesters.forEach((tester) => {
     // Obtener dispositivo principal
-    const primaryDevice = tester.device || 
-                         (Array.isArray(tester.dispositivos) && tester.dispositivos.length > 0 
-                           ? tester.dispositivos[0] 
-                           : 'N/A');
-    
+    const primaryDevice = tester.device ||
+      (Array.isArray(tester.dispositivos) && tester.dispositivos.length > 0
+        ? tester.dispositivos[0]
+        : 'N/A');
+
     // Obtener modelo del dispositivo
     const model = getDeviceModel(primaryDevice);
-    
+
     // Obtener capturas
     const captures = Array.isArray(tester.capturas) && tester.capturas.length > 0
       ? tester.capturas.join(', ')
       : '';
-    
+
     // Determinar Config (ej: Splitscreen, DX12, etc.)
     const config = getConfig(tester);
-    
+
     // Location (región)
     const location = tester.region || tester.Region || session.region || 'Bogota';
-    
+
     // Station
     const station = tester.Station || '';
-    
+
     // POD
     const pod = tester.Pod || '';
-    
+
     // Tester (nombre completo)
     const testerName = tester.Epam_user || tester.testerId || '';
-    
+
     // Username (usuario EPAM formateado)
     const username = testerName ? `EPAM-${testerName.replace(/\s+/g, '')}` : '';
-    
+
     // Crear fila
     const row = [
       primaryDevice,           // Primary
@@ -2425,7 +2890,7 @@ function generateCSVContent(session) {
       '',                      // Reemplazo Plataforma - vacío
       ''                       // Comentarios - vacío
     ];
-    
+
     rows.push(row);
   });
 
@@ -2461,7 +2926,7 @@ function getDeviceModel(device) {
     'Android': 'Samsung S20',
     'iOS': 'iPhone 12'
   };
-  
+
   return models[device] || device || '';
 }
 
@@ -2470,18 +2935,18 @@ function getDeviceModel(device) {
  */
 function getConfig(tester) {
   const configs = [];
-  
+
   // Verificar si tiene capturas especiales
   if (Array.isArray(tester.capturas)) {
     if (tester.capturas.includes('DX12')) configs.push('DX12');
     if (tester.capturas.includes('DX11')) configs.push('DX11');
   }
-  
+
   // Verificar splitscreen
   if (tester.splitScreen || tester.isSplitScreen) {
     configs.push('Splitscreen');
   }
-  
+
   return configs.join(', ');
 }
 
@@ -2492,19 +2957,19 @@ function downloadCSV(csvContent, filename) {
   // Agregar BOM para compatibilidad con Excel y caracteres especiales
   const BOM = '\uFEFF';
   const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-  
+
   // Crear enlace de descarga
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
   link.setAttribute('href', url);
   link.setAttribute('download', filename);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   // Liberar memoria
   URL.revokeObjectURL(url);
 }
@@ -2519,10 +2984,10 @@ function downloadCSV(csvContent, filename) {
  */
 async function exportTestersToExcel(sessionId) {
   const token = getToken();
-  
+
   try {
     showNotification('Generando archivo Excel...', 'info');
-    
+
     const response = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
       headers: {
         "Authorization": token,
@@ -2540,23 +3005,23 @@ async function exportTestersToExcel(sessionId) {
 
     // Preparar datos
     const headers = [
-      'Primary', 'Model', 'Capture', 'Config', 'Location', 'Station', 
-      'POD', 'Tester', 'Username', 'Splitscreen (player 2)', 
+      'Primary', 'Model', 'Capture', 'Config', 'Location', 'Station',
+      'POD', 'Tester', 'Username', 'Splitscreen (player 2)',
       'Replacement', 'Reemplazo Plataforma', 'Comentarios'
     ];
 
     // Crear datos
     const data = [headers];
-    
+
     session.assignedTesters.forEach((tester) => {
-      const primaryDevice = tester.device || 
-                           (Array.isArray(tester.dispositivos) && tester.dispositivos.length > 0 
-                             ? tester.dispositivos[0] 
-                             : 'N/A');
-      
+      const primaryDevice = tester.device ||
+        (Array.isArray(tester.dispositivos) && tester.dispositivos.length > 0
+          ? tester.dispositivos[0]
+          : 'N/A');
+
       const testerName = tester.Epam_user || tester.testerId || '';
       const username = testerName ? `EPAM-${testerName.replace(/\s+/g, '')}` : '';
-      
+
       const row = [
         primaryDevice,                                              // Primary
         getDeviceModel(primaryDevice),                             // Model
@@ -2572,13 +3037,13 @@ async function exportTestersToExcel(sessionId) {
         '',                                                        // Reemplazo Plataforma
         ''                                                         // Comentarios
       ];
-      
+
       data.push(row);
     });
 
     // Crear workbook
     const ws = XLSX.utils.aoa_to_sheet(data);
-    
+
     // Aplicar anchos de columna
     ws['!cols'] = [
       { wch: 10 }, // Primary
@@ -2601,7 +3066,7 @@ async function exportTestersToExcel(sessionId) {
 
     // Descargar
     XLSX.writeFile(wb, `Testers_${session.backendName}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    
+
     showNotification('✅ Archivo Excel exportado', 'success');
 
   } catch (error) {

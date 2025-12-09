@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de Usuario</title>
   <link rel="stylesheet" href="/css/profile.css" />
+  <link rel="stylesheet" href="/css/profilecont.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 
@@ -58,18 +59,31 @@
 
         <!-- Contenedor de sesiones -->
         <div id="tester-sessions"></div>
+        <!-- Profile Actions -->
+        <div id="profile-actions" class="profile-actions"></div>
+          <!-- Sessions List (solo para KeyTesters) -->
+        <div id="sessions-list-container" class="sessions-list-container" style="display: none;">
+          <h3><i class="fas fa-gamepad"></i> Mis Sesiones</h3>
+          <div id="sessions-list" class="sessions-list">
+            <div class="loading">
+              <i class="fas fa-spinner fa-spin"></i> Cargando sesiones...
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- RIGHT PANEL (DYNAMIC CONTENT) -->
-      <aside id="dynamic-panel" class="side-panel hidden">
+        <aside id="dynamic-panel" class="side-panel">
         <div class="panel-header">
-          <h3 id="panel-title">Detalles</h3>
-          <button id="close-panel" class="close-panel">
+          <h3 id="panel-title">Mis Sesiones</h3>
+          <button id="close-panel" class="close-panel" style="display: none;">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div id="dynamic-content" class="dynamic-content">
-          <p>Selecciona una opción para ver más información.</p>
+          <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i> Cargando...
+          </div>
         </div>
       </aside>
     </div>
