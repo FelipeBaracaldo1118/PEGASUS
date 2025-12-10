@@ -1,135 +1,331 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Asignar Testers a Sesión</title>
-    <link rel="stylesheet" href="./css/asignarSession.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asignar Testers - Sistema de Testing</title>
+   <link rel="stylesheet" href="/css/asignarSession.css" />
 </head>
 <body>
-    <div class="container">
-        <h2>Asignar Testers a Sesión</h2>
-        <!-- BOTÓN VOLVER ATRÁS -->
-        <button class="btn" onclick="window.location.href='pages/profile.html'">⬅ Volver al Perfil</button>
-        
-        <div class="session-info" id="session-info"></div>
-        
-        <button class="btn" id="assignBtn">Asignar testers automáticamente</button>
-        
-        <div class="assigned-list" id="assigned-list"></div>
-        
-        <div id="message"></div>
+  <div class="container">
+    <div class="header">
+      <h1>🎮 Asignación Automática de Testers</h1>
+      <p>Sistema de Rotación Inteligente con MMR</p>
     </div>
 
-    <script>
-        const SERVER_URL = "http://10.13.46.195:3000";
-        const token = localStorage.getItem("token");
-        let sessionCaptureRequirements = {};
+    <div class="content">
+      <div class="session-selector">
+        <h2>📋 Selecciona una Sesión</h2>
+        <div id="sessionGrid" class="session-grid">
+          <div class="loading">Cargando sesiones...</div>
+        </div>
+        <button id="assignButton" class="assign-button" disabled>
+          🚀 Asignar Testers Automáticamente
+        </button>
+      </div>
 
-        // Obtener sessionId de la URL
-        function getSessionId() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get("sessionId");
-        }
+      <div id="results" class="results" style="display: none;"></div>
+    </div>
+  </div>
 
-        // Mostrar info de la sesión
-        async function fetchSessionInfo() {
-            const sessionId = getSessionId();
-            if (!sessionId) return;
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+    let selectedSessionId = null;
+    let sessions = [];
 
-            const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}`, {
-                headers: { "Authorization": token }
-            });
-            const session = await res.json();
-
-            if (!res.ok) {
-                document.getElementById("session-info").innerText = session.message || "No se pudo cargar la sesión";
-                return;
-            }
-
-            let html = `<b>Backend:</b> ${session.backendName}<br>`;
-            html += `<b>IdOverride:</b> ${session.idOverride}<br>`;
-            html += `<b>Cantidad de jugadores:</b> ${session.totalPlayers}<br>`;
-            html += `<b>CL:</b> ${session.buildString}<br>`;
-            document.getElementById("session-info").innerHTML = html;
-
-            sessionCaptureRequirements = session.captureRequirements || {};
-
-            if (session.assignedTesters && session.assignedTesters.length > 0) {
-                renderAssignedList(session.assignedTesters);
-            }
-        }
-
-        document.getElementById("assignBtn").addEventListener("click", async function () {
-            const sessionId = getSessionId();
-            if (!sessionId) return;
-
-            document.getElementById("message").innerText = "Asignando testers...";
-
-            const res = await fetch(`${SERVER_URL}/api/sessions/${sessionId}/assign`, {
-                method: "POST",
-                headers: { "Authorization": token }
-            });
-            const data = await res.json();
-
-            if (res.ok) {
-                document.getElementById("message").style.color = "green";
-                document.getElementById("message").innerText = "Testers asignados correctamente.";
-                renderAssignedList(data.assignedTesters);
-            } else {
-                document.getElementById("message").style.color = "red";
-                document.getElementById("message").innerText = data.message || "Error en la asignación";
-            }
+    // Cargar sesiones al iniciar
+    async function loadSessions() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/sessions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
 
-        // ⬇️ AQUÍ ESTÁ LA FUNCIÓN MEJORADA - REEMPLAZA LA QUE TENÍAS ⬇️
-        function renderAssignedList(list) {
-            if (!list || list.length === 0) {
-                document.getElementById("assigned-list").innerHTML = "<i>No hay testers asignados aún.</i>";
-                return;
-            }
-            
-            let html = `
-                <h3>Testers asignados (${list.length})</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Tester</th>
-                            <th>Device</th>
-                            <th>Región</th>
-                            <th>MMR</th>
-                            <th>Pod</th>
-                            <th>Estación</th>
-                            <th>Captura asignada</th>
-                            <th>Grupo</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            list.forEach(t => {
-                html += `
-                    <tr>
-                        <td><strong>${t.Epam_user || t.testerId}</strong></td>
-                        <td>${t.device}</td>
-                        <td>${t.region}</td>
-                        <td>${t.mmr}</td>
-                        <td>${t.pod}</td>
-                        <td>${t.station}</td>
-                        <td>${Array.isArray(t.capturas) ? t.capturas.join(", ") : ""}</td>
-                        <td>${t.group ? `<span class="group-badge">${t.group}</span>` : ""}</td>
-                    </tr>
-                `;
-            });
-            
-            html += `
-                    </tbody>
-                </table>
-            `;
-            
-            document.getElementById("assigned-list").innerHTML = html;
+        if (!response.ok) throw new Error('Error cargando sesiones');
+
+        sessions = await response.json();
+        displaySessions(sessions);
+
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('sessionGrid').innerHTML = `
+          <div class="error">❌ Error cargando sesiones: ${error.message}</div>
+        `;
+      }
+    }
+
+    // Mostrar sesiones
+    function displaySessions(sessions) {
+      const grid = document.getElementById('sessionGrid');
+      
+      if (sessions.length === 0) {
+        grid.innerHTML = '<div class="loading">No hay sesiones disponibles</div>';
+        return;
+      }
+
+      grid.innerHTML = sessions.map(session => `
+        <div class="session-card" onclick="selectSession('${session._id}')">
+          <div class="session-status status-${session.status.toLowerCase().replace(' ', '-')}">
+            ${session.status}
+          </div>
+          <div class="session-name">${session.sessionName}</div>
+          <div class="session-type type-${session.sessionType}">
+            ${session.sessionType.toUpperCase()}
+          </div>
+          <div class="session-info">
+            📅 ${new Date(session.startDate).toLocaleDateString('es-ES')}
+            <br>
+            🎯 Proyecto: ${session.project || 'N/A'}
+            <br>
+            🔧 Build: ${session.build || 'N/A'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Seleccionar sesión
+    function selectSession(sessionId) {
+      selectedSessionId = sessionId;
+      
+      // Actualizar UI
+      document.querySelectorAll('.session-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+      
+      // Habilitar botón
+      document.getElementById('assignButton').disabled = false;
+    }
+
+    // Asignar testers
+    async function assignTesters() {
+      if (!selectedSessionId) {
+        alert('Por favor selecciona una sesión');
+        return;
+      }
+
+      const button = document.getElementById('assignButton');
+      button.disabled = true;
+      button.textContent = '⏳ Asignando testers...';
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_URL}/sessions/${selectedSessionId}/assign`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.message || 'Error en la asignación');
         }
 
-        fetchSessionInfo();
-    </script>
+        const data = await response.json();
+        displayResults(data);
+
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('results').innerHTML = `
+          <div class="error">❌ Error: ${error.message}</div>
+        `;
+        document.getElementById('results').style.display = 'block';
+      } finally {
+        button.disabled = false;
+        button.textContent = '🚀 Asignar Testers Automáticamente';
+      }
+    }
+
+    // Mostrar resultados
+    function displayResults(data) {
+      const resultsDiv = document.getElementById('results');
+      const session = sessions.find(s => s._id === selectedSessionId);
+      
+      // Agrupar por plataforma
+      const byPlatform = {};
+      data.assignedTesters.forEach(tester => {
+        if (!byPlatform[tester.platform]) {
+          byPlatform[tester.platform] = [];
+        }
+        byPlatform[tester.platform].push(tester);
+      });
+
+      // Agrupar backups por plataforma
+      const backupsByPlatform = {};
+      (data.backupTesters || []).forEach(backup => {
+        if (!backupsByPlatform[backup.platform]) {
+          backupsByPlatform[backup.platform] = [];
+        }
+        backupsByPlatform[backup.platform].push(backup);
+      });
+
+      let html = `
+        <div class="success">
+          ✅ Asignación completada exitosamente
+          <br>
+          📊 Total Activos: ${data.stats.totalActives} | 
+          🔄 Total Backups: ${data.stats.totalBackups} | 
+          📈 MMR Promedio: ${data.stats.averageMMR}
+        </div>
+      `;
+
+      // Mostrar por plataforma
+      for (const [platform, testers] of Object.entries(byPlatform)) {
+        const platformPoints = getPlatformPoints(platform);
+        const avgMMR = (testers.reduce((sum, t) => sum + t.mmr, 0) / testers.length).toFixed(2);
+
+        html += `
+          <div class="platform-section">
+            <div class="platform-header">
+              <div>
+                <div class="platform-name">${platform}</div>
+                <span class="platform-points ${getPlatformPointsClass(platformPoints)}">
+                  +${platformPoints} MMR por sesión
+                </span>
+              </div>
+              <div class="platform-stats">
+                <div class="stat-badge">👥 ${testers.length} testers</div>
+                <div class="stat-badge">📊 MMR Promedio: ${avgMMR}</div>
+              </div>
+            </div>
+
+            <table class="testers-table">
+              <thead>
+                <tr>
+                  <th>Tester</th>
+                  <th>MMR Actual</th>
+                  <th>Score de Rotación</th>
+                  <th>Capturas</th>
+                  <th>POD/Station</th>
+                  ${session.sessionType !== 'normal' ? '<th>Equipo</th>' : ''}
+                </tr>
+              </thead>
+              <tbody>
+                ${testers.map(t => `
+                  <tr>
+                    <td><strong>${t.Epam_user}</strong></td>
+                    <td><span class="mmr-badge ${getMMRClass(t.mmr)}">${t.mmr}</span></td>
+                    <td><span class="score-badge">${t.rotationScore}</span></td>
+                    <td>${(t.capturas || []).join(', ')}</td>
+                    <td>${t.pod} / ${t.station}</td>
+                    ${session.sessionType !== 'normal' ? `<td>${t.team || t.group || '-'}</td>` : ''}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+
+            ${backupsByPlatform[platform] ? `
+              <div class="backup-section">
+                <h3>🔄 Backups para ${platform}</h3>
+                <div class="backup-list">
+                  ${backupsByPlatform[platform].map(b => `
+                    <div class="backup-card">
+                      <div class="backup-name">${b.Epam_user}</div>
+                      <div class="backup-reason">MMR: ${b.mmr} | Score: ${b.rotationScore}</div>
+                      <div class="backup-reason">${b.reason}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
+
+      // Mostrar equipos si es Juno, Sparks o Sprout
+      if (session.sessionType === 'juno' || session.sessionType === 'sparks' || session.sessionType === 'sprout') {
+        html += generateTeamView(data.assignedTesters, session.sessionType);
+      }
+
+      resultsDiv.innerHTML = html;
+      resultsDiv.style.display = 'block';
+    }
+
+    // Generar vista de equipos
+    function generateTeamView(testers, sessionType) {
+      const teams = {};
+      
+      testers.forEach(tester => {
+        const teamKey = tester.team || tester.group || 'Sin equipo';
+        if (!teams[teamKey]) {
+          teams[teamKey] = [];
+        }
+        teams[teamKey].push(tester);
+      });
+
+      let html = `
+        <div class="team-section">
+          <h2>👥 Vista por Equipos</h2>
+          <div class="team-grid">
+      `;
+
+      for (const [teamName, members] of Object.entries(teams)) {
+        const avgMMR = (members.reduce((sum, t) => sum + t.mmr, 0) / members.length).toFixed(2);
+        
+        html += `
+          <div class="team-card">
+            <div class="team-header">
+              ${teamName} (MMR: ${avgMMR})
+            </div>
+            ${members.map(m => `
+              <div class="team-member">
+                <span><strong>${m.Epam_user}</strong></span>
+                <span>
+                  <span class="device-badge">${m.platform}</span>
+                  <span class="mmr-badge ${getMMRClass(m.mmr)}">${m.mmr}</span>
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      html += `
+          </div>
+        </div>
+      `;
+
+      return html;
+    }
+
+    // Funciones auxiliares
+    function getPlatformPoints(platform) {
+      const points = {
+        "Android": 4.27,
+        "Switch": 3.99,
+        "iOS": 3.90,
+        "XB1": 3.10,
+        "PS4": 2.64,
+        "PS4 Dev": 2.64,
+        "XSX": 2.45,
+        "PS5": 2.32,
+        "PS5 Dev": 2.32,
+        "PC": 2.03
+      };
+      return points[platform] || 3.0;
+    }
+
+    function getPlatformPointsClass(points) {
+      if (points >= 3.5) return 'points-high';
+      if (points >= 2.5) return 'points-medium';
+      return 'points-low';
+    }
+
+    function getMMRClass(mmr) {
+      if (mmr < 30) return 'mmr-low';
+      if (mmr > 60) return 'mmr-high';
+      return 'mmr-medium';
+    }
+
+    // Event listeners
+    document.getElementById('assignButton').addEventListener('click', assignTesters);
+
+    // Cargar sesiones al iniciar
+    loadSessions();
+  </script>
 </body>
 </html>

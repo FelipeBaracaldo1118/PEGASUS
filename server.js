@@ -17,6 +17,10 @@ app.use(cors());
 app.use(express.json());
 // Servir todos los archivos estáticos (HTML, CSS, JS, imágenes, etc.)
 
+// ============================================
+// ✅ AGREGAR JWT_SECRET AQUÍ
+// ============================================
+const JWT_SECRET = process.env.JWT_SECRET || "SECRETO_SUPER_SEGURO_CAMBIAR_EN_PRODUCCION";
 
 app.use('/api-docs', swaggerUi.serve);
 app.get('/api-docs', swaggerUi.setup(specs));
@@ -40,28 +44,156 @@ mongoose.connect("mongodb://localhost:27017/loginApp", {
   })
   .catch((err) => console.error("❌ Error al conectar a MongoDB:", err));
 
+// ============================================
+// TABLA DE PESOS MMR POR PLATAFORMA
+// ============================================
+
+const PLATFORM_DIFFICULTY = {
+  "PC": 4.67,
+  "PS5": 4.38,
+  "PS5 Dev": 4.38,
+  "XSX": 4.25,
+  "PS4": 4.06,
+  "PS4 Dev": 4.06,
+  "XB1": 3.60,
+  "Switch": 2.71,
+  "iOS": 2.80,
+  "Android": 2.43
+};
+
+const MAX_DIFFICULTY = 4.7;
+const BASE_POINTS = 2.0;
+
+/**
+ * Calcula los puntos MMR invertidos para una plataforma
+ * Fórmula: (MAX_DIFFICULTY - dificultad) + BASE_POINTS
+ */
+function getMMRPoints(platform) {
+  const difficulty = PLATFORM_DIFFICULTY[platform] || 3.5;
+  return parseFloat(((MAX_DIFFICULTY - difficulty) + BASE_POINTS).toFixed(2));
+}
+
+// Tabla de puntos MMR precalculada
+const MMR_POINTS = {
+  "Android": 4.27,  // Más difícil → Más puntos
+  "Switch": 3.99,
+  "iOS": 3.90,
+  "XB1": 3.10,
+  "PS4": 2.64,
+  "PS4 Dev": 2.64,
+  "XSX": 2.45,
+  "PS5": 2.32,
+  "PS5 Dev": 2.32,
+  "PC": 2.03       // Más fácil → Menos puntos
+};
+
+// Clasificación de plataformas
+const EASY_PLATFORMS = ["PC", "PS5","PS5 Dev", "XSX", "PS4","PS4 Dev"];
+const HARD_PLATFORMS = ["Android", "iOS", "Switch"];
+const MEDIUM_PLATFORMS = ["XB1"];
+
+/**
+ * Determina si una plataforma es fácil o difícil
+ */
+function getPlatformDifficulty(platform) {
+  if (EASY_PLATFORMS.includes(platform)) return "easy";
+  if (HARD_PLATFORMS.includes(platform)) return "hard";
+  return "medium";
+}
+
+
 // --------------------------
 // ESQUEMA Y MODELO DE USUARIO
 // --------------------------
 const userSchema = new mongoose.Schema({
   Epam_user: { type: String, required: true, unique: true },
-  Accounts: { type: [String], default: [] },
-  Devices: [{ name: String, priority: Number }],
-  availability: { type: String },
-  Mmr: { type: Number },
   Password: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
-  userType: { type: String, enum: ['tester', 'keytester'], default: 'tester' },
-  Date_Time: { type: Date, default: Date.now },
-  Pod: { type: String },
-  Region: { type: String },
-  Station: { type: String },
+  userType: { 
+    type: String, 
+    enum: ["tester", "keytester", "admin"], 
+    default: "tester" 
+  },
+  Region: { 
+    type: String, 
+    enum: ["Bogota"], 
+    required: true 
+  },
+  Pod: String,
+  Station: String,
+  
+  // ✅ DISPOSITIVOS DISPONIBLES
+  Devices: [{
+    name: String,
+    priority: { type: Number, default: 1 },
+    isDev: { type: Boolean, default: false }
+  }],
+  
+  // ✅ CUENTAS NECESARIAS
+  hasNintendoAccount: { type: Boolean, default: false },
+  hasXboxAccount: { type: Boolean, default: false },
+  canSplitscreen: { type: Boolean, default: true },
+  
+  // ✅ NUEVO: Elegibilidad para móviles (por defecto true)
+  eligibleForMobile: { 
+    type: Boolean, 
+    default: true,
+    description: "Si es true, el usuario puede ser asignado a Android/iOS aunque no tenga el dispositivo registrado"
+  },
+  
+  availability: { 
+    type: String, 
+    enum: ["Disponible", "Ocupado", "Ausente", "N/A"], 
+    default: "Disponible" 
+  },
+  
+  // ✅ MMR ÚNICO (INICIAL = 40)
+  Mmr: { 
+    type: Number, 
+    default: 40,
+    min: 0,
+    max: 200
+  },
+  
+  // ✅ HISTORIAL DE PLATAFORMAS JUGADAS
+  platformHistory: {
+    type: Map,
+    of: {
+      sessions: { type: Number, default: 0 },
+      lastPlayed: Date,
+      totalMMRGained: { type: Number, default: 0 }
+    }
+  },
+  
+  // ✅ HISTORIAL COMPLETO DE ASIGNACIONES
+  assignmentHistory: [{
+    sessionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Session' },
+    sessionName: String,
+    platform: String,
+    role: { type: String, enum: ["active", "backup"] },
+    mmrBefore: Number,
+    mmrAfter: Number,
+    mmrGained: Number,
+    date: { type: Date, default: Date.now }
+  }],
+  
+  totalSessions: { type: Number, default: 0 },
+  totalBackups: { type: Number, default: 0 },
+  
+  // ✅ CAMPOS ADICIONALES (compatibilidad)
+  StateOfInstalling: { 
+    type: String, 
+    enum: ["instalado", "instalando", "no instalado"],
+    default: "no instalado"
+  },
   IsPlaying: { type: Boolean, default: false },
-  StateOfInstalling: { type: String, enum: ['instalando', 'no instalado', 'instalado'], default: 'no instalado' },
-  // ✅ NUEVOS CAMPOS PARA 2FA
-  totpSecret: { type: String, default: null },
-  totpEnabled: { type: Boolean, default: false }
+  
+  // ✅ 2FA
+  totpSecret: String,
+  totpEnabled: { type: Boolean, default: false },
+  
+  createdAt: { type: Date, default: Date.now }
 });
+
 const User = mongoose.model("User", userSchema);
 
 
@@ -69,46 +201,119 @@ const User = mongoose.model("User", userSchema);
 //esquema playtest
 //------------------------------------
 const sessionSchema = new mongoose.Schema({
+  // ============================================
+  // INFORMACIÓN BÁSICA
+  // ============================================
+  sessionName: { type: String, required: true },
+  
+  backendName: { type: String, required: true },  // ✅ AGREGAR
+  buildString: { type: String, required: true },  // ✅ AGREGAR
+  
+  sessionType: { 
+    type: String, 
+    enum: ["sprout", "juno", "sparks", "battle_royale", "eventos"], 
+    default: "battle_royale" 
+  },
+  
+  // ============================================
+  // IDs DE OVERRIDE
+  // ============================================
+  idOverride: String,      // ✅ AGREGAR (Battle Royale)
+  idOverrideA: String,     // ✅ AGREGAR (Sprout/Juno/Sparks - Grupo A)
+  idOverrideB: String,     // ✅ AGREGAR (Sprout/Juno/Sparks - Grupo B)
+  
+  // ============================================
+  // CONFIGURACIÓN DE SESIÓN
+  // ============================================
+  startTime: String,              // ✅ AGREGAR (ej: "1PM")
+  teamSize: String,               // ✅ AGREGAR (ej: "Squad (4), Fill")
+  totalPlayers: Number,           // ✅ AGREGAR
+  splitScreenCount: Number,       // ✅ AGREGAR
+  totalTeams: Number,
+  
+  // ============================================
+  // INFORMACIÓN ADICIONAL
+  // ============================================
   commsLead: String,
   commsAssist: String,
-  backendName: String,
-  buildString: String,
   googleDrive: String,
   gameModes: String,
-  idOverride: String,
-  idOverrideA: String,
-  idOverrideB: String,
-  startTime: String,
-  premadeTeams: String,
-  teamSize: String,
   testPlan: String,
-  totalPlayers: Number,
-  captureRequirements: { type: Object, default: {} },
-  isSprout: { type: Boolean, default: false },
-  sessionType: {
-    type: String,
-    enum: ['normal', 'sprout', 'juno', 'sparks'],
-    default: 'normal'
-  },
-  assignedTesters: [
-    {
-      testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      Epam_user: String,
-      device: String,
-      region: String,
-      mmr: Number,
-      pod: String,
-      station: String,
-      group: String,
-      team: String,
-      dispositivos: [String],
-      capturas: [String]
-    }
-  ],
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  premadeTeams: String,
   pod: String,
-  createdAt: { type: Date, default: Date.now }
+  
+  // ============================================
+  // CAMPOS LEGACY (mantener por compatibilidad)
+  // ============================================
+  project: String,
+  build: String,
+  startDate: Date,
+  endDate: Date,
+  
+  status: { 
+    type: String, 
+    enum: ["Pendiente", "En Progreso", "Completada", "Cancelada"], 
+    default: "Pendiente" 
+  },
+  
+  captureRequirements: {
+    type: Object,
+    default:{}
+  },
+  
+  // ============================================
+  // TESTERS ASIGNADOS
+  // ============================================
+  assignedTesters: [{
+    testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    Epam_user: String,
+    platform: String,
+    region: String,
+    mmr: Number,
+    rotationScore: Number,
+    pod: String,
+    station: String,
+    capturas: [String],
+    
+    // Para splitscreen
+    splitscreenGroup: Number,
+    splitscreenRole: { type: String, enum: ["host", "guest"] },
+    
+    // Para sesiones con equipos
+    group: String,
+    team: String
+  }],
+  
+  // ============================================
+  // TESTERS BACKUP
+  // ============================================
+  backupTesters: [{
+    testerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    Epam_user: String,
+    platform: String,
+    mmr: Number,
+    rotationScore: Number,
+    reason: String
+  }],
+  
+  // ============================================
+  // CONTROL
+  // ============================================
+  mmrProcessed: { type: Boolean, default: false },
+  actualStartTime: Date,
+  actualEndTime: Date,
+  
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
+
+// Middleware para actualizar updatedAt
+sessionSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
 const Session = mongoose.model("Session", sessionSchema);
 /**
  * @swagger
@@ -303,35 +508,102 @@ app.post("/register", async (req, res) => {
  *       404:
  *         description: Usuario no encontrado
  */
-// --------------------------
-// RUTA: LOGIN DE USUARIO
-// --------------------------
+// ============================================
+// ✅ ENDPOINT DE LOGIN (CORREGIDO)
+// ============================================
 app.post("/login", async (req, res) => {
-  const { Epam_user, Password } = req.body;
-
   try {
-    // Buscar el usuario
-    const user = await User.findOne({ Epam_user });
+    const { Epam_user, Password } = req.body;
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔐 [LOGIN] Intento de login');
+    console.log('📝 [LOGIN] Usuario:', Epam_user);
+    console.log('📝 [LOGIN] Password recibida:', Password ? '✅ SÍ' : '❌ NO');
+
+    // ✅ VALIDACIÓN DE CAMPOS
+    if (!Epam_user || !Password) {
+      console.log('❌ [LOGIN] Campos vacíos');
+      return res.status(400).json({ 
+        success: false, 
+        message: "Usuario y contraseña son requeridos" 
+      });
+    }
+
+    // ✅ BUSCAR USUARIO (case-insensitive)
+    const user = await User.findOne({ 
+      Epam_user: { $regex: new RegExp(`^${Epam_user}$`, 'i') }
+    });
+
     if (!user) {
-      return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+      console.log('❌ [LOGIN] Usuario no encontrado:', Epam_user);
+      return res.status(404).json({ 
+        success: false, 
+        message: "Usuario no encontrado" 
+      });
     }
 
-    // Comparar contraseñas
+    console.log('✅ [LOGIN] Usuario encontrado:', user.Epam_user);
+    console.log('📊 [LOGIN] Hash en BD:', user.Password.substring(0, 30) + '...');
+
+    // ✅ COMPARAR CONTRASEÑAS
     const isMatch = await bcrypt.compare(Password, user.Password);
+
+    console.log('🔍 [LOGIN] Resultado de bcrypt.compare:', isMatch);
+
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Contraseña incorrecta" });
+      console.log('❌ [LOGIN] Contraseña incorrecta');
+      return res.status(401).json({ 
+        success: false, 
+        message: "Contraseña incorrecta" 
+      });
     }
 
-    // ✅ Actualizar disponibilidad a "Disponible"
+    console.log('✅ [LOGIN] Contraseña correcta');
+
+    // ✅ ACTUALIZAR DISPONIBILIDAD
     user.availability = "Disponible";
     await user.save();
 
-    // Generar token
-    const token = jwt.sign({ userId: user._id }, "SECRETO", { expiresIn: "1h" });
+    console.log('✅ [LOGIN] Disponibilidad actualizada a "Disponible"');
 
-    res.status(200).json({ success: true, message: "Login exitoso", token });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Error al iniciar sesión" });
+    // ✅ GENERAR TOKEN JWT
+    const token = jwt.sign(
+      { 
+        userId: user._id,
+        userType: user.userType,
+        Epam_user: user.Epam_user
+      },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    console.log('✅ [LOGIN] Token generado:', token.substring(0, 30) + '...');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+    // ✅ RESPUESTA EXITOSA
+    res.status(200).json({ 
+      success: true, 
+      message: "Login exitoso", 
+      token,
+      user: {
+        id: user._id,
+        Epam_user: user.Epam_user,
+        userType: user.userType,
+        Region: user.Region,
+        Pod: user.Pod,
+        Station: user.Station,
+        Mmr: user.Mmr || 40
+      }
+    });
+
+  } catch (error) {
+    console.error('💥 [LOGIN] Error:', error);
+    console.error('💥 [LOGIN] Stack:', error.stack);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error al iniciar sesión",
+      error: error.message 
+    });
   }
 });
 /**
@@ -396,7 +668,7 @@ app.get("/protected", (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, "SECRETO");
+    const decoded = jwt.verify(token, JWT_SECRET);
     res.status(200).json({ success: true, message: "Bienvenido a la ruta protegida", userId: decoded.userId });
   } catch (err) {
     res.status(401).json({ success: false, message: "Token inválido o expirado" });
@@ -422,7 +694,7 @@ const authMiddleware = (req, res, next) => {
     console.log("Token limpio:", token.substring(0, 20) + '...');
 
     // Verificar el token
-    const decoded = jwt.verify(token, "SECRETO");
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     console.log("Token decodificado:", decoded);
 
@@ -649,70 +921,115 @@ app.get("/api/all-testers", authMiddleware, async (req, res) => {
 // Crear nueva sesión
 app.post("/api/sessions", authMiddleware, async (req, res) => {
   try {
-    // Verificar autorización
     const user = await User.findById(req.userId);
     if (!user || (user.userType !== "keytester" && !user.isAdmin)) {
       return res.status(403).json({ message: "No autorizado" });
     }
 
+    // ✅ EXTRAER TODOS LOS CAMPOS
     const {
-      commsLead,
-      commsAssist,
+      sessionName,
       backendName,
       buildString,
-      googleDrive,
-      gameModes,
       idOverride,
       idOverrideA,
       idOverrideB,
-      startTime,
+      commsLead,
+      commsAssist,
+      googleDrive,
+      gameModes,
+      testPlan,
       premadeTeams,
       teamSize,
-      testPlan,
+      totalTeams,
       totalPlayers,
+      splitScreenCount,
+      startTime,
       captureRequirements,
       sessionType,
       pod
     } = req.body;
 
-    // Crear nueva sesión
-    const newSession = new Session({
-      commsLead,
-      commsAssist,
+    // ✅ LOG PARA DEBUG
+    console.log('📥 Datos recibidos:', {
+      sessionName,
       backendName,
       buildString,
-      googleDrive,
-      gameModes,
+      sessionType,
+      totalPlayers,
+      teamSize,
+      splitScreenCount
+    });
+
+    // ✅ VALIDACIONES
+    if (!sessionName) {
+      return res.status(400).json({
+        success: false,
+        message: "sessionName es obligatorio"
+      });
+    }
+
+    if (!backendName) {
+      return res.status(400).json({
+        success: false,
+        message: "backendName es obligatorio"
+      });
+    }
+
+    if (!buildString) {
+      return res.status(400).json({
+        success: false,
+        message: "buildString es obligatorio"
+      });
+    }
+
+    // ✅ CREAR NUEVA SESIÓN
+    const newSession = new Session({
+      sessionName,
+      backendName,
+      buildString,
       idOverride,
       idOverrideA,
       idOverrideB,
-      startTime,
+      commsLead,
+      commsAssist,
+      googleDrive,
+      gameModes,
+      testPlan,
       premadeTeams,
       teamSize,
-      testPlan,
+      totalTeams,
       totalPlayers: parseInt(totalPlayers) || 0,
-      captureRequirements,
-      sessionType: sessionType || 'normal',
+      splitScreenCount: parseInt(splitScreenCount) || 1,
+      startTime,
+      captureRequirements: captureRequirements || {},
+      sessionType: sessionType || 'battle_royale',
+      pod,
       createdBy: req.userId,
-      pod
+      status: "Pendiente"
     });
 
-    // Guardar la sesión
+    // ✅ GUARDAR EN BD
     const savedSession = await newSession.save();
 
-    // Enviar respuesta
+    console.log('✅ Sesión creada:', savedSession._id);
+
+    // ✅ RESPUESTA
     res.status(201).json({
       success: true,
       message: "Sesión creada exitosamente",
-      session: savedSession
+      session: savedSession,
+      sessionId: savedSession._id
     });
 
   } catch (error) {
-    console.error('Error al crear sesión:', error);
+    console.error('❌ Error al crear sesión:', error);
+    
     res.status(500).json({
       success: false,
       message: "Error al crear sesión",
-      error: error.message
+      error: error.message,
+      details: error.errors ? Object.keys(error.errors) : []
     });
   }
 });
@@ -1105,6 +1422,93 @@ app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
   }
 });
 /**
+ * Calcula el Score de Rotación para un tester en una plataforma específica
+ * 
+ * @param {Object} tester - Objeto del tester
+ * @param {String} platform - Plataforma a evaluar
+ * @returns {Object} - { score, breakdown }
+ */
+function calculateRotationScore(tester, platform) {
+  const mmr = tester.Mmr || 40;
+  const platformHistory = tester.platformHistory || new Map();
+  
+  // Obtener historial de esta plataforma
+  const platformData = platformHistory.get(platform) || { sessions: 0 };
+  const sessionsInPlatform = platformData.sessions || 0;
+  
+  // Contar plataformas únicas jugadas
+  const platformsPlayed = Array.from(platformHistory.keys()).length;
+  const platformsAvailable = tester.Devices.length;
+  
+  // ============================================
+  // COMPONENTE 1: PUNTOS BASE DE LA PLATAFORMA
+  // ============================================
+  const basePlatformPoints = MMR_POINTS[platform] || 3.0;
+  
+  // ============================================
+  // COMPONENTE 2: BONO POR DIVERSIDAD
+  // ============================================
+  const diversityBonus = (platformsAvailable - platformsPlayed) * 2;
+  
+  // ============================================
+  // COMPONENTE 3: BONO POR PLATAFORMA NUEVA
+  // ============================================
+  const newPlatformBonus = sessionsInPlatform === 0 ? 5 : 0;
+  
+  // ============================================
+  // COMPONENTE 4: AJUSTE POR MMR
+  // ============================================
+  let mmrAdjustment = 0;
+  const platformDifficulty = getPlatformDifficulty(platform);
+  
+  if (mmr > 60) {
+    // MMR alto → Merece descansar
+    if (platformDifficulty === "easy") {
+      mmrAdjustment = 15;  // Prioridad para plataformas fáciles
+    } else if (platformDifficulty === "hard") {
+      mmrAdjustment = -10; // Evitar plataformas difíciles
+    }
+  } else if (mmr < 30) {
+    // MMR bajo → Necesita trabajar
+    if (platformDifficulty === "easy") {
+      mmrAdjustment = -10; // Evitar plataformas fáciles
+    } else if (platformDifficulty === "hard") {
+      mmrAdjustment = 15;  // Prioridad para plataformas difíciles
+    }
+  }
+  // Si 30 ≤ MMR ≤ 60 → mmrAdjustment = 0 (balanceado)
+  
+  // ============================================
+  // COMPONENTE 5: PENALIZACIÓN POR REPETICIÓN
+  // ============================================
+  const repetitionPenalty = sessionsInPlatform * 1.5;
+  
+  // ============================================
+  // SCORE TOTAL
+  // ============================================
+  const score = basePlatformPoints 
+              + diversityBonus 
+              + newPlatformBonus 
+              + mmrAdjustment 
+              - repetitionPenalty;
+  
+  return {
+    score: parseFloat(score.toFixed(2)),
+    breakdown: {
+      basePlatformPoints,
+      diversityBonus,
+      newPlatformBonus,
+      mmrAdjustment,
+      repetitionPenalty,
+      sessionsInPlatform,
+      platformsPlayed,
+      platformsAvailable,
+      mmr
+    }
+  };
+}
+
+/**
  * @swagger
  * /api/sessions/{id}/assign:
  *   post:
@@ -1142,147 +1546,663 @@ app.get("/api/user/my-sessions", authMiddleware, async (req, res) => {
 // Asignación automática de testers (con soporte para Sprout, Juno, Sparks)
 app.post("/api/sessions/:id/assign", authMiddleware, async (req, res) => {
   try {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🎯 [ASSIGN] Iniciando asignación');
+    console.log('🎯 [ASSIGN] Session ID:', req.params.id);
+
     const session = await Session.findById(req.params.id);
-    if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
-
-    const assignedTesters = [];
-    const testersAsignados = new Set();
-
-    const captureReq = session.captureRequirements || {};
-    const dispositivos = new Set();
-    for (const distros of Object.values(captureReq)) {
-      Object.keys(distros).forEach(d => dispositivos.add(d));
+    
+    if (!session) {
+      return res.status(404).json({ message: "Sesión no encontrada" });
     }
 
-    const CAPTURA_DISPOSITIVO = {
-      CSVProfile: ["PS4", "PS4 Dev", "PS5", "PS5 Dev", "PC", "Android", "iOS", "XSX", "XB1", "Switch", "iPad"],
-      LLM: ["PS4 Dev", "PS5 Dev", "PC", "Android", "XSX", "Switch"],
-      LWM: ["PS4 Dev", "PS5 Dev", "XSX", "Switch"],
-      Trace: ["PC", "Android", "iOS", "Switch"],
-      Razor: ["PS4 Dev", "PS5 Dev", "XSX"],
-      DX11: ["PC"],
-      DX12: ["PC"],
-      Performance: ["PC"]
-    };
+    console.log('✅ [ASSIGN] Sesión encontrada:', {
+      sessionName: session.sessionName,
+      sessionType: session.sessionType,
+      backendName: session.backendName
+    });
 
-    // Repartición de testers según requerimientos
-    for (const device of dispositivos) {
-      let capturasExclusivas = [];
-      let csvCount = 0;
-      for (const [tipoCaptura, distros] of Object.entries(captureReq)) {
-        const cantidad = distros[device] || 0;
-        if (!CAPTURA_DISPOSITIVO[tipoCaptura] || !CAPTURA_DISPOSITIVO[tipoCaptura].includes(device)) continue;
-        if (tipoCaptura === "CSVProfile") {
-          csvCount = cantidad;
-        } else {
-          for (let i = 0; i < cantidad; i++) capturasExclusivas.push(tipoCaptura);
+    if (!session.sessionName) {
+      session.sessionName = session.backendName || "Sesión sin nombre";
+    }
+
+    if (!session.sessionType || !["sprout", "juno", "sparks", "battle_royale", "eventos", "normal"].includes(session.sessionType)) {
+      session.sessionType = "battle_royale";
+    }
+
+    const assignedTesters = [];
+    const backupTesters = [];
+    const testersAssignedAsActive = new Set();
+    const testersAssignedAsBackup = new Set();
+
+    let captureReq = {};
+    
+    if (session.captureRequirements) {
+      if (session.captureRequirements instanceof Map) {
+        captureReq = Object.fromEntries(session.captureRequirements);
+        for (const [key, value] of Object.entries(captureReq)) {
+          if (value instanceof Map) {
+            captureReq[key] = Object.fromEntries(value);
+          }
+        }
+      } else if (typeof session.captureRequirements === 'object') {
+        captureReq = session.captureRequirements;
+      }
+    }
+    
+    console.log('📋 [ASSIGN] Capture Requirements (limpio):', JSON.stringify(captureReq, null, 2));
+
+    const platformsNeeded = new Set();
+    const VALID_CAPTURES = ["CSVProfile", "LLM", "LWM", "Trace", "Razor", "DX11", "DX12", "Performance"];
+    
+    for (const [captureType, distros] of Object.entries(captureReq)) {
+      if (!VALID_CAPTURES.includes(captureType)) {
+        console.log(`⚠️ [ASSIGN] Ignorando propiedad inválida: ${captureType}`);
+        continue;
+      }
+
+      console.log(`📦 [ASSIGN] Procesando captura: ${captureType}`);
+      
+      if (distros && typeof distros === 'object' && !(distros instanceof Map)) {
+        for (const [platform, cantidad] of Object.entries(distros)) {
+          if (cantidad > 0) {
+            platformsNeeded.add(platform);
+            console.log(`  ✅ Plataforma agregada: ${platform} (cantidad: ${cantidad})`);
+          }
         }
       }
+    }
 
-      let agruparLLMLWM = false;
-      if ((device.includes("Dev")) && capturasExclusivas.includes("LLM") && capturasExclusivas.includes("LWM")) {
-        agruparLLMLWM = true;
-      }
+    console.log('🎮 [ASSIGN] Plataformas necesarias:', Array.from(platformsNeeded));
 
-      const totalTesters = Math.max(
-        agruparLLMLWM ? Math.max(csvCount, 2) : Math.max(capturasExclusivas.length, csvCount),
-        1
-      );
-
-      let testers = await User.find({
+    if (platformsNeeded.size === 0) {
+      console.log('⚠️ [ASSIGN] No hay plataformas requeridas, buscando testers disponibles...');
+      
+      const availableTesters = await User.find({
         Region: "Bogota",
-        "Devices.name": device,
         userType: "tester",
-        Epam_user: { $nin: Array.from(testersAsignados) }
-      }).sort({ "Devices.priority": 1, Mmr: 1 }).limit(totalTesters);
+        availability: "Disponible"
+      }).limit(10);
 
-      let llmAsignado = false, lwmAsignado = false;
-      for (const tester of testers) {
-        if (testersAsignados.has(tester.Epam_user)) continue;
-        const capturas = [];
-        if (csvCount > 0 && CAPTURA_DISPOSITIVO["CSVProfile"].includes(device)) {
-          capturas.push("CSVProfile");
-          csvCount--;
-        }
-        if (agruparLLMLWM && !llmAsignado) {
-          capturas.push("LLM", "LWM");
-          capturasExclusivas = capturasExclusivas.filter(c => c !== "LLM" && c !== "LWM");
-          llmAsignado = lwmAsignado = true;
-        } else if (capturasExclusivas.length > 0) {
-          const captura = capturasExclusivas.shift();
-          if (captura) capturas.push(captura);
+      console.log(`📊 [ASSIGN] Testers disponibles encontrados: ${availableTesters.length}`);
+
+      for (const tester of availableTesters) {
+        const platform = tester.Devices && tester.Devices[0] ? tester.Devices[0].name : "PC";
+        
+        assignedTesters.push({
+          testerId: tester._id,
+          Epam_user: tester.Epam_user,
+          platform,
+          region: tester.Region,
+          mmr: tester.Mmr || 40,
+          rotationScore: 0,
+          pod: tester.Pod,
+          station: tester.Station,
+          capturas: []
+        });
+
+        testersAssignedAsActive.add(tester.Epam_user);
+        console.log(`  ✅ Tester asignado: ${tester.Epam_user} (${platform})`);
+      }
+    } else {
+      const CAPTURA_DISPOSITIVO = {
+        CSVProfile: ["PS4", "PS5", "PC", "Android", "iOS", "XSX", "XB1", "Switch"],
+        LLM: ["PS5", "PC", "Android", "XSX", "Switch"],
+        LWM: ["PS5", "XSX", "Switch"],
+        Trace: ["PC", "Android", "iOS", "Switch"],
+        Razor: ["PS5", "XSX"],
+        DX11: ["PC"],
+        DX12: ["PC"],
+        Performance: ["PC"]
+      };
+
+      for (const platform of platformsNeeded) {
+        console.log(`\n🔍 [ASSIGN] Procesando plataforma: ${platform}`);
+        
+        let capturasExclusivas = [];
+        let csvCount = 0;
+        
+        for (const [tipoCaptura, distros] of Object.entries(captureReq)) {
+          if (!VALID_CAPTURES.includes(tipoCaptura)) continue;
+          
+          const cantidad = distros[platform] || 0;
+          
+          console.log(`  📦 ${tipoCaptura}: ${cantidad} capturas`);
+          
+          if (!CAPTURA_DISPOSITIVO[tipoCaptura] || !CAPTURA_DISPOSITIVO[tipoCaptura].includes(platform)) {
+            console.log(`    ⚠️ ${tipoCaptura} no compatible con ${platform}`);
+            continue;
+          }
+          
+          if (tipoCaptura === "CSVProfile") {
+            csvCount = cantidad;
+          } else {
+            for (let i = 0; i < cantidad; i++) {
+              capturasExclusivas.push(tipoCaptura);
+            }
+          }
         }
 
-        if (capturas.length > 0) {
-          testersAsignados.add(tester.Epam_user);
+        const totalTestersNeeded = Math.max(capturasExclusivas.length, csvCount, 1);
+        const backupsNeeded = Math.ceil(totalTestersNeeded * 0.3);
+
+        console.log(`  📊 Testers necesarios: ${totalTestersNeeded}`);
+        console.log(`  📊 Backups necesarios: ${backupsNeeded}`);
+        console.log(`  📊 CSV Count: ${csvCount}`);
+        console.log(`  📊 Capturas exclusivas: ${capturasExclusivas.length}`);
+
+        // ============================================
+        // ✅ LÓGICA ESPECIAL PARA ANDROID E iOS
+        // ============================================
+        let eligibleTesters = [];
+        
+        if (platform === "Android" || platform === "iOS") {
+          console.log(`  📱 Plataforma móvil detectada: ${platform}`);
+          
+          const query = {
+            Region: "Bogota",
+            userType: "tester",
+            availability: "Disponible",
+            Epam_user: { 
+              $nin: [
+                ...Array.from(testersAssignedAsActive),
+                ...Array.from(testersAssignedAsBackup)
+              ]
+            }
+          };
+
+          console.log(`  🔍 Buscando todos los testers disponibles (sin filtro de dispositivo)`);
+
+          eligibleTesters = await User.find(query);
+          
+          console.log(`  📊 Testers encontrados (antes de filtrar consolas): ${eligibleTesters.length}`);
+
+          // ✅ FILTRAR: Excluir testers con consolas dev SI esas consolas son requeridas
+          const consolasRequeridas = new Set();
+          
+          for (const plat of platformsNeeded) {
+            if (["PS4", "PS5", "XSX", "XB1", "Switch"].includes(plat)) {
+              consolasRequeridas.add(plat);
+            }
+          }
+
+          console.log(`  🎮 Consolas requeridas en la sesión:`, Array.from(consolasRequeridas));
+
+          if (consolasRequeridas.size > 0) {
+            const before = eligibleTesters.length;
+            
+            eligibleTesters = eligibleTesters.filter(tester => {
+              const tieneConsolaDev = tester.Devices && tester.Devices.some(device => {
+                return device.isDev === true && consolasRequeridas.has(device.name);
+              });
+
+              if (tieneConsolaDev) {
+                const consolaDev = tester.Devices.find(d => d.isDev === true && consolasRequeridas.has(d.name));
+                console.log(`    ❌ ${tester.Epam_user} excluido: tiene ${consolaDev.name} dev (requerida)`);
+                return false;
+              }
+
+              return true;
+            });
+
+            console.log(`  🔧 Filtro de consolas dev: ${before} → ${eligibleTesters.length}`);
+          } else {
+            console.log(`  ✅ No hay consolas requeridas, todos los testers son elegibles`);
+          }
+
+        } else {
+          // ============================================
+          // LÓGICA NORMAL PARA OTRAS PLATAFORMAS
+          // ============================================
+          const query = {
+            Region: "Bogota",
+            "Devices.name": platform,
+            userType: "tester",
+            availability: "Disponible",
+            Epam_user: { 
+              $nin: [
+                ...Array.from(testersAssignedAsActive),
+                ...Array.from(testersAssignedAsBackup)
+              ]
+            }
+          };
+
+          console.log(`  🔍 Testers excluidos: ${query.Epam_user.$nin.length}`);
+
+          eligibleTesters = await User.find(query);
+
+          console.log(`  📊 Testers elegibles encontrados: ${eligibleTesters.length}`);
+
+          if (eligibleTesters.length > 0) {
+            console.log(`  👥 Testers elegibles:`);
+            eligibleTesters.slice(0, 5).forEach(t => {
+              console.log(`    - ${t.Epam_user} (MMR: ${t.Mmr}, Pod: ${t.Pod})`);
+            });
+          }
+
+          // ✅ FILTRAR POR RESTRICCIONES DE CUENTA
+          if (platform === "Switch") {
+            const before = eligibleTesters.length;
+            eligibleTesters = eligibleTesters.filter(t => t.hasNintendoAccount === true);
+            console.log(`  🎮 Filtro Nintendo: ${before} → ${eligibleTesters.length}`);
+          }
+          
+          if (platform === "XSX" || platform === "XB1") {
+            const before = eligibleTesters.length;
+            eligibleTesters = eligibleTesters.filter(t => 
+              t.hasXboxAccount === true || t.canSplitscreen === true
+            );
+            console.log(`  🎮 Filtro Xbox: ${before} → ${eligibleTesters.length}`);
+          }
+        }
+
+        if (eligibleTesters.length === 0) {
+          console.log(`  ❌ No hay testers elegibles para ${platform}`);
+          continue;
+        }
+
+        // ✅ CALCULAR SCORE DE ROTACIÓN
+        const testersWithScores = eligibleTesters.map(tester => {
+          const scoreData = calculateRotationScore(tester, platform);
+          return {
+            tester,
+            score: scoreData.score,
+            breakdown: scoreData.breakdown
+          };
+        });
+
+        testersWithScores.sort((a, b) => b.score - a.score);
+
+        console.log(`  📊 Top 3 testers por score:`);
+        testersWithScores.slice(0, 3).forEach((t, i) => {
+          console.log(`    ${i + 1}. ${t.tester.Epam_user} - Score: ${t.score}`);
+        });
+
+        // ✅ ASIGNAR ACTIVOS
+        const activeTesters = testersWithScores.slice(0, totalTestersNeeded);
+        
+        for (const { tester, score } of activeTesters) {
+          if (testersAssignedAsActive.has(tester.Epam_user)) {
+            console.log(`  ⚠️ ${tester.Epam_user} ya está asignado como ACTIVO, saltando...`);
+            continue;
+          }
+
+          if (testersAssignedAsBackup.has(tester.Epam_user)) {
+            console.log(`  ⚠️ ${tester.Epam_user} ya está asignado como BACKUP, saltando...`);
+            continue;
+          }
+
+          testersAssignedAsActive.add(tester.Epam_user);
+          
+          const capturas = [];
+          if (csvCount > 0) {
+            capturas.push("CSVProfile");
+            csvCount--;
+          }
+          if (capturasExclusivas.length > 0) {
+            capturas.push(capturasExclusivas.shift());
+          }
+
           assignedTesters.push({
             testerId: tester._id,
             Epam_user: tester.Epam_user,
-            device,  // ✅ Dispositivo principal
+            platform,
             region: tester.Region,
             mmr: tester.Mmr,
+            rotationScore: score,
             pod: tester.Pod,
             station: tester.Station,
-            dispositivos: [device],  // ✅ Array de dispositivos
-            capturas  // ✅ Array de capturas asignadas
+            capturas
           });
+
+          console.log(`  ✅ Asignado: ${tester.Epam_user} (Score: ${score})`);
+        }
+
+        // ✅ ASIGNAR BACKUPS
+        const backupCandidates = testersWithScores.slice(totalTestersNeeded, totalTestersNeeded + backupsNeeded);
+        
+        for (const { tester, score } of backupCandidates) {
+          if (testersAssignedAsActive.has(tester.Epam_user)) {
+            console.log(`  ⚠️ ${tester.Epam_user} ya está asignado como ACTIVO, no puede ser BACKUP`);
+            continue;
+          }
+
+          if (testersAssignedAsBackup.has(tester.Epam_user)) {
+            console.log(`  ⚠️ ${tester.Epam_user} ya está asignado como BACKUP en otra plataforma`);
+            continue;
+          }
+
+          testersAssignedAsBackup.add(tester.Epam_user);
+
+          backupTesters.push({
+            testerId: tester._id,
+            Epam_user: tester.Epam_user,
+            platform,
+            mmr: tester.Mmr,
+            rotationScore: score,
+            reason: "Exceso de testers disponibles"
+          });
+
+          console.log(`  🔄 Backup: ${tester.Epam_user} (Score: ${score})`);
         }
       }
     }
 
-    // Aplicar lógica según tipo de sesión
-    const { sessionType } = session;
+    console.log('\n📊 [ASSIGN] Resumen de asignación:');
+    console.log(`  ✅ Testers activos: ${assignedTesters.length}`);
+    console.log(`  🔄 Testers backup: ${backupTesters.length}`);
+    console.log(`  👥 Testers únicos activos: ${testersAssignedAsActive.size}`);
+    console.log(`  👥 Testers únicos backup: ${testersAssignedAsBackup.size}`);
 
-    if (sessionType === "sprout") {
-      const half = Math.ceil(assignedTesters.length / 2);
-      const groupA = assignedTesters.slice(0, half).map(t => ({ ...t, group: "A" }));
-      const groupB = assignedTesters.slice(half).map(t => ({ ...t, group: "B" }));
-      session.assignedTesters = [...groupA, ...groupB];
-
-    } else if (sessionType === "juno") {
-      const teamSize = 4;
-      const totalTeams = 10;
-      const totalNeeded = totalTeams * teamSize;
-      const selected = assignedTesters.slice(0, totalNeeded);
-
-      const teams = [];
-      for (let i = 0; i < totalTeams; i++) {
-        const buildGroup = i < 5 ? "A" : "B";
-        const members = selected.slice(i * teamSize, (i + 1) * teamSize).map(t => ({
-          ...t,
-          group: buildGroup,
-          team: `Team ${i + 1}`
-        }));
-        teams.push(...members);
-      }
-      session.assignedTesters = teams;
-
-    } else if (sessionType === "sparks") {
-      const teamSize = 4;
-      const totalTeams = 5;
-      const selected = assignedTesters.slice(0, totalTeams * teamSize);
-
-      const teams = [];
-      for (let i = 0; i < totalTeams; i++) {
-        const buildGroup = i < Math.ceil(totalTeams / 2) ? "A" : "B";
-        const members = selected.slice(i * teamSize, (i + 1) * teamSize).map(t => ({
-          ...t,
-          group: buildGroup,
-          team: `Team ${i + 1}`
-        }));
-        teams.push(...members);
-      }
-      session.assignedTesters = teams;
-
+    const activosSet = new Set(assignedTesters.map(t => t.Epam_user));
+    const backupsSet = new Set(backupTesters.map(t => t.Epam_user));
+    
+    const duplicados = [...activosSet].filter(x => backupsSet.has(x));
+    
+    if (duplicados.length > 0) {
+      console.log('⚠️ [ASSIGN] ADVERTENCIA: Duplicados encontrados:', duplicados);
+      const backupsFiltrados = backupTesters.filter(b => !activosSet.has(b.Epam_user));
+      session.backupTesters = backupsFiltrados;
+      console.log(`  🔧 Backups filtrados: ${backupTesters.length} → ${backupsFiltrados.length}`);
     } else {
-      session.assignedTesters = assignedTesters;
+      session.backupTesters = backupTesters;
     }
 
+    session.assignedTesters = assignedTesters;
+    
+    console.log('💾 [ASSIGN] Guardando sesión...');
     await session.save();
-    res.json({ assignedTesters: session.assignedTesters });
+    console.log('✅ [ASSIGN] Sesión guardada correctamente');
+
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+    res.json({ 
+      success: true,
+      assignedTesters: session.assignedTesters,
+      backupTesters: session.backupTesters,
+      stats: {
+        totalActives: session.assignedTesters.length,
+        totalBackups: session.backupTesters.length,
+        uniqueActives: testersAssignedAsActive.size,
+        uniqueBackups: testersAssignedAsBackup.size,
+        averageMMR: session.assignedTesters.length > 0 
+          ? (session.assignedTesters.reduce((sum, t) => sum + t.mmr, 0) / session.assignedTesters.length).toFixed(2)
+          : 0
+      }
+    });
+
   } catch (error) {
-    console.error('Error en la asignación automática:', error);
-    res.status(500).json({ message: "Error en la asignación automática", error: error.message });
+    console.error('❌ [ASSIGN] Error en asignación:', error);
+    
+    res.status(500).json({ 
+      success: false,
+      message: "Error en la asignación automática", 
+      error: error.message
+    });
+  }
+});
+/**
+ * Actualizar MMR de todos los testers después de completar una sesión
+ */
+app.post("/api/sessions/:id/update-mmr", authMiddleware, async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
+
+    if (session.mmrProcessed) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "El MMR de esta sesión ya fue procesado" 
+      });
+    }
+
+    const results = [];
+
+    // ============================================
+    // ACTUALIZAR MMR DE TESTERS ACTIVOS
+    // ============================================
+    for (const testerData of session.assignedTesters) {
+      const user = await User.findById(testerData.testerId);
+      if (!user) continue;
+
+      const platform = testerData.platform;
+      const mmrBefore = user.Mmr;
+      const mmrGained = MMR_POINTS[platform] || 3.0;
+      const mmrAfter = Math.min(200, mmrBefore + mmrGained);
+
+      // Actualizar MMR
+      user.Mmr = mmrAfter;
+
+      // Actualizar historial de plataforma
+      if (!user.platformHistory) user.platformHistory = new Map();
+      const platformData = user.platformHistory.get(platform) || { sessions: 0, totalMMRGained: 0 };
+      platformData.sessions += 1;
+      platformData.lastPlayed = new Date();
+      platformData.totalMMRGained += mmrGained;
+      user.platformHistory.set(platform, platformData);
+
+      // Agregar al historial de asignaciones
+      if (!user.assignmentHistory) user.assignmentHistory = [];
+      user.assignmentHistory.push({
+        sessionId: session._id,
+        sessionName: session.sessionName,
+        platform,
+        role: "active",
+        mmrBefore,
+        mmrAfter,
+        mmrGained,
+        date: new Date()
+      });
+
+      user.totalSessions += 1;
+      await user.save();
+
+      results.push({
+        tester: user.Epam_user,
+        platform,
+        role: "active",
+        mmrBefore,
+        mmrAfter,
+        mmrGained
+      });
+    }
+
+    // ============================================
+    // ACTUALIZAR MMR DE BACKUPS
+    // ============================================
+    for (const backupData of session.backupTesters) {
+      const user = await User.findById(backupData.testerId);
+      if (!user) continue;
+
+      const mmrBefore = user.Mmr;
+      let backupBonus = 0;
+
+      // Calcular bono de backup según MMR
+      if (mmrBefore > 60) {
+        backupBonus = 1.0;  // Recompensa por haber trabajado duro
+      } else if (mmrBefore < 30) {
+        backupBonus = -0.5; // Penalización por no trabajar
+      }
+      // Si 30 ≤ MMR ≤ 60 → backupBonus = 0
+
+      const mmrAfter = Math.max(0, Math.min(200, mmrBefore + backupBonus));
+
+      // Actualizar MMR
+      user.Mmr = mmrAfter;
+
+      // Agregar al historial
+      if (!user.assignmentHistory) user.assignmentHistory = [];
+      user.assignmentHistory.push({
+        sessionId: session._id,
+        sessionName: session.sessionName,
+        platform: backupData.platform,
+        role: "backup",
+        mmrBefore,
+        mmrAfter,
+        mmrGained: backupBonus,
+        date: new Date()
+      });
+
+      user.totalBackups += 1;
+      await user.save();
+
+      results.push({
+        tester: user.Epam_user,
+        platform: backupData.platform,
+        role: "backup",
+        mmrBefore,
+        mmrAfter,
+        mmrGained: backupBonus
+      });
+    }
+
+    // Marcar sesión como procesada
+    session.mmrProcessed = true;
+    session.status = "Completada";
+    await session.save();
+
+    res.json({
+      success: true,
+      message: `MMR actualizado para ${results.length} testers`,
+      results
+    });
+
+  } catch (error) {
+    console.error('Error actualizando MMR:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error actualizando MMR",
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Ver estadísticas de rotación de un tester
+ */
+app.get("/api/users/:id/rotation-stats", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+
+    const platformStats = [];
+    const platformHistory = user.platformHistory || new Map();
+
+    for (const [platform, data] of platformHistory.entries()) {
+      platformStats.push({
+        platform,
+        sessions: data.sessions,
+        lastPlayed: data.lastPlayed,
+        totalMMRGained: data.totalMMRGained,
+        mmrPerSession: (data.totalMMRGained / data.sessions).toFixed(2)
+      });
+    }
+
+    platformStats.sort((a, b) => b.sessions - a.sessions);
+
+    const platformsAvailable = user.Devices.map(d => d.name);
+    const platformsPlayed = Array.from(platformHistory.keys());
+    const platformsNotPlayed = platformsAvailable.filter(p => !platformsPlayed.includes(p));
+
+    res.json({
+      success: true,
+      tester: user.Epam_user,
+      mmr: user.Mmr,
+      totalSessions: user.totalSessions,
+      totalBackups: user.totalBackups,
+      platformsAvailable: platformsAvailable.length,
+      platformsPlayed: platformsPlayed.length,
+      platformsNotPlayed,
+      platformStats,
+      recentHistory: user.assignmentHistory.slice(-10).reverse()
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Error obteniendo estadísticas" 
+    });
+  }
+});
+
+/**
+ * Ver tabla de pesos MMR
+ */
+app.get("/api/mmr-weights", authMiddleware, (req, res) => {
+  const weights = Object.entries(MMR_POINTS)
+    .map(([platform, points]) => ({
+      platform,
+      points,
+      difficulty: PLATFORM_DIFFICULTY[platform],
+      classification: getPlatformDifficulty(platform)
+    }))
+    .sort((a, b) => b.points - a.points);
+
+  res.json({
+    success: true,
+    weights
+  });
+});
+
+/**
+ * Simular asignación (sin guardar)
+ */
+app.post("/api/sessions/:id/simulate-assignment", authMiddleware, async (req, res) => {
+  try {
+    const session = await Session.findById(req.params.id);
+    if (!session) return res.status(404).json({ message: "Sesión no encontrada" });
+
+    // Ejecutar la misma lógica de asignación pero sin guardar
+    // ... (copiar lógica de /assign pero sin session.save())
+
+    res.json({
+      success: true,
+      message: "Simulación completada (no se guardó)",
+      preview: {
+        assignedTesters: assignedTesters,
+        backupTesters: backupTesters
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Error en simulación" 
+    });
+  }
+});
+
+/**
+ * Resetear MMR de todos los testers (Admin)
+ */
+app.post("/api/admin/reset-mmr", authMiddleware, async (req, res) => {
+  try {
+    const adminUser = await User.findById(req.userId);
+    if (adminUser.userType !== "admin") {
+      return res.status(403).json({ message: "Solo administradores" });
+    }
+
+    const { initialMMR } = req.body;
+    const newMMR = initialMMR || 40;
+
+    await User.updateMany(
+      { userType: "tester" },
+      { 
+        $set: { Mmr: newMMR },
+        $unset: { platformHistory: "", assignmentHistory: "" }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: `MMR reseteado a ${newMMR} para todos los testers`
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Error reseteando MMR" 
+    });
   }
 });
 
@@ -1456,7 +2376,7 @@ app.get("/protected", (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(token, "SECRETO");
+    const decoded = jwt.verify(token, JWT_SECRET);
     res.status(200).json({ success: true, message: "Bienvenido a la ruta protegida", userId: decoded.userId });
   } catch (err) {
     res.status(401).json({ success: false, message: "Token inválido o expirado" });
@@ -3044,6 +3964,25 @@ app.post('/api/sessions/:sessionId/replace-tester', authMiddleware, async (req, 
     });
   }
 });
+
+/**
+ * Obtener todos los usuarios (para estadísticas)
+ */
+app.get("/api/users", authMiddleware, async (req, res) => {
+  try {
+    const users = await User.find({ userType: "tester" })
+      .select('-Password')
+      .sort({ Mmr: -1 });
+
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Error obteniendo usuarios" 
+    });
+  }
+});
+
 
 //logout 
 app.post("/logout", authMiddleware, async (req, res) => {

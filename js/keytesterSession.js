@@ -203,149 +203,151 @@ document.addEventListener("DOMContentLoaded", function () {
         console.log("Modo seleccionado:", val);
     });
 
-    // --- Envío del formulario ---
-    document.getElementById("sessionForm").addEventListener("submit", async function (e) {
-        e.preventDefault();
+    
+   // --- Envío del formulario ---
+document.getElementById("sessionForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-        const mode = modeSelect.value.toLowerCase();
-        const usaSproutLayout = ["sprout", "juno", "sparks"].includes(mode);
+    const mode = modeSelect.value.toLowerCase();
+    const usaSproutLayout = ["sprout", "juno", "sparks"].includes(mode);
 
-        if (usaSproutLayout && (!idA.value.trim() || !idB.value.trim())) {
-            const msg = document.getElementById("message");
-            msg.style.color = "red";
-            msg.innerText = "Debes ingresar ambos ID Override para este tipo de sesión.";
-            return;
-        }
+    if (usaSproutLayout && (!idA.value.trim() || !idB.value.trim())) {
+        const msg = document.getElementById("message");
+        msg.style.color = "red";
+        msg.innerText = "Debes ingresar ambos ID Override para este tipo de sesión.";
+        return;
+    }
 
-        const captureRequirements = {
-            CSVProfile: {
-                PS4: +document.getElementById("csv_ps4").value || 0,
-                "PS4 Dev": +document.getElementById("csv_ps4dev").value || 0,
-                PS5: +document.getElementById("csv_ps5").value || 0,
-                "PS5 Dev": +document.getElementById("csv_ps5dev").value || 0,
-                PC: +document.getElementById("csv_pc").value || 0,
-                Android: +document.getElementById("csv_android").value || 0,
-                iOS: +document.getElementById("csv_ios").value || 0,
-                XSX: +document.getElementById("csv_xsx").value || 0,
-                Switch: +document.getElementById("csv_switch").value || 0
+    const captureRequirements = {
+        CSVProfile: {
+            PS4: +document.getElementById("csv_ps4").value || 0,
+            "PS4 Dev": +document.getElementById("csv_ps4dev").value || 0,
+            PS5: +document.getElementById("csv_ps5").value || 0,
+            "PS5 Dev": +document.getElementById("csv_ps5dev").value || 0,
+            PC: +document.getElementById("csv_pc").value || 0,
+            Android: +document.getElementById("csv_android").value || 0,
+            iOS: +document.getElementById("csv_ios").value || 0,
+            XSX: +document.getElementById("csv_xsx").value || 0,
+            Switch: +document.getElementById("csv_switch").value || 0
+        },
+        LLM: {
+            "PS4 Dev": +document.getElementById("llm_ps4dev").value || 0,
+            "PS5 Dev": +document.getElementById("llm_ps5dev").value || 0,
+            PC: +document.getElementById("llm_pc").value || 0,
+            Android: +document.getElementById("llm_android").value || 0,
+            XSX: +document.getElementById("llm_xsx").value || 0,
+            Switch: +document.getElementById("llm_switch").value || 0
+        },
+        LWM: {
+            "PS4 Dev": +document.getElementById("lwm_ps4dev").value || 0,
+            "PS5 Dev": +document.getElementById("lwm_ps5dev").value || 0,
+            XSX: +document.getElementById("lwm_xsx").value || 0,
+            Switch: +document.getElementById("lwm_switch").value || 0
+        },
+        Trace: {
+            PC: +document.getElementById("trace_pc").value || 0,
+            Android: +document.getElementById("trace_android").value || 0,
+            iOS: +document.getElementById("trace_ios").value || 0,
+            Switch: +document.getElementById("trace_switch").value || 0
+        },
+        Razor: {
+            "PS4 Dev": +document.getElementById("razor_ps4dev").value || 0,
+            "PS5 Dev": +document.getElementById("razor_ps5dev").value || 0,
+            XSX: +document.getElementById("razor_xsx").value || 0
+        },
+        DX11: { PC: +document.getElementById("dx11_pc").value || 0 },
+        DX12: { PC: +document.getElementById("dx12_pc").value || 0 },
+        Performance: { PC: +document.getElementById("perf_pc").value || 0 }
+    };
+
+    // ✅ DETERMINAR sessionType CORRECTO
+    let sessionType = "battle_royale"; // ← Valor por defecto correcto
+    if (["sprout", "juno", "sparks"].includes(mode)) {
+        sessionType = mode;
+    }
+
+    // ✅ CONSTRUIR OBJETO DATA
+    const data = {
+        sessionName: document.getElementById("backendName").value, // ✅ AGREGADO
+        backendName: document.getElementById("backendName").value,
+        buildString: document.getElementById("buildString").value,
+        startTime: document.getElementById("startTime").value,
+        totalPlayers: +document.getElementById("totalPlayers").value,
+        captureRequirements,
+        sessionType // ✅ Ahora usa el valor correcto
+    };
+
+    // 🔹 SPLIT SCREEN: Todos los modos lo usan
+    const splitScreenInput = document.getElementById("splitScreenCount");
+    if (splitScreenInput && splitScreenInput.value) {
+        data.splitScreenCount = +splitScreenInput.value;
+    }
+
+    // 🔹 TeamSize según el modo
+    if (mode === "100" || mode === "80") {
+        // Battle Royale usa el campo de texto
+        data.teamSize = document.getElementById("teamSizeNormal").value;
+    } else if (mode === "sprout" || mode === "juno" || mode === "sparks") {
+        // Estos usan configuración de equipos
+        data.teamSize = +document.getElementById("teamSize").value;
+        data.totalTeams = +document.getElementById("totalTeams").value;
+    }
+
+    // 🔹 IDs según layout
+    if (usaSproutLayout) {
+        data.idOverrideA = idA.value;
+        data.idOverrideB = idB.value;
+    } else {
+        data.idOverride = idOverride.value;
+    }
+
+    console.log("Data enviada:", data);
+
+    try {
+        const res = await fetch(`${SERVER_URL}/api/sessions`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token
             },
-            LLM: {
-                "PS4 Dev": +document.getElementById("llm_ps4dev").value || 0,
-                "PS5 Dev": +document.getElementById("llm_ps5dev").value || 0,
-                PC: +document.getElementById("llm_pc").value || 0,
-                Android: +document.getElementById("llm_android").value || 0,
-                XSX: +document.getElementById("llm_xsx").value || 0,
-                Switch: +document.getElementById("llm_switch").value || 0
-            },
-            LWM: {
-                "PS4 Dev": +document.getElementById("lwm_ps4dev").value || 0,
-                "PS5 Dev": +document.getElementById("lwm_ps5dev").value || 0,
-                XSX: +document.getElementById("lwm_xsx").value || 0,
-                Switch: +document.getElementById("lwm_switch").value || 0
-            },
-            Trace: {
-                PC: +document.getElementById("trace_pc").value || 0,
-                Android: +document.getElementById("trace_android").value || 0,
-                iOS: +document.getElementById("trace_ios").value || 0,
-                Switch: +document.getElementById("trace_switch").value || 0
-            },
-            Razor: {
-                "PS4 Dev": +document.getElementById("razor_ps4dev").value || 0,
-                "PS5 Dev": +document.getElementById("razor_ps5dev").value || 0,
-                XSX: +document.getElementById("razor_xsx").value || 0
-            },
-            DX11: { PC: +document.getElementById("dx11_pc").value || 0 },
-            DX12: { PC: +document.getElementById("dx12_pc").value || 0 },
-            Performance: { PC: +document.getElementById("perf_pc").value || 0 }
-        };
+            body: JSON.stringify(data)
+        });
 
-        let sessionType = "normal";
-        if (["sprout", "juno", "sparks"].includes(mode)) {
-            sessionType = mode;
-        }
+        const result = await res.json();
+        const msg = document.getElementById("message");
 
-        const data = {
-            backendName: document.getElementById("backendName").value,
-            buildString: document.getElementById("buildString").value,
-            startTime: document.getElementById("startTime").value,
-            totalPlayers: +document.getElementById("totalPlayers").value,
-            captureRequirements,
-            sessionType
-        };
-
-        // 🔹 SPLIT SCREEN: Todos los modos lo usan
-        const splitScreenInput = document.getElementById("splitScreenCount");
-        if (splitScreenInput && splitScreenInput.value) {
-            data.splitScreenCount = +splitScreenInput.value;
-        }
-
-        // 🔹 TeamSize según el modo
-        if (mode === "100" || mode === "80") {
-            // Battle Royale usa el campo de texto
-            data.teamSize = document.getElementById("teamSizeNormal").value;
-        } else if (mode === "sprout" || mode === "juno" || mode === "sparks") {
-            // Estos usan configuración de equipos
-            data.teamSize = +document.getElementById("teamSize").value;
-            data.totalTeams = +document.getElementById("totalTeams").value;
-        }
-
-        // 🔹 IDs según layout
-        if (usaSproutLayout) {
-            data.idOverrideA = idA.value;
-            data.idOverrideB = idB.value;
-        } else {
-            data.idOverride = idOverride.value;
-        }
-
-        console.log("Data enviada:", data);
-
-        try {
-            const res = await fetch(`${SERVER_URL}/api/sessions`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": token
-                },
-                body: JSON.stringify(data)
-            });
-
-            const result = await res.json();
-            const msg = document.getElementById("message");
-
-            if (res.ok) {
-                msg.style.color = "green";
-                msg.innerHTML = `
+        if (res.ok) {
+            msg.style.color = "green";
+            msg.innerHTML = `
                 ✅ Sesión creada con éxito<br>
                 Split Screen: ${data.splitScreenCount || 1}<br>
                 ${data.totalTeams ? `Equipos: ${data.totalTeams}<br>` : ''}
                 Redirigiendo...
             `;
-             // Verificar la estructura de la respuesta
-    console.log('Respuesta del servidor:', result);
-    // Obtener el sessionId de la respuesta
-    const sessionId = result.session?._id || result.sessionId;
-    if (!sessionId) {
-        console.error('Respuesta sin sessionId:', result);
-        msg.style.color = "red";
-        msg.innerText = "Error: No se pudo obtener el ID de la sesión";
-        return;
-    }
-
-    console.log('SessionId obtenido:', sessionId);
-                setTimeout(() => {
-                    window.location.href = `asignar_sesion.html?sessionId=${sessionId}`;
-                }, 1500);
-            } else {
+            
+            const sessionId = result.session?._id || result.sessionId;
+            if (!sessionId) {
+                console.error('Respuesta sin sessionId:', result);
                 msg.style.color = "red";
-                msg.innerText = result.message || "Error al crear la sesión";
+                msg.innerText = "Error: No se pudo obtener el ID de la sesión";
+                return;
             }
-        } catch (error) {
-            const msg = document.getElementById("message");
+
+            console.log('SessionId obtenido:', sessionId);
+            setTimeout(() => {
+                window.location.href = `asignar_sesion.html?sessionId=${sessionId}`;
+            }, 1500);
+        } else {
             msg.style.color = "red";
-            msg.innerText = "Error de conexión: " + error.message;
-            console.error("Error:", error);
+            msg.innerText = result.message || "Error al crear la sesión";
         }
-    });
+    } catch (error) {
+        const msg = document.getElementById("message");
+        msg.style.color = "red";
+        msg.innerText = "Error de conexión: " + error.message;
+        console.error("Error:", error);
+    }
+});
 
     // Llenar preset inicial
     if (presetsPorModo[modeSelect.value.toLowerCase()]) {

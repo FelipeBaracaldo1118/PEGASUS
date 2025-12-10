@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estadísticas MMR - Sistema de Testing</title>
+  <link rel="stylesheet" href="/css/mmrStyle.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Estadísticas de MMR</h1>
+      <p>Sistema de Rotación y Balanceo</p>
+    </div>
+
+    <div class="content">
+      <div class="stats-grid" id="statsGrid">
+        <div class="loading">Cargando estadísticas...</div>
+      </div>
+
+      <h2 class="section-title">👥 Ranking de Testers</h2>
+      <table class="testers-table" id="testersTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Tester</th>
+            <th>MMR</th>
+            <th>Sesiones Totales</th>
+            <th>Backups</th>
+            <th>Plataformas Jugadas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="6" class="loading">Cargando...</td></tr>
+        </tbody>
+      </table>
+
+      <h2 class="section-title">🎮 Tabla de Pesos MMR</h2>
+      <table class="testers-table" id="weightsTable">
+        <thead>
+          <tr>
+            <th>Plataforma</th>
+            <th>Dificultad Votada</th>
+            <th>Puntos MMR</th>
+            <th>Clasificación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="4" class="loading">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api';
+
+    async function loadStats() {
+      try {
+        const token = localStorage.getItem('token');
+        
+        // Cargar todos los testers
+        const testersResponse = await fetch(`${API_URL}/users`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const testers = await testersResponse.json();
+
+        // Cargar pesos MMR
+        const weightsResponse = await fetch(`${API_URL}/mmr-weights`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const weightsData = await weightsResponse.json();
+
+        displayStats(testers);
+        displayTesters(testers);
+        displayWeights(weightsData.weights);
+
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    function displayStats(testers) {
+      const totalTesters = testers.length;
+      const avgMMR = (testers.reduce((sum, t) => sum + (t.Mmr || 40), 0) / totalTesters).toFixed(2);
+      const totalSessions = testers.reduce((sum, t) => sum + (t.totalSessions || 0), 0);
+      const highMMR = testers.filter(t => (t.Mmr || 40) > 60).length;
+
+      document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total Testers</div>
+          <div class="stat-value">${totalTesters}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">MMR Promedio</div>
+          <div class="stat-value">${avgMMR}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sesiones Totales</div>
+          <div class="stat-value">${totalSessions}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">MMR Alto (>60)</div>
+          <div class="stat-value">${highMMR}</div>
+        </div>
+      `;
+    }
+
+    function displayTesters(testers) {
+      const sorted = testers.sort((a, b) => (b.Mmr || 40) - (a.Mmr || 40));
+      
+      const tbody = document.querySelector('#testersTable tbody');
+      tbody.innerHTML = sorted.map((tester, index) => {
+        const mmr = tester.Mmr || 40;
+        const platformsPlayed = tester.platformHistory ? Array.from(tester.platformHistory.keys()).length : 0;
+        
+        return `
+          <tr>
+            <td><strong>${index + 1}</strong></td>
+            <td>${tester.Epam_user}</td>
+            <td><span class="mmr-badge ${getMMRClass(mmr)}">${mmr}</span></td>
+            <td>${tester.totalSessions || 0}</td>
+            <td>${tester.totalBackups || 0}</td>
+            <td>${platformsPlayed} plataformas</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function displayWeights(weights) {
+      const tbody = document.querySelector('#weightsTable tbody');
+      tbody.innerHTML = weights.map(w => `
+        <tr>
+          <td><strong>${w.platform}</strong></td>
+          <td>${w.difficulty.toFixed(2)}</td>
+          <td><span class="mmr-badge ${getPlatformClass(w.points)}">${w.points}</span></td>
+          <td>${w.classification === 'easy' ? '🟢 Fácil' : w.classification === 'hard' ? '🔴 Difícil' : '🟡 Media'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function getMMRClass(mmr) {
+      if (mmr < 30) return 'mmr-low';
+      if (mmr > 60) return 'mmr-high';
+      return 'mmr-medium';
+    }
+
+    function getPlatformClass(points) {
+      if (points >= 3.5) return 'mmr-high';
+      if (points >= 2.5) return 'mmr-medium';
+      return 'mmr-low';
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>
